@@ -1,0 +1,23 @@
+2025-08-02 17:49:37,431 - ERROR - Error fetching data: HTTPConnectionPool(host='localhost', port=8081): Max retries exceeded with url: /api/data/maintenance-records (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001B2F61BF8B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-08-02 17:49:37,432 - ERROR - Error initializing model: HTTPConnectionPool(host='localhost', port=8081): Max retries exceeded with url: /api/data/maintenance-records (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001B2F61BF8B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-08-02 18:00:44,069 - INFO - Maintenance Data Sample: [{'endDate': '2025-08-03', 'description': 'Routine check', 'estimatedHours': 4, 'id': 1000, 'priority': None, 'equipmentId': 900, 'startDate': '2025-08-02'}]
+2025-08-02 18:00:44,157 - ERROR - Error fetching data: 404 Client Error:  for url: http://localhost:8081/api/data/incidents
+2025-08-02 18:00:44,157 - ERROR - Error initializing model: 404 Client Error:  for url: http://localhost:8081/api/data/incidents
+2025-08-02 18:03:03,237 - INFO - Maintenance Data Sample: [{'endDate': '2025-08-03', 'description': 'Routine check', 'estimatedHours': 4, 'id': 1000, 'priority': None, 'equipmentId': 900, 'startDate': '2025-08-02'}]
+2025-08-02 18:03:03,274 - INFO - Incident Data Sample: []
+2025-08-02 18:03:03,287 - INFO - Maintenance DataFrame Columns: ['endDate', 'description', 'estimatedHours', 'id', 'priority', 'equipmentId', 'startDate']
+2025-08-02 18:03:03,314 - WARNING - No incident data or 'bus_id' column not found. Using zero incident counts.
+2025-08-02 18:03:03,328 - ERROR - Error training model: With n_samples=1, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.
+2025-08-02 18:03:03,329 - ERROR - Error initializing model: With n_samples=1, test_size=0.2 and train_size=None, the resulting train set will be empty. Adjust any of the aforementioned parameters.
+2025-08-02 18:16:08,561 - INFO - Maintenance Data Sample: [{'endDate': '2025-08-03', 'description': 'Routine check', 'estimatedHours': 4, 'id': 1000, 'priority': None, 'equipmentId': 900, 'startDate': '2025-08-02'}, {'endDate': '2025-08-03', 'description': 'Routine engine check', 'estimatedHours': 4, 'id': 1001, 'priority': 'LOW', 'equipmentId': 1001, 'startDate': '2025-08-02'}]
+2025-08-02 18:16:08,598 - INFO - Incident Data Sample: []
+2025-08-02 18:16:08,611 - INFO - Maintenance DataFrame Columns: ['endDate', 'description', 'estimatedHours', 'id', 'priority', 'equipmentId', 'startDate']
+2025-08-02 18:16:08,639 - WARNING - No incident data or 'bus_id' column not found. Using zero incident counts.
+2025-08-02 18:16:08,674 - ERROR - Error training model: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+2025-08-02 18:16:08,675 - ERROR - Error initializing model: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+2025-08-02 21:21:22,056 - INFO - Maintenance Data Sample: [{'endDate': '2025-08-03', 'description': 'Routine check', 'estimatedHours': 4, 'id': 1000, 'priority': None, 'equipmentId': 900, 'startDate': '2025-08-02'}, {'endDate': '2025-08-03', 'description': 'Routine engine check', 'estimatedHours': 4, 'id': 1001, 'priority': 'LOW', 'equipmentId': 1001, 'startDate': '2025-08-02'}]
+2025-08-02 21:21:22,101 - INFO - Incident Data Sample: []
+2025-08-02 21:21:22,139 - INFO - Maintenance DataFrame Columns: ['endDate', 'description', 'estimatedHours', 'id', 'priority', 'equipmentId', 'startDate']
+2025-08-02 21:21:22,366 - WARNING - No incident data or 'bus_id' column not found. Using zero incident counts.
+2025-08-02 21:21:22,666 - ERROR - Error training model: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
+2025-08-02 21:21:22,671 - ERROR - Error initializing model: This solver needs samples of at least 2 classes in the data, but the data contains only one class: 0
