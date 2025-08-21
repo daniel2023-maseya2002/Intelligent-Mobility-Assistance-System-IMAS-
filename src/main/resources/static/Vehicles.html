@@ -1,0 +1,4659 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Simulateur de Circulation 3D Kinshasa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            cursor: none;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 16px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #ui.minimized {
+            transform: translateX(-80%);
+            opacity: 0.7;
+        }
+
+        #ui h2 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        #ui div {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #ui span {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        #toggleUI {
+            position: absolute;
+            top: 20px;
+            left: 300px;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        #toggleUI:hover {
+            background: rgba(0, 212, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #controls h3 {
+            margin-bottom: 10px;
+            color: #ffaa00;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+
+        #controls div {
+            margin: 5px 0;
+            padding: 2px 0;
+        }
+
+        #controlCenter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        #controlCenter button {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            display: block;
+            width: 100%;
+        }
+
+        #controlCenter button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        #trafficControlButton {
+            background: linear-gradient(45deg, #9C27B0, #E1BEE7);
+        }
+
+        #trafficControlButton:hover {
+            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+        }
+
+        #dataManagement {
+            position: absolute;
+            top: 350px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        #dataManagement button {
+            background: linear-gradient(45deg, #4CAF50, #81C784);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            display: block;
+            width: 100%;
+            min-width: 180px;
+        }
+
+        #dataManagement button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        #dataManagement button.danger {
+            background: linear-gradient(45deg, #f44336, #ef5350);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        #dataManagement button.danger:hover {
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        #zoomControls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        #zoomControls button {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            display: block;
+        }
+
+        #zoomControls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 220px;
+            width: 250px;
+            height: 250px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 13px;
+        }
+
+        .speed-meter {
+            position: absolute;
+            bottom: 200px;
+            right: 20px;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, #000 30%, #1a1a2e 70%, #00d4ff 100%);
+            border-radius: 50%;
+            border: 4px solid #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .speed-meter::before {
+            content: '';
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h2 {
+            color: #00d4ff;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .close {
+            color: #ff6b6b;
+            float: right;
+            font-size: 35px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #ff4444;
+        }
+
+        .bus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .bus-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .bus-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .bus-card h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .bus-info {
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .bus-info div {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bus-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .route-info {
+            position: absolute;
+            top: 300px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+            max-width: 250px;
+            display: none;
+        }
+
+        .route-info h4 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .status-indicators {
+            position: absolute;
+            bottom: 20px;
+            right: 200px;
+            z-index: 1000;
+        }
+
+        .status-indicator {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin: 5px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-indicator.active {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .traffic-indicator {
+            position: absolute;
+            bottom: 160px;
+            right: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            z-index: 1000;
+            border: 2px solid #FF6B6B;
+            box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
+            font-size: 12px;
+        }
+
+        .traffic-level {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+        }
+
+        .traffic-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .traffic-low { background: #4CAF50; }
+        .traffic-medium { background: #FF9800; }
+        .traffic-high { background: #F44336; }
+
+        .pedestrian-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 380px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            z-index: 1000;
+            border: 2px solid #00d4ff;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 3000;
+            display: none;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .notification.warning {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        .notification.arrival {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            font-size: 18px;
+            font-weight: bold;
+            padding: 20px 30px;
+            animation: arrivalBounce 0.6s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes arrivalBounce {
+            0% { transform: translateX(100%) scale(0.8); opacity: 0; }
+            50% { transform: translateX(0) scale(1.1); opacity: 1; }
+            100% { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        .bus-station {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: 3px solid #00d4ff;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4);
+            animation: stationGlow 2s infinite alternate;
+        }
+
+        @keyframes stationGlow {
+            0% { box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4); }
+            100% { box-shadow: 0 12px 48px rgba(0, 212, 255, 0.7); }
+        }
+
+        .station-departure {
+            border-color: #4CAF50;
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+        }
+
+        .station-arrival {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00d4ff;
+            font-size: 28px;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .loading::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 4px solid rgba(0, 212, 255, 0.3);
+            border-top: 4px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bus-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .bus-status.en-service {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .bus-status.en-panne {
+            background: #f44336;
+            color: white;
+        }
+
+        .bus-status.arrete {
+            background: #ff9800;
+            color: white;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        .station-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1001;
+            pointer-events: none;
+            transform: translateY(-100%);
+            margin-top: -15px;
+            border: 2px solid;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .station-label.departure {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border-color: #2E7D32;
+        }
+
+        .station-label.arrival {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            border-color: #c62828;
+        }
+
+        .minimap-legend {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 10px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 2px 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 5px;
+        }
+
+        .ai-debug {
+            position: absolute;
+            top: 500px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            max-width: 280px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .ai-debug.active {
+            display: block;
+        }
+
+        .ai-debug h4 {
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+    <div class="loading" id="loading">Chargement du simulateur IMAS...</div>
+
+    <button id="toggleUI">👁️ Masquer UI</button>
+
+    <div id="ui">
+        <h2>🚌 IMAS - Centre de Contrôle</h2>
+        <div>Vue: <span id="cameraMode">Troisième Personne</span></div>
+        <div>Vitesse: <span id="speed">0</span> km/h</div>
+        <div>Accidents: <span id="accidents">0</span></div>
+        <div>Bus Actifs: <span id="vehicleCount">0</span></div>
+        <div>FPS: <span id="fps">60</span></div>
+        <div>Simulation: <span id="simulationMode">Manuelle</span></div>
+        <div>Bus Sélectionné: <span id="selectedBus">Aucun</span></div>
+        <div>Gares Actives: <span id="activeStations">0</span></div>
+        <div>Progression DB: <span id="dbProgress">0%</span></div>
+        <div>Voitures: <span id="totalVehicles">0</span></div>
+        <div>Piétons: <span id="pedestrianCount">0</span></div>
+        <div>Congestion: <span id="trafficLevel">Faible</span></div>
+        <div>IA Status: <span id="aiStatus">Active</span></div>
+    </div>
+
+    <div id="controls">
+        <h3>Contrôles:</h3>
+        <div>🎮 WASD/Flèches: Conduire</div>
+        <div>📷 C: Changer de vue</div>
+        <div>🔄 R: Redémarrer</div>
+        <div>⏸️ P: Pause</div>
+        <div>🛑 Espace: Frein à main</div>
+        <div>🚌 M: Gestion des Bus</div>
+        <div>🤖 A: Simulation Auto</div>
+        <div>🗺️ Tab: Carte de Route</div>
+        <div>🚗 T: Ajouter du Trafic</div>
+        <div>🚶 G: Gérer les Piétons</div>
+        <div>🔍 F: Debug IA</div>
+    </div>
+
+    <div id="controlCenter">
+        <button onclick="openBusModal()">🚌 Gestion des Bus</button>
+        <button onclick="toggleAutoSimulation()">🤖 Simulation Auto</button>
+        <button onclick="openControlCenter()">🏢 Centre de Contrôle</button>
+        <button onclick="toggleMap()">🗺️ Carte</button>
+        <button id="trafficControlButton" onclick="addTrafficCars()">🚗 Ajouter du Trafic</button>
+        <button onclick="togglePedestrians()">🚶 Piétons</button>
+    </div>
+
+    <div id="dataManagement">
+        <button onclick="clearAllVehicles()">🗑️ Supprimer Véhicules</button>
+        <button onclick="restoreVehicles()">🔄 Restaurer Véhicules</button>
+        <button onclick="clearBusStations()">❌ Supprimer Gares</button>
+        <button onclick="restoreBusStations()">✅ Restaurer Gares</button>
+        <button onclick="resetSimulation()" class="danger">🔁 Reset Complet</button>
+        <button onclick="toggleAIDebug()">🤖 Debug IA</button>
+    </div>
+
+    <div id="zoomControls">
+        <button onclick="zoomIn()">+</button>
+        <button onclick="zoomOut()">-</button>
+        <button onclick="resetCamera()">🏠</button>
+    </div>
+
+    <div id="minimap">
+        <canvas id="minimapCanvas" width="250" height="250"></canvas>
+        <div class="minimap-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4CAF50;"></div>
+                <span>Gare Départ</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f44336;"></div>
+                <span>Gare Arrivée</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700;"></div>
+                <span>Bus</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF0000;"></div>
+                <span>Congestion</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="speed-meter">
+        <div id="speedDisplay">0</div>
+    </div>
+
+    <div class="route-info" id="routeInfo">
+        <h4>Informations de Route</h4>
+        <div id="routeDetails">
+            <div>Route: <span id="currentRoute">Sélectionnez un bus</span></div>
+            <div>Destination: <span id="destination">-</span></div>
+            <div>Distance: <span id="distance">0 km</span></div>
+            <div>Temps Estimé: <span id="estimatedTime">0 min</span></div>
+            <div>Progression: <span id="routeProgress">0%</span></div>
+            <div>Prochaine Gare: <span id="nextStation">-</span></div>
+            <div>Route Alternative: <span id="alternativeRoute">Standard</span></div>
+        </div>
+    </div>
+
+    <div class="status-indicators">
+        <div class="status-indicator" id="connectionStatus">🌐 Connexion Backend</div>
+        <div class="status-indicator" id="databaseStatus">💾 Base de Données</div>
+    </div>
+
+    <div class="pedestrian-indicator">
+        <h4 style="color: #00d4ff; margin-bottom: 5px;">🚶 Piétons</h4>
+        <div>Actifs: <span id="activePedestrians">0</span></div>
+        <div>Traversent: <span id="crossingPedestrians">0</span></div>
+    </div>
+
+    <div class="traffic-indicator">
+        <h4 style="color: #00d4ff; margin-bottom: 8px; font-size: 14px;">🚦 Trafic</h4>
+        <div class="traffic-level">
+            <div class="traffic-color traffic-low"></div>
+            <span id="lowTraffic">Fluide: 0</span>
+        </div>
+        <div class="traffic-level">
+            <div class="traffic-color traffic-medium"></div>
+            <span id="mediumTraffic">Moyen: 0</span>
+        </div>
+        <div class="traffic-level">
+            <div class="traffic-color traffic-high"></div>
+            <span id="highTraffic">Dense: 0</span>
+        </div>
+    </div>
+
+    <div class="ai-debug" id="aiDebug">
+        <h4>🤖 Debug IA</h4>
+        <div id="aiDebugContent">
+            <div>Pathfinding: <span id="aiPathfinding">-</span></div>
+            <div>État: <span id="aiState">-</span></div>
+            <div>Vitesse Cible: <span id="aiTargetSpeed">-</span></div>
+            <div>Distance Cible: <span id="aiTargetDistance">-</span></div>
+            <div>Obstacles: <span id="aiObstacles">-</span></div>
+            <div>Navigation: <span id="aiNavigation">-</span></div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <div id="notificationText"></div>
+    </div>
+
+    <!-- Modal de gestion des bus -->
+    <div id="busModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚌 Gestion des Bus - Kinshasa</h2>
+                <span class="close" onclick="closeBusModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="busLoadingMessage">
+                    <div class="loading-spinner"></div>
+                    Chargement des bus depuis la base de données...
+                </div>
+                <div id="busGrid" class="bus-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal du centre de contrôle -->
+    <div id="controlModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏢 Centre de Contrôle IMAS</h2>
+                <span class="close" onclick="closeControlModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div class="bus-card">
+                        <h3>📊 Statistiques</h3>
+                        <div class="bus-info">
+                            <div>Total Bus: <span id="totalBuses">0</span></div>
+                            <div>En Service: <span id="busesInService">0</span></div>
+                            <div>En Panne: <span id="busesOutOfService">0</span></div>
+                            <div>Incidents: <span id="totalIncidents">0</span></div>
+                            <div>Gares Totales: <span id="totalStations">0</span></div>
+                            <div>Voitures Totales: <span id="totalCars">0</span></div>
+                            <div>Piétons Actifs: <span id="totalPedestrians">0</span></div>
+                        </div>
+                    </div>
+                    <div class="bus-card">
+                        <h3>🚨 Alertes</h3>
+                        <div id="alertsList" class="bus-info">
+                            <div>Aucune alerte active</div>
+                        </div>
+                    </div>
+                    <div class="bus-card">
+                        <h3>⚙️ Paramètres</h3>
+                        <div class="bus-actions">
+                            <button class="btn btn-primary" onclick="refreshBusData()">Actualiser</button>
+                            <button class="btn btn-secondary" onclick="exportData()">Exporter</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    // Configuration du jeu améliorée
+    const CONFIG = {
+        WORLD_SIZE: 4000,
+        ROAD_WIDTH: 40,
+        VEHICLE_COUNT: 15,
+        TRAFFIC_LIGHT_INTERVAL: 10000,
+        ACCIDENT_PROBABILITY: 0.0001, // Réduit pour plus de stabilité
+        PHYSICS_TIMESTEP: 1/60,
+        BACKEND_URL: 'http://localhost:8080/api',
+        STATION_DETECTION_RADIUS: 60,
+        MAX_SPEED: 100,
+        AUTO_SIMULATION_SPEED: 60,
+        STATION_SEPARATION_DISTANCE: 800,
+        TRAFFIC_CARS_COUNT: 50,
+        PEDESTRIAN_COUNT: 30,
+        CONGESTION_THRESHOLD: 8,
+        PATHFINDING_GRID_SIZE: 50, // Taille de grille pour pathfinding
+        AI_REACTION_TIME: 0.1, // Temps de réaction de l'IA
+        MAX_PATHFINDING_ITERATIONS: 100, // Limite d'itérations pour pathfinding
+        BUILDING_ROAD_CLEARANCE: 80, // Distance minimale entre bâtiments et routes
+        KINSHASA_ROUTES: [
+            { name: 'Gombe-Kintambo', start: {x: -300, z: -400}, end: {x: 500, z: 400}, color: '#FF0000' },
+            { name: 'Bandalungwa-Lemba', start: {x: -600, z: 200}, end: {x: 600, z: -300}, color: '#00FF00' },
+            { name: 'Matongé-Ngaliema', start: {x: -800, z: -200}, end: {x: 700, z: 300}, color: '#0000FF' },
+            { name: 'Kalamu-Makala', start: {x: 200, z: -600}, end: {x: -500, z: 500}, color: '#FFFF00' },
+            { name: 'Lingwala-Barumbu', start: {x: 700, z: -100}, end: {x: -700, z: 600}, color: '#FF00FF' },
+            { name: 'Masina-Ndjili', start: {x: 900, z: 100}, end: {x: -400, z: 700}, color: '#00FFFF' },
+            { name: 'Limete-Selembao', start: {x: -900, z: -300}, end: {x: 400, z: -700}, color: '#FFA500' }
+        ]
+    };
+
+    // Variables globales
+    let scene, camera, renderer, playerCar, vehicles = [], buildings = [], trafficLights = [];
+    let cameraMode = 0, zoomLevel = 1;
+    let keys = {}, gameState = {
+        speed: 0,
+        accidents: 0,
+        isPaused: false,
+        isAutoSimulation: false,
+        selectedBus: null,
+        busProgress: {},
+        routes: [],
+        activeBuses: [],
+        uiMinimized: false,
+        activeStations: 0,
+        trafficCarsAdded: false,
+        pedestriansEnabled: false,
+        currentSimulationBus: null,
+        aiDebugEnabled: false,
+        savedVehicleData: [],
+        savedStationData: []
+    };
+    let roads = [], intersections = [];
+    let fpsCounter = 0, lastTime = 0;
+    let busDatabase = [];
+    let simulationBuses = [];
+    let routeDatabase = [];
+
+    // Variables pour les gares de bus
+    let busStations = [];
+    let activeStations = [];
+
+    // Variables pour la minimap
+    let minimapCanvas, minimapCtx;
+
+    // Variables pour la progression en base de données
+    let dbUpdateInterval = null;
+
+    // Variables pour le système de congestion et rerouting
+    let trafficCars = [];
+    let pedestrians = [];
+    let roadCongestionMap = new Map();
+    let alternativeRoutes = new Map();
+    let reroutingSystem = null;
+
+    // Variables pour le pathfinding et l'IA avancée
+    let pathfindingGrid = null;
+    let aiManager = null;
+
+    // Classe pour le pathfinding A*
+    class PathfindingGrid {
+        constructor(worldSize, gridSize) {
+            this.worldSize = worldSize;
+            this.gridSize = gridSize;
+            this.cols = Math.floor(worldSize / gridSize);
+            this.rows = Math.floor(worldSize / gridSize);
+            this.grid = [];
+            this.initGrid();
+        }
+
+        initGrid() {
+            for (let i = 0; i < this.rows; i++) {
+                this.grid[i] = [];
+                for (let j = 0; j < this.cols; j++) {
+                    this.grid[i][j] = {
+                        x: j,
+                        y: i,
+                        worldX: (j - this.cols/2) * this.gridSize,
+                        worldZ: (i - this.rows/2) * this.gridSize,
+                        walkable: true,
+                        cost: 1,
+                        gCost: 0,
+                        hCost: 0,
+                        fCost: 0,
+                        parent: null,
+                        isRoad: false,
+                        congestionLevel: 0
+                    };
+                }
+            }
+            this.updateRoadNodes();
+            this.updateObstacles();
+        }
+
+        updateRoadNodes() {
+            const roadSpacing = 200;
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.cols; j++) {
+                    const node = this.grid[i][j];
+                    const isOnHorizontalRoad = Math.abs(node.worldZ % roadSpacing) < CONFIG.ROAD_WIDTH/2;
+                    const isOnVerticalRoad = Math.abs(node.worldX % roadSpacing) < CONFIG.ROAD_WIDTH/2;
+
+                    if (isOnHorizontalRoad || isOnVerticalRoad) {
+                        node.isRoad = true;
+                        node.cost = 1;
+                    } else {
+                        node.cost = 3; // Plus coûteux de sortir des routes
+                    }
+                }
+            }
+        }
+
+        updateObstacles() {
+            // Marquer les bâtiments comme non-walkable
+            buildings.forEach(building => {
+                const gridX = this.worldToGridX(building.position.x);
+                const gridZ = this.worldToGridZ(building.position.z);
+
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        const x = gridX + dx;
+                        const z = gridZ + dz;
+                        if (this.isValidGridPos(x, z)) {
+                            this.grid[z][x].walkable = false;
+                        }
+                    }
+                }
+            });
+        }
+
+        worldToGridX(worldX) {
+            return Math.floor((worldX + this.worldSize/2) / this.gridSize);
+        }
+
+        worldToGridZ(worldZ) {
+            return Math.floor((worldZ + this.worldSize/2) / this.gridSize);
+        }
+
+        gridToWorldX(gridX) {
+            return (gridX - this.cols/2) * this.gridSize;
+        }
+
+        gridToWorldZ(gridZ) {
+            return (gridZ - this.rows/2) * this.gridSize;
+        }
+
+        isValidGridPos(x, y) {
+            return x >= 0 && x < this.cols && y >= 0 && y < this.rows;
+        }
+
+        getNode(x, y) {
+            if (this.isValidGridPos(x, y)) {
+                return this.grid[y][x];
+            }
+            return null;
+        }
+
+        getNeighbors(node) {
+            const neighbors = [];
+            const directions = [
+                {x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0},
+                {x: -1, y: -1}, {x: 1, y: -1}, {x: 1, y: 1}, {x: -1, y: 1}
+            ];
+
+            directions.forEach(dir => {
+                const x = node.x + dir.x;
+                const y = node.y + dir.y;
+                const neighbor = this.getNode(x, y);
+
+                if (neighbor && neighbor.walkable) {
+                    neighbors.push(neighbor);
+                }
+            });
+
+            return neighbors;
+        }
+
+        calculateDistance(nodeA, nodeB) {
+            const dx = Math.abs(nodeA.x - nodeB.x);
+            const dy = Math.abs(nodeA.y - nodeB.y);
+
+            if (dx > dy) {
+                return 14 * dy + 10 * (dx - dy);
+            }
+            return 14 * dx + 10 * (dy - dx);
+        }
+
+        findPath(startWorld, endWorld) {
+            const startX = this.worldToGridX(startWorld.x);
+            const startZ = this.worldToGridZ(startWorld.z);
+            const endX = this.worldToGridX(endWorld.x);
+            const endZ = this.worldToGridZ(endWorld.z);
+
+            const startNode = this.getNode(startX, startZ);
+            const endNode = this.getNode(endX, endZ);
+
+            if (!startNode || !endNode || !startNode.walkable || !endNode.walkable) {
+                return null;
+            }
+
+            const openSet = [startNode];
+            const closedSet = [];
+            let iterations = 0;
+
+            // Reset des coûts
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.cols; j++) {
+                    const node = this.grid[i][j];
+                    node.gCost = 0;
+                    node.hCost = 0;
+                    node.fCost = 0;
+                    node.parent = null;
+                }
+            }
+
+            startNode.gCost = 0;
+            startNode.hCost = this.calculateDistance(startNode, endNode);
+            startNode.fCost = startNode.hCost;
+
+            while (openSet.length > 0 && iterations < CONFIG.MAX_PATHFINDING_ITERATIONS) {
+                iterations++;
+
+                // Trouver le nœud avec le coût F le plus bas
+                let currentNode = openSet[0];
+                for (let i = 1; i < openSet.length; i++) {
+                    if (openSet[i].fCost < currentNode.fCost ||
+                        (openSet[i].fCost === currentNode.fCost && openSet[i].hCost < currentNode.hCost)) {
+                        currentNode = openSet[i];
+                    }
+                }
+
+                openSet.splice(openSet.indexOf(currentNode), 1);
+                closedSet.push(currentNode);
+
+                if (currentNode === endNode) {
+                    return this.retracePath(startNode, endNode);
+                }
+
+                const neighbors = this.getNeighbors(currentNode);
+                neighbors.forEach(neighbor => {
+                    if (closedSet.includes(neighbor)) return;
+
+                    const newMovementCostToNeighbor = currentNode.gCost +
+                        this.calculateDistance(currentNode, neighbor) + neighbor.cost;
+
+                    if (newMovementCostToNeighbor < neighbor.gCost || !openSet.includes(neighbor)) {
+                        neighbor.gCost = newMovementCostToNeighbor;
+                        neighbor.hCost = this.calculateDistance(neighbor, endNode);
+                        neighbor.fCost = neighbor.gCost + neighbor.hCost;
+                        neighbor.parent = currentNode;
+
+                        if (!openSet.includes(neighbor)) {
+                            openSet.push(neighbor);
+                        }
+                    }
+                });
+            }
+
+            return null; // Aucun chemin trouvé
+        }
+
+        retracePath(startNode, endNode) {
+            const path = [];
+            let currentNode = endNode;
+
+            while (currentNode !== startNode) {
+                path.unshift({
+                    x: this.gridToWorldX(currentNode.x),
+                    z: this.gridToWorldZ(currentNode.y)
+                });
+                currentNode = currentNode.parent;
+            }
+
+            return path;
+        }
+
+        updateCongestion() {
+            // Reset congestion
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.cols; j++) {
+                    this.grid[i][j].congestionLevel = 0;
+                }
+            }
+
+            // Calculer congestion basée sur les véhicules
+            vehicles.forEach(vehicle => {
+                const gridX = this.worldToGridX(vehicle.position.x);
+                const gridZ = this.worldToGridZ(vehicle.position.z);
+
+                if (this.isValidGridPos(gridX, gridZ)) {
+                    const node = this.grid[gridZ][gridX];
+                    node.congestionLevel++;
+                    node.cost = 1 + node.congestionLevel * 0.5;
+                }
+            });
+        }
+    }
+
+    // Gestionnaire d'IA avancé
+    class AIManager {
+        constructor() {
+            this.vehicles = [];
+            this.debugEnabled = false;
+            this.currentDebugVehicle = null;
+        }
+
+        addVehicle(vehicle) {
+            this.vehicles.push(vehicle);
+            vehicle.aiState = this.createAIState(vehicle);
+        }
+
+        removeVehicle(vehicle) {
+            const index = this.vehicles.indexOf(vehicle);
+            if (index > -1) {
+                this.vehicles.splice(index, 1);
+            }
+        }
+
+        createAIState(vehicle) {
+            return {
+                currentPath: [],
+                currentWaypoint: 0,
+                targetPosition: null,
+                state: 'IDLE', // IDLE, NAVIGATING, AVOIDING, ARRIVED
+                lastPathUpdate: 0,
+                pathUpdateInterval: 120, // frames
+                reactionTimer: 0,
+                stuckTimer: 0,
+                lastPosition: {x: vehicle.position.x, z: vehicle.position.z},
+                avoidanceDirection: 0,
+                emergencyStop: false,
+                debug: {
+                    pathfindingTime: 0,
+                    obstaclesDetected: 0,
+                    currentAction: 'idle'
+                }
+            };
+        }
+
+        updateVehicle(vehicle, deltaTime) {
+            if (!vehicle.aiState) {
+                vehicle.aiState = this.createAIState(vehicle);
+            }
+
+            const ai = vehicle.aiState;
+            ai.reactionTimer += deltaTime;
+
+            // Mise à jour périodique du pathfinding
+            ai.lastPathUpdate++;
+            if (ai.lastPathUpdate >= ai.pathUpdateInterval || ai.currentPath.length === 0) {
+                this.updatePathfinding(vehicle);
+                ai.lastPathUpdate = 0;
+            }
+
+            // Détection des obstacles
+            const obstacles = this.detectObstacles(vehicle);
+            ai.debug.obstaclesDetected = obstacles.length;
+
+            // Logique de comportement
+            if (obstacles.length > 0 && ai.reactionTimer >= CONFIG.AI_REACTION_TIME) {
+                this.handleObstacleAvoidance(vehicle, obstacles);
+            } else if (ai.currentPath.length > 0) {
+                this.followPath(vehicle);
+            } else {
+                this.idleBehavior(vehicle);
+            }
+
+            // Détection de blocage
+            this.checkIfStuck(vehicle);
+
+            // Mise à jour du debug
+            if (this.debugEnabled && vehicle === this.currentDebugVehicle) {
+                this.updateDebugInfo(vehicle);
+            }
+        }
+
+        updatePathfinding(vehicle) {
+            if (!vehicle.destination || !pathfindingGrid) return;
+
+            const startTime = performance.now();
+            const path = pathfindingGrid.findPath(vehicle.position, vehicle.destination);
+            const endTime = performance.now();
+
+            if (path && path.length > 0) {
+                vehicle.aiState.currentPath = path;
+                vehicle.aiState.currentWaypoint = 0;
+                vehicle.aiState.state = 'NAVIGATING';
+                vehicle.aiState.debug.pathfindingTime = endTime - startTime;
+                vehicle.aiState.debug.currentAction = 'pathfinding';
+            } else {
+                // Fallback: navigation directe
+                vehicle.aiState.currentPath = [vehicle.destination];
+                vehicle.aiState.currentWaypoint = 0;
+                vehicle.aiState.state = 'NAVIGATING';
+                vehicle.aiState.debug.currentAction = 'direct_navigation';
+            }
+        }
+
+        followPath(vehicle) {
+            const ai = vehicle.aiState;
+            if (ai.currentWaypoint >= ai.currentPath.length) {
+                ai.state = 'ARRIVED';
+                ai.debug.currentAction = 'arrived';
+                return;
+            }
+
+            const target = ai.currentPath[ai.currentWaypoint];
+            const dx = target.x - vehicle.position.x;
+            const dz = target.z - vehicle.position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+
+            if (distance < 30) {
+                ai.currentWaypoint++;
+                ai.debug.currentAction = 'waypoint_reached';
+                return;
+            }
+
+            // Navigation vers le waypoint
+            const targetAngle = Math.atan2(dx, dz);
+            this.smoothTurnTowards(vehicle, targetAngle);
+
+            // Contrôle de vitesse adaptatif
+            this.adaptiveSpeedControl(vehicle, distance, targetAngle);
+
+            ai.debug.currentAction = 'following_path';
+        }
+
+        smoothTurnTowards(vehicle, targetAngle) {
+            let angleDiff = targetAngle - vehicle.rotation;
+
+            // Normaliser l'angle
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            // Tourner progressivement
+            const maxTurnRate = vehicle.isAutoSimulation ? 0.08 : 0.05;
+            const turnRate = Math.min(Math.abs(angleDiff), maxTurnRate) * Math.sign(angleDiff);
+            vehicle.rotation += turnRate;
+        }
+
+        adaptiveSpeedControl(vehicle, distanceToTarget, targetAngle) {
+            const angleDiff = Math.abs(targetAngle - vehicle.rotation);
+            let speedMultiplier = 1;
+
+            // Ralentir dans les virages
+            if (angleDiff > Math.PI / 6) {
+                speedMultiplier = 0.6;
+            } else if (angleDiff > Math.PI / 12) {
+                speedMultiplier = 0.8;
+            }
+
+            // Ralentir en approchant de la destination
+            if (distanceToTarget < 100) {
+                speedMultiplier *= Math.max(0.3, distanceToTarget / 100);
+            }
+
+            // Adapter selon la congestion
+            const congestionLevel = TrafficManager.getCongestionLevel(vehicle.position.x, vehicle.position.z);
+            switch(congestionLevel) {
+                case 'HIGH':
+                    speedMultiplier *= 0.5;
+                    break;
+                case 'MEDIUM':
+                    speedMultiplier *= 0.7;
+                    break;
+            }
+
+            vehicle.targetSpeed = vehicle.maxSpeed * speedMultiplier;
+        }
+
+        detectObstacles(vehicle) {
+            const obstacles = [];
+            const detectionRange = vehicle.type === 'city_bus' ? 100 : 80;
+            const detectionAngle = Math.PI / 3; // 60 degrés
+
+            vehicles.forEach(otherVehicle => {
+                if (otherVehicle === vehicle) return;
+
+                const dx = otherVehicle.position.x - vehicle.position.x;
+                const dz = otherVehicle.position.z - vehicle.position.z;
+                const distance = Math.sqrt(dx * dx + dz * dz);
+
+                if (distance < detectionRange) {
+                    const angleToObstacle = Math.atan2(dx, dz);
+                    let angleDiff = Math.abs(angleToObstacle - vehicle.rotation);
+                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+                    if (angleDiff < detectionAngle / 2) {
+                        obstacles.push({
+                            vehicle: otherVehicle,
+                            distance: distance,
+                            angle: angleToObstacle,
+                            priority: this.calculateObstaclePriority(vehicle, otherVehicle, distance)
+                        });
+                    }
+                }
+            });
+
+            // Trier par priorité
+            obstacles.sort((a, b) => b.priority - a.priority);
+            return obstacles;
+        }
+
+        calculateObstaclePriority(vehicle, obstacle, distance) {
+            let priority = 100 - distance; // Plus proche = plus prioritaire
+
+            // Bus ont priorité sur voitures
+            if (obstacle.type === 'city_bus' && vehicle.type !== 'city_bus') {
+                priority += 50;
+            }
+
+            // Véhicules à l'arrêt sont moins prioritaires
+            if (obstacle.speed < 5) {
+                priority -= 20;
+            }
+
+            return priority;
+        }
+
+        handleObstacleAvoidance(vehicle, obstacles) {
+            const ai = vehicle.aiState;
+            const mainObstacle = obstacles[0];
+
+            ai.state = 'AVOIDING';
+            ai.debug.currentAction = 'avoiding_obstacle';
+
+            // Arrêt d'urgence si obstacle très proche
+            if (mainObstacle.distance < 25) {
+                ai.emergencyStop = true;
+                vehicle.speed = Math.max(0, vehicle.speed - 8);
+                return;
+            }
+
+            ai.emergencyStop = false;
+
+            // Décider de la direction d'évitement
+            const avoidanceAngle = this.calculateAvoidanceAngle(vehicle, mainObstacle);
+            ai.avoidanceDirection = avoidanceAngle;
+
+            // Appliquer l'évitement
+            vehicle.rotation += avoidanceAngle * 0.3;
+            vehicle.speed = Math.max(vehicle.targetSpeed * 0.6, vehicle.speed - 2);
+
+            ai.reactionTimer = 0; // Reset du timer de réaction
+        }
+
+        calculateAvoidanceAngle(vehicle, obstacle) {
+            const dx = obstacle.vehicle.position.x - vehicle.position.x;
+            const dz = obstacle.vehicle.position.z - vehicle.position.z;
+            const obstacleAngle = Math.atan2(dx, dz);
+
+            let vehicleAngle = vehicle.rotation;
+            let angleDiff = obstacleAngle - vehicleAngle;
+
+            // Normaliser
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+            // Éviter vers la droite ou la gauche selon l'angle
+            return angleDiff > 0 ? -0.1 : 0.1;
+        }
+
+        checkIfStuck(vehicle) {
+            const ai = vehicle.aiState;
+            const currentPos = {x: vehicle.position.x, z: vehicle.position.z};
+            const distanceMoved = Math.sqrt(
+                Math.pow(currentPos.x - ai.lastPosition.x, 2) +
+                Math.pow(currentPos.z - ai.lastPosition.z, 2)
+            );
+
+            if (distanceMoved < 10 && vehicle.speed < 10) {
+                ai.stuckTimer++;
+                if (ai.stuckTimer > 180) { // 3 secondes à 60 FPS
+                    this.unstuckVehicle(vehicle);
+                    ai.stuckTimer = 0;
+                }
+            } else {
+                ai.stuckTimer = 0;
+            }
+
+            ai.lastPosition = {x: currentPos.x, z: currentPos.z};
+        }
+
+        unstuckVehicle(vehicle) {
+            const ai = vehicle.aiState;
+
+            // Rotation aléatoire pour se débloquer
+            vehicle.rotation += (Math.random() - 0.5) * Math.PI;
+
+            // Petite poussée
+            vehicle.position.x += Math.sin(vehicle.rotation) * 20;
+            vehicle.position.z += Math.cos(vehicle.rotation) * 20;
+
+            // Force le recalcul du chemin
+            ai.currentPath = [];
+            ai.debug.currentAction = 'unsticking';
+
+            console.log('Véhicule débloqué:', vehicle.type);
+        }
+
+        idleBehavior(vehicle) {
+            const ai = vehicle.aiState;
+            ai.state = 'IDLE';
+            ai.debug.currentAction = 'idle';
+
+            // Comportement d'attente ou de patrouille
+            if (!vehicle.isAutoSimulation) {
+                // Mouvement aléatoire léger pour les véhicules de trafic
+                if (Math.random() < 0.005) {
+                    vehicle.rotation += (Math.random() - 0.5) * 0.1;
+                }
+            }
+        }
+
+        updateDebugInfo(vehicle) {
+            if (!vehicle.aiState) return;
+
+            const ai = vehicle.aiState;
+            document.getElementById('aiPathfinding').textContent = `${ai.debug.pathfindingTime.toFixed(2)}ms`;
+            document.getElementById('aiState').textContent = ai.state;
+            document.getElementById('aiTargetSpeed').textContent = `${Math.round(vehicle.targetSpeed)} km/h`;
+
+            if (ai.currentPath.length > 0 && ai.currentWaypoint < ai.currentPath.length) {
+                const target = ai.currentPath[ai.currentWaypoint];
+                const distance = Math.sqrt(
+                    Math.pow(target.x - vehicle.position.x, 2) +
+                    Math.pow(target.z - vehicle.position.z, 2)
+                );
+                document.getElementById('aiTargetDistance').textContent = `${Math.round(distance)}m`;
+            } else {
+                document.getElementById('aiTargetDistance').textContent = 'N/A';
+            }
+
+            document.getElementById('aiObstacles').textContent = ai.debug.obstaclesDetected;
+            document.getElementById('aiNavigation').textContent = ai.debug.currentAction;
+        }
+
+        setDebugVehicle(vehicle) {
+            this.currentDebugVehicle = vehicle;
+        }
+    }
+
+    // Classe pour les piétons (améliorée)
+    class Pedestrian {
+        constructor(x, z) {
+            this.position = { x, z };
+            this.targetPosition = this.generateRandomTarget();
+            this.speed = 15 + Math.random() * 10;
+            this.rotation = 0;
+            this.isWaiting = false;
+            this.waitTimer = 0;
+            this.crossingStreet = false;
+            this.id = Date.now() + Math.random();
+            this.avoidanceRadius = 25;
+
+            this.createMesh();
+        }
+
+        createMesh() {
+            const group = new THREE.Group();
+
+            // Corps du piéton plus visible
+            const bodyGeometry = new THREE.CapsuleGeometry(1.5, 5, 8, 16);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: this.getRandomColor(),
+                shininess: 60,
+                emissive: new THREE.Color(this.getRandomColor()).multiplyScalar(0.1)
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 3;
+            body.castShadow = true;
+            group.add(body);
+
+            // Tête
+            const headGeometry = new THREE.SphereGeometry(1, 16, 16);
+            const headMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFDBB5,
+                shininess: 50,
+                emissive: new THREE.Color(0xFFDBB5).multiplyScalar(0.05)
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 6;
+            head.castShadow = true;
+            group.add(head);
+
+            // Halo lumineux pour visibilité
+            const glowGeometry = new THREE.SphereGeometry(2, 8, 8);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: this.getRandomColor(),
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.position.y = 3;
+            group.add(glow);
+
+            this.mesh = group;
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            this.mesh.userData = { type: 'pedestrian', pedestrian: this };
+            scene.add(this.mesh);
+        }
+
+        getRandomColor() {
+            const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080, 0xFFC0CB];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        generateRandomTarget() {
+            return {
+                x: (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8,
+                z: (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8
+            };
+        }
+
+        update(deltaTime) {
+            if (this.isWaiting) {
+                this.waitTimer -= deltaTime;
+                if (this.waitTimer <= 0) {
+                    this.isWaiting = false;
+                    this.targetPosition = this.generateRandomTarget();
+                }
+                return;
+            }
+
+            // Déplacement vers la cible
+            const dx = this.targetPosition.x - this.position.x;
+            const dz = this.targetPosition.z - this.position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+
+            if (distance < 10) {
+                this.isWaiting = true;
+                this.waitTimer = 2 + Math.random() * 3;
+                return;
+            }
+
+            this.rotation = Math.atan2(dx, dz);
+
+            // Vérifier s'il traverse une route
+            this.checkStreetCrossing();
+
+            // Éviter les véhicules (priorité absolue)
+            if (this.avoidVehicles()) {
+                return;
+            }
+
+            // Mouvement normal
+            this.position.x += Math.sin(this.rotation) * this.speed * deltaTime;
+            this.position.z += Math.cos(this.rotation) * this.speed * deltaTime;
+
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            this.mesh.rotation.y = this.rotation;
+
+            // Limites du monde
+            const worldLimit = CONFIG.WORLD_SIZE / 2 - 50;
+            if (Math.abs(this.position.x) > worldLimit || Math.abs(this.position.z) > worldLimit) {
+                this.targetPosition = { x: 0, z: 0 };
+            }
+        }
+
+        checkStreetCrossing() {
+            const roadSpacing = 200;
+            const nearRoad = Math.abs(this.position.x % roadSpacing) < CONFIG.ROAD_WIDTH/2 ||
+                           Math.abs(this.position.z % roadSpacing) < CONFIG.ROAD_WIDTH/2;
+
+            this.crossingStreet = nearRoad;
+
+            if (this.crossingStreet) {
+                this.speed = Math.max(10, this.speed * 0.8);
+                if (this.mesh.children[2]) {
+                    this.mesh.children[2].material.opacity = 0.6;
+                }
+            } else {
+                this.speed = Math.min(25, this.speed * 1.1);
+                if (this.mesh.children[2]) {
+                    this.mesh.children[2].material.opacity = 0.3;
+                }
+            }
+        }
+
+        avoidVehicles() {
+            let avoiding = false;
+
+            vehicles.forEach(vehicle => {
+                const distance = Math.sqrt(
+                    Math.pow(vehicle.position.x - this.position.x, 2) +
+                    Math.pow(vehicle.position.z - this.position.z, 2)
+                );
+
+                if (distance < this.avoidanceRadius) {
+                    if (distance < 15) {
+                        // Arrêt d'urgence
+                        avoiding = true;
+                        this.isWaiting = true;
+                        this.waitTimer = 1;
+                    } else {
+                        // Évitement intelligent
+                        const avoidAngle = Math.atan2(
+                            this.position.x - vehicle.position.x,
+                            this.position.z - vehicle.position.z
+                        );
+
+                        this.position.x += Math.sin(avoidAngle) * 8;
+                        this.position.z += Math.cos(avoidAngle) * 8;
+                        avoiding = true;
+                    }
+                }
+            });
+
+            return avoiding;
+        }
+
+        remove() {
+            scene.remove(this.mesh);
+            const index = pedestrians.indexOf(this);
+            if (index > -1) {
+                pedestrians.splice(index, 1);
+            }
+        }
+    }
+
+        // Système de gestion du trafic amélioré
+    class TrafficManager {
+        static init() {
+            this.congestionZones = new Map();
+            this.updateInterval = 0;
+            this.trafficFlowData = {
+                totalFlow: 0,
+                averageSpeed: 0,
+                congestionPoints: []
+            };
+        }
+
+        static update() {
+            this.updateInterval++;
+
+            // Mise à jour toutes les 2 secondes
+            if (this.updateInterval % 120 === 0) {
+                this.updateCongestionData();
+                this.updateTrafficIndicators();
+                this.updateTrafficFlow();
+            }
+        }
+
+        static updateCongestionData() {
+            const gridSize = 200;
+            const congestionMap = new Map();
+            let totalSpeed = 0;
+            let totalVehicles = 0;
+
+            // Analyser la densité de trafic par zones
+            vehicles.forEach(vehicle => {
+                const gridX = Math.floor(vehicle.position.x / gridSize) * gridSize;
+                const gridZ = Math.floor(vehicle.position.z / gridSize) * gridSize;
+                const key = `${gridX},${gridZ}`;
+
+                if (!congestionMap.has(key)) {
+                    congestionMap.set(key, {
+                        count: 0,
+                        totalSpeed: 0,
+                        vehicles: [],
+                        averageSpeed: 0,
+                        congestionLevel: 'LOW'
+                    });
+                }
+
+                const zone = congestionMap.get(key);
+                zone.count++;
+                zone.totalSpeed += vehicle.speed;
+                zone.vehicles.push(vehicle);
+                totalSpeed += vehicle.speed;
+                totalVehicles++;
+            });
+
+            // Calculer les niveaux de congestion
+            let lowTraffic = 0, mediumTraffic = 0, highTraffic = 0;
+
+            congestionMap.forEach((zone, key) => {
+                zone.averageSpeed = zone.count > 0 ? zone.totalSpeed / zone.count : 0;
+
+                if (zone.count >= CONFIG.CONGESTION_THRESHOLD) {
+                    if (zone.averageSpeed < 20) {
+                        zone.congestionLevel = 'HIGH';
+                        highTraffic++;
+                    } else if (zone.averageSpeed < 40) {
+                        zone.congestionLevel = 'MEDIUM';
+                        mediumTraffic++;
+                    } else {
+                        zone.congestionLevel = 'LOW';
+                        lowTraffic++;
+                    }
+                } else {
+                    zone.congestionLevel = 'LOW';
+                    lowTraffic++;
+                }
+            });
+
+            this.congestionZones = congestionMap;
+            this.trafficFlowData.averageSpeed = totalVehicles > 0 ? totalSpeed / totalVehicles : 0;
+            this.trafficFlowData.totalFlow = totalVehicles;
+
+            // Déterminer le niveau global
+            let globalLevel = 'Faible';
+            if (highTraffic > 3) globalLevel = 'Dense';
+            else if (mediumTraffic > 4 || highTraffic > 1) globalLevel = 'Moyen';
+
+            // Mise à jour de la grille de pathfinding
+            if (pathfindingGrid) {
+                pathfindingGrid.updateCongestion();
+            }
+
+            document.getElementById('trafficLevel').textContent = globalLevel;
+            document.getElementById('lowTraffic').textContent = `Fluide: ${lowTraffic}`;
+            document.getElementById('mediumTraffic').textContent = `Moyen: ${mediumTraffic}`;
+            document.getElementById('highTraffic').textContent = `Dense: ${highTraffic}`;
+        }
+
+        static updateTrafficIndicators() {
+            document.getElementById('totalVehicles').textContent = vehicles.length;
+            document.getElementById('pedestrianCount').textContent = pedestrians.length;
+            document.getElementById('activePedestrians').textContent = pedestrians.filter(p => !p.isWaiting).length;
+            document.getElementById('crossingPedestrians').textContent = pedestrians.filter(p => p.crossingStreet).length;
+        }
+
+        static updateTrafficFlow() {
+            // Analyser les points de congestion critique
+            this.trafficFlowData.congestionPoints = [];
+
+            this.congestionZones.forEach((zone, key) => {
+                if (zone.congestionLevel === 'HIGH') {
+                    const [x, z] = key.split(',').map(Number);
+                    this.trafficFlowData.congestionPoints.push({
+                        x: x,
+                        z: z,
+                        severity: zone.count,
+                        averageSpeed: zone.averageSpeed
+                    });
+                }
+            });
+        }
+
+        static getCongestionLevel(x, z) {
+            const gridSize = 200;
+            const gridX = Math.floor(x / gridSize) * gridSize;
+            const gridZ = Math.floor(z / gridSize) * gridSize;
+            const key = `${gridX},${gridZ}`;
+
+            const zone = this.congestionZones.get(key);
+            return zone ? zone.congestionLevel : 'LOW';
+        }
+
+        static getTrafficFlowData() {
+            return this.trafficFlowData;
+        }
+    }
+
+    // Communication avec le backend (améliorée)
+    class BackendAPI {
+        static async loadBuses() {
+            try {
+                console.log('Chargement des bus depuis la base de données...');
+                // Simulation d'appel API - remplacer par vraie API
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const buses = this.getDefaultBuses();
+                busDatabase = buses;
+                updateConnectionStatus('database', true);
+                return buses;
+            } catch (error) {
+                console.error('Erreur backend:', error);
+                updateConnectionStatus('database', false);
+                showNotification('Utilisation des données par défaut.', 'warning');
+                return this.getDefaultBuses();
+            }
+        }
+
+        static async loadRoutes() {
+            try {
+                console.log('Chargement des routes depuis la base de données...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const routes = this.getDefaultRoutes();
+                routeDatabase = routes;
+                return routes;
+            } catch (error) {
+                console.error('Erreur backend routes:', error);
+                return this.getDefaultRoutes();
+            }
+        }
+
+        static async updateBusProgress(busId, progress, currentLat, currentLng) {
+            try {
+                const updateData = {
+                    progress: progress,
+                    currentLat: currentLat,
+                    currentLng: currentLng,
+                    timestamp: new Date().toISOString(),
+                    trafficData: TrafficManager.getTrafficFlowData()
+                };
+
+                // Simulation de sauvegarde
+                updateConnectionStatus('connection', true);
+                return { success: true, data: updateData };
+            } catch (error) {
+                console.error('Erreur mise à jour progression:', error);
+                updateConnectionStatus('connection', false);
+            }
+        }
+
+        static getDefaultBuses() {
+            return [
+                {
+                    id: 1,
+                    name: 'Bus KIN-001',
+                    busLine: 'Ligne 1',
+                    capacity: 45,
+                    startLat: -300,
+                    startLng: -400,
+                    endLat: 500,
+                    endLng: 400,
+                    currentLat: -300,
+                    currentLng: -400,
+                    stopped: false,
+                    hasAccident: false,
+                    progress: 0,
+                    driver: { firstName: 'Jean', lastName: 'Mukendi' },
+                    route: { routeName: 'Gombe-Kintambo', color: '#FF0000' }
+                },
+                {
+                    id: 2,
+                    name: 'Bus KIN-002',
+                    busLine: 'Ligne 2',
+                    capacity: 50,
+                    startLat: -600,
+                    startLng: 200,
+                    endLat: 600,
+                    endLng: -300,
+                    currentLat: -600,
+                    currentLng: 200,
+                    stopped: false,
+                    hasAccident: false,
+                    progress: 0,
+                    driver: { firstName: 'Marie', lastName: 'Kabila' },
+                    route: { routeName: 'Bandalungwa-Lemba', color: '#00FF00' }
+                },
+                {
+                    id: 3,
+                    name: 'Bus KIN-003',
+                    busLine: 'Ligne 3',
+                    capacity: 40,
+                    startLat: -800,
+                    startLng: -200,
+                    endLat: 700,
+                    endLng: 300,
+                    currentLat: -800,
+                    currentLng: -200,
+                    stopped: false,
+                    hasAccident: false,
+                    progress: 0,
+                    driver: { firstName: 'Joseph', lastName: 'Tshisekedi' },
+                    route: { routeName: 'Matongé-Ngaliema', color: '#0000FF' }
+                },
+                {
+                    id: 4,
+                    name: 'Bus KIN-004',
+                    busLine: 'Ligne 4',
+                    capacity: 55,
+                    startLat: 200,
+                    startLng: -600,
+                    endLat: -500,
+                    endLng: 500,
+                    currentLat: 200,
+                    currentLng: -600,
+                    stopped: false,
+                    hasAccident: false,
+                    progress: 0,
+                    driver: { firstName: 'Grace', lastName: 'Mbuyi' },
+                    route: { routeName: 'Kalamu-Makala', color: '#FFFF00' }
+                },
+                {
+                    id: 5,
+                    name: 'Bus KIN-005',
+                    busLine: 'Ligne 5',
+                    capacity: 48,
+                    startLat: 700,
+                    startLng: -100,
+                    endLat: -700,
+                    endLng: 600,
+                    currentLat: 700,
+                    currentLng: -100,
+                    stopped: false,
+                    hasAccident: false,
+                    progress: 0,
+                    driver: { firstName: 'Paul', lastName: 'Kasongo' },
+                    route: { routeName: 'Lingwala-Barumbu', color: '#FF00FF' }
+                }
+            ];
+        }
+
+        static getDefaultRoutes() {
+            return [
+                {
+                    id: 1,
+                    routeName: 'Gombe-Kintambo',
+                    routeCode: 'GK001',
+                    description: 'Route du centre-ville vers Kintambo',
+                    totalDistance: 15.8,
+                    estimatedDuration: 45,
+                    color: '#FF0000'
+                },
+                {
+                    id: 2,
+                    routeName: 'Bandalungwa-Lemba',
+                    routeCode: 'BL002',
+                    description: 'Route reliant Bandalungwa à Lemba',
+                    totalDistance: 18.5,
+                    estimatedDuration: 52,
+                    color: '#00FF00'
+                },
+                {
+                    id: 3,
+                    routeName: 'Matongé-Ngaliema',
+                    routeCode: 'MN003',
+                    description: 'Route entre Matongé et Ngaliema',
+                    totalDistance: 22.3,
+                    estimatedDuration: 65,
+                    color: '#0000FF'
+                }
+            ];
+        }
+
+        static async saveIncident(incidentData) {
+            try {
+                console.log('Sauvegarde de l\'incident:', incidentData);
+                // Simulation de sauvegarde
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                showNotification('Incident sauvegardé avec succès', 'success');
+                updateConnectionStatus('connection', true);
+                return { success: true, id: Date.now() };
+            } catch (error) {
+                console.error('Erreur sauvegarde incident:', error);
+                updateConnectionStatus('connection', false);
+                showNotification('Erreur lors de la sauvegarde de l\'incident', 'error');
+                return null;
+            }
+        }
+    }
+
+    // Classe pour les gares de bus (améliorée)
+    class BusStation {
+        constructor(x, z, name, type = 'DEPARTURE', routeInfo = null) {
+            this.position = { x, z };
+            this.name = name;
+            this.type = type;
+            this.id = Date.now() + Math.random();
+            this.isActive = false;
+            this.routeInfo = routeInfo;
+            this.passengerCapacity = type === 'DEPARTURE' ? 120 : 100;
+            this.currentPassengers = Math.floor(Math.random() * this.passengerCapacity);
+            this.lastBusArrival = null;
+
+            this.createMesh();
+            this.createLabel();
+        }
+
+        createMesh() {
+            const group = new THREE.Group();
+
+            // Couleurs basées sur le type
+            let primaryColor, secondaryColor, accentColor, emissiveColor;
+            if (this.type === 'DEPARTURE') {
+                primaryColor = 0x4CAF50;
+                secondaryColor = 0x2E7D32;
+                accentColor = 0x81C784;
+                emissiveColor = 0x1B5E20;
+            } else {
+                primaryColor = 0xf44336;
+                secondaryColor = 0xc62828;
+                accentColor = 0xef5350;
+                emissiveColor = 0xB71C1C;
+            }
+
+            // Plateforme principale
+            const platformGeometry = new THREE.BoxGeometry(35, 1.5, 55);
+            const platformMaterial = new THREE.MeshPhongMaterial({
+                color: 0xE0E0E0,
+                shininess: 120
+            });
+            const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+            platform.position.y = 0.75;
+            platform.receiveShadow = true;
+            group.add(platform);
+
+            // Bâtiment principal
+            const buildingGeometry = new THREE.BoxGeometry(28, 15, 20);
+            const buildingMaterial = new THREE.MeshPhongMaterial({
+                color: primaryColor,
+                shininess: 100,
+                emissive: new THREE.Color(emissiveColor).multiplyScalar(0.1)
+            });
+            const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+            building.position.y = 7.5;
+            building.position.z = -15;
+            building.castShadow = true;
+            building.receiveShadow = true;
+            group.add(building);
+
+            // Toit
+            const roofGeometry = new THREE.BoxGeometry(30, 2.5, 22);
+            const roofMaterial = new THREE.MeshPhongMaterial({
+                color: secondaryColor,
+                shininess: 150
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 16;
+            roof.position.z = -15;
+            roof.castShadow = true;
+            group.add(roof);
+
+            // Auvent
+            const canopyGeometry = new THREE.BoxGeometry(40, 1.5, 60);
+            const canopyMaterial = new THREE.MeshPhongMaterial({
+                color: accentColor,
+                transparent: true,
+                opacity: 0.85,
+                shininess: 180
+            });
+            const canopy = new THREE.Mesh(canopyGeometry, canopyMaterial);
+            canopy.position.y = 12;
+            canopy.castShadow = true;
+            group.add(canopy);
+
+            // Piliers de support
+            const pillarGeometry = new THREE.CylinderGeometry(0.8, 0.8, 12, 16);
+            const pillarMaterial = new THREE.MeshPhongMaterial({
+                color: 0x666666,
+                shininess: 80
+            });
+
+            const pillarPositions = [
+                [-15, 6, -25], [15, 6, -25], [-15, 6, 0], [15, 6, 0], [-15, 6, 25], [15, 6, 25]
+            ];
+
+            pillarPositions.forEach(pos => {
+                const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+                pillar.position.set(pos[0], pos[1], pos[2]);
+                pillar.castShadow = true;
+                group.add(pillar);
+            });
+
+            // Bancs pour les voyageurs
+            const benchGeometry = new THREE.BoxGeometry(12, 2, 3);
+            const benchMaterial = new THREE.MeshPhongMaterial({
+                color: 0x8B4513,
+                shininess: 50
+            });
+
+            const benchPositions = [
+                [-12, 2, 15], [0, 2, 15], [12, 2, 15],
+                [-12, 2, 0], [0, 2, 0], [12, 2, 0],
+                [-12, 2, -10], [0, 2, -10], [12, 2, -10]
+            ];
+
+            benchPositions.forEach(pos => {
+                const bench = new THREE.Mesh(benchGeometry, benchMaterial);
+                bench.position.set(pos[0], pos[1], pos[2]);
+                bench.castShadow = true;
+                group.add(bench);
+            });
+
+            // Panneau d'information
+            const signGeometry = new THREE.BoxGeometry(16, 8, 0.8);
+            const signMaterial = new THREE.MeshPhongMaterial({
+                color: primaryColor,
+                shininess: 120,
+                emissive: new THREE.Color(emissiveColor).multiplyScalar(0.15)
+            });
+            const sign = new THREE.Mesh(signGeometry, signMaterial);
+            sign.position.set(0, 10, -25.5);
+            group.add(sign);
+
+            // Zone d'arrêt du bus
+            const stopZoneGeometry = new THREE.BoxGeometry(15, 0.2, 40);
+            const stopZoneMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFD700,
+                shininess: 80,
+                emissive: 0x332200
+            });
+            const stopZone = new THREE.Mesh(stopZoneGeometry, stopZoneMaterial);
+            stopZone.position.set(25, 1.6, 0);
+            group.add(stopZone);
+
+            this.mesh = group;
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            this.mesh.userData = { type: 'busStation', station: this };
+            scene.add(this.mesh);
+        }
+
+        createLabel() {
+            const labelDiv = document.createElement('div');
+            labelDiv.className = `station-label ${this.type.toLowerCase()}`;
+            labelDiv.textContent = this.name;
+            labelDiv.id = `station-label-${this.id}`;
+
+            labelDiv.style.position = 'absolute';
+            labelDiv.style.zIndex = '1001';
+            labelDiv.style.pointerEvents = 'none';
+
+            document.body.appendChild(labelDiv);
+            this.labelElement = labelDiv;
+        }
+
+        updateLabel() {
+            if (!this.labelElement || !camera || !renderer) return;
+
+            const vector = new THREE.Vector3(this.position.x, 20, this.position.z);
+            vector.project(camera);
+
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+
+            this.labelElement.style.left = `${x}px`;
+            this.labelElement.style.top = `${y}px`;
+
+            const distance = camera.position.distanceTo(new THREE.Vector3(this.position.x, 0, this.position.z));
+            this.labelElement.style.display = distance < 600 ? 'block' : 'none';
+        }
+
+        activate() {
+            this.isActive = true;
+            if (this.mesh.children[1]) {
+                this.mesh.children[1].material.emissive.setHex(0x334455);
+            }
+        }
+
+        deactivate() {
+            this.isActive = false;
+            if (this.mesh.children[1]) {
+                this.mesh.children[1].material.emissive.setHex(0x000000);
+            }
+        }
+
+        remove() {
+            scene.remove(this.mesh);
+            if (this.labelElement) {
+                document.body.removeChild(this.labelElement);
+            }
+            const index = busStations.indexOf(this);
+            if (index > -1) {
+                busStations.splice(index, 1);
+            }
+        }
+
+        isBusNearby(busPosition) {
+            const distance = Math.sqrt(
+                Math.pow(this.position.x - busPosition.x, 2) +
+                Math.pow(this.position.z - busPosition.z, 2)
+            );
+            return distance < CONFIG.STATION_DETECTION_RADIUS;
+        }
+
+        onBusArrival(bus) {
+            this.lastBusArrival = {
+                busId: bus.busData ? bus.busData.id : null,
+                time: Date.now(),
+                passengerCount: this.currentPassengers
+            };
+
+            // Simulation d'embarquement/débarquement
+            if (this.type === 'DEPARTURE') {
+                this.currentPassengers = Math.max(0, this.currentPassengers - Math.floor(Math.random() * 30));
+            } else {
+                this.currentPassengers = Math.min(this.passengerCapacity, this.currentPassengers + Math.floor(Math.random() * 20));
+            }
+        }
+    }
+
+    // Gestionnaire de gares amélioré
+    class StationManager {
+        static createStationsForRoute(bus) {
+            console.log('Création des gares séparées pour le bus:', bus.name);
+
+            this.clearStations();
+
+            if (!bus.route || !bus.route.routeName) return;
+
+            const startX = bus.startLat || 0;
+            const startZ = bus.startLng || 0;
+            const endX = bus.endLat || 0;
+            const endZ = bus.endLng || 0;
+
+            const distance = Math.sqrt(
+                Math.pow(endX - startX, 2) + Math.pow(endZ - startZ, 2)
+            );
+
+            console.log(`Distance entre les gares: ${distance.toFixed(2)} unités`);
+
+            let finalStartX = startX, finalStartZ = startZ;
+            let finalEndX = endX, finalEndZ = endZ;
+
+            // Ajuster si nécessaire
+            if (distance < CONFIG.STATION_SEPARATION_DISTANCE) {
+                const angle = Math.atan2(endZ - startZ, endX - startX);
+                const adjustedDistance = CONFIG.STATION_SEPARATION_DISTANCE;
+
+                const midX = (startX + endX) / 2;
+                const midZ = (startZ + endZ) / 2;
+
+                finalStartX = midX - Math.cos(angle) * adjustedDistance / 2;
+                finalStartZ = midZ - Math.sin(angle) * adjustedDistance / 2;
+                finalEndX = midX + Math.cos(angle) * adjustedDistance / 2;
+                finalEndZ = midZ + Math.sin(angle) * adjustedDistance / 2;
+
+                bus.startLat = finalStartX;
+                bus.startLng = finalStartZ;
+                bus.endLat = finalEndX;
+                bus.endLng = finalEndZ;
+            }
+
+            // S'assurer que les gares ne sont pas sur des bâtiments
+            finalStartX = this.findClearPosition(finalStartX, finalStartZ).x;
+            finalStartZ = this.findClearPosition(finalStartX, finalStartZ).z;
+            finalEndX = this.findClearPosition(finalEndX, finalEndZ).x;
+            finalEndZ = this.findClearPosition(finalEndX, finalEndZ).z;
+
+            // Créer gare de départ
+            const departureStation = new BusStation(
+                finalStartX,
+                finalStartZ,
+                `Gare de Départ - ${bus.route.routeName}`,
+                'DEPARTURE',
+                bus.route
+            );
+            departureStation.activate();
+            busStations.push(departureStation);
+            activeStations.push(departureStation);
+
+            // Créer gare d'arrivée
+            const arrivalStation = new BusStation(
+                finalEndX,
+                finalEndZ,
+                `Gare d'Arrivée - ${bus.route.routeName}`,
+                'ARRIVAL',
+                bus.route
+            );
+            arrivalStation.activate();
+            busStations.push(arrivalStation);
+            activeStations.push(arrivalStation);
+
+            gameState.activeStations = 2;
+            this.updateUI();
+
+            showNotification(`2 gares séparées créées pour ${bus.name}`, 'success');
+        }
+
+        static findClearPosition(x, z) {
+            // Vérifier qu'on n'est pas trop près d'un bâtiment
+            for (let building of buildings) {
+                const distance = Math.sqrt(
+                    Math.pow(building.position.x - x, 2) + Math.pow(building.position.z - z, 2)
+                );
+                if (distance < CONFIG.BUILDING_ROAD_CLEARANCE) {
+                    // Déplacer légèrement
+                    const angle = Math.atan2(z - building.position.z, x - building.position.x);
+                    x = building.position.x + Math.cos(angle) * CONFIG.BUILDING_ROAD_CLEARANCE;
+                    z = building.position.z + Math.sin(angle) * CONFIG.BUILDING_ROAD_CLEARANCE;
+                }
+            }
+            return { x, z };
+        }
+
+        static clearStations() {
+            activeStations.forEach(station => station.remove());
+            activeStations = [];
+            busStations = [];
+            gameState.activeStations = 0;
+        }
+
+        static updateUI() {
+            document.getElementById('activeStations').textContent = gameState.activeStations;
+            document.getElementById('totalStations').textContent = busStations.length;
+        }
+
+        static updateLabels() {
+            activeStations.forEach(station => station.updateLabel());
+        }
+
+        static findNearestStation(position, type = null) {
+            let nearest = null;
+            let minDistance = CONFIG.STATION_DETECTION_RADIUS;
+
+            activeStations.forEach(station => {
+                if (type && station.type !== type) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(station.position.x - position.x, 2) +
+                    Math.pow(station.position.z - position.z, 2)
+                );
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = station;
+                }
+            });
+
+            return nearest;
+        }
+
+        static checkBusArrivals() {
+            // Vérifier pour le bus joueur
+            if (playerCar && playerCar.busData) {
+                const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+                if (arrivalStation && arrivalStation.isBusNearby(playerCar.position)) {
+                    const progress = gameState.busProgress[playerCar.busData.id] || 0;
+                    if (progress >= 85 && !playerCar.hasArrived) {
+                        playerCar.arriveAtDestination();
+                        arrivalStation.onBusArrival(playerCar);
+                    }
+                }
+            }
+
+            // Vérifier pour le bus en simulation automatique suivi
+            if (gameState.currentSimulationBus && gameState.currentSimulationBus.busData) {
+                const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+                if (arrivalStation && arrivalStation.isBusNearby(gameState.currentSimulationBus.position)) {
+                    const progress = gameState.busProgress[gameState.currentSimulationBus.busData.id] || 0;
+                    if (progress >= 85 && !gameState.currentSimulationBus.hasArrived) {
+                        gameState.currentSimulationBus.arriveAtDestination();
+                        arrivalStation.onBusArrival(gameState.currentSimulationBus);
+                    }
+                }
+            }
+        }
+    }
+
+    // Système de minimap amélioré
+    class MinimapManager {
+        static init() {
+            minimapCanvas = document.getElementById('minimapCanvas');
+            minimapCtx = minimapCanvas.getContext('2d');
+            this.update();
+        }
+
+        static update() {
+            if (!minimapCtx) return;
+
+            minimapCtx.clearRect(0, 0, 250, 250);
+
+            // Fond
+            minimapCtx.fillStyle = '#1a1a2e';
+            minimapCtx.fillRect(0, 0, 250, 250);
+
+            // Routes
+            minimapCtx.strokeStyle = '#444444';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.beginPath();
+
+            for (let i = 0; i < 6; i++) {
+                const pos = (i + 1) * 40;
+                minimapCtx.moveTo(0, pos);
+                minimapCtx.lineTo(250, pos);
+                minimapCtx.moveTo(pos, 0);
+                minimapCtx.lineTo(pos, 250);
+            }
+            minimapCtx.stroke();
+
+            // Zones de congestion
+            if (TrafficManager.congestionZones) {
+                TrafficManager.congestionZones.forEach((zone, key) => {
+                    const [gridX, gridZ] = key.split(',').map(Number);
+                    const x = ((gridX + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                    const z = ((gridZ + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                    let color = '#00FF00';
+                    if (zone.congestionLevel === 'MEDIUM') color = '#FF9800';
+                    else if (zone.congestionLevel === 'HIGH') color = '#FF0000';
+
+                    minimapCtx.fillStyle = color;
+                    minimapCtx.globalAlpha = 0.3;
+                    minimapCtx.fillRect(x - 15, z - 15, 30, 30);
+                    minimapCtx.globalAlpha = 1.0;
+                });
+            }
+
+            // Gares
+            activeStations.forEach(station => {
+                const x = ((station.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                const z = ((station.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                if (station.type === 'DEPARTURE') {
+                    minimapCtx.fillStyle = '#4CAF50';
+                    minimapCtx.fillRect(x - 8, z - 8, 16, 16);
+                    minimapCtx.strokeStyle = '#2E7D32';
+                    minimapCtx.lineWidth = 3;
+                    minimapCtx.strokeRect(x - 8, z - 8, 16, 16);
+
+                    minimapCtx.fillStyle = '#FFFFFF';
+                    minimapCtx.font = 'bold 14px Arial';
+                    minimapCtx.fillText('D', x - 5, z + 5);
+                } else if (station.type === 'ARRIVAL') {
+                    minimapCtx.fillStyle = '#f44336';
+                    minimapCtx.fillRect(x - 8, z - 8, 16, 16);
+                    minimapCtx.strokeStyle = '#c62828';
+                    minimapCtx.lineWidth = 3;
+                    minimapCtx.strokeRect(x - 8, z - 8, 16, 16);
+
+                    minimapCtx.fillStyle = '#FFFFFF';
+                    minimapCtx.font = 'bold 14px Arial';
+                    minimapCtx.fillText('A', x - 5, z + 5);
+                }
+            });
+
+            // Route du bus avec effet amélioré
+            const targetBus = playerCar || gameState.currentSimulationBus;
+            const selectedBus = gameState.selectedBus || (gameState.currentSimulationBus ? gameState.currentSimulationBus.busData : null);
+
+            if (selectedBus && targetBus && activeStations.length >= 2) {
+                const startStation = activeStations.find(s => s.type === 'DEPARTURE');
+                const endStation = activeStations.find(s => s.type === 'ARRIVAL');
+
+                if (startStation && endStation) {
+                    const startX = ((startStation.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                    const startZ = ((startStation.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                    const endX = ((endStation.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                    const endZ = ((endStation.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                    // Ligne de route
+                    const gradient = minimapCtx.createLinearGradient(startX, startZ, endX, endZ);
+                    gradient.addColorStop(0, selectedBus.route?.color || '#00d4ff');
+                    gradient.addColorStop(0.5, '#ffffff');
+                    gradient.addColorStop(1, selectedBus.route?.color || '#00d4ff');
+
+                    minimapCtx.strokeStyle = gradient;
+                    minimapCtx.lineWidth = 5;
+                    minimapCtx.beginPath();
+                    minimapCtx.moveTo(startX, startZ);
+                    minimapCtx.lineTo(endX, endZ);
+                    minimapCtx.stroke();
+                }
+
+                // Position du bus avec effet pulsant
+                const currentX = ((targetBus.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                const currentZ = ((targetBus.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                const time = Date.now() / 300;
+                const opacity = Math.sin(time) * 0.4 + 0.8;
+                const size = Math.sin(time) * 2 + 8;
+
+                minimapCtx.fillStyle = `rgba(255, 215, 0, ${opacity})`;
+                minimapCtx.beginPath();
+                minimapCtx.arc(currentX, currentZ, size, 0, Math.PI * 2);
+                minimapCtx.fill();
+
+                minimapCtx.strokeStyle = '#FFD700';
+                minimapCtx.lineWidth = 3;
+                minimapCtx.stroke();
+            }
+
+            // Autres bus en simulation
+            simulationBuses.forEach(bus => {
+                const x = ((bus.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                const z = ((bus.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                minimapCtx.fillStyle = '#FF8800';
+                minimapCtx.beginPath();
+                minimapCtx.arc(x, z, 5, 0, Math.PI * 2);
+                minimapCtx.fill();
+            });
+
+            // Voitures de trafic
+            trafficCars.forEach(car => {
+                const x = ((car.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                const z = ((car.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                minimapCtx.fillStyle = '#CCCCCC';
+                minimapCtx.beginPath();
+                minimapCtx.arc(x, z, 2, 0, Math.PI * 2);
+                minimapCtx.fill();
+            });
+
+            // Piétons
+            pedestrians.forEach(pedestrian => {
+                const x = ((pedestrian.position.x + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+                const z = ((pedestrian.position.z + CONFIG.WORLD_SIZE/2) / CONFIG.WORLD_SIZE) * 250;
+
+                minimapCtx.fillStyle = pedestrian.crossingStreet ? '#FF0000' : '#00FFFF';
+                minimapCtx.beginPath();
+                minimapCtx.arc(x, z, 1.5, 0, Math.PI * 2);
+                minimapCtx.fill();
+            });
+        }
+    }
+
+    // Fonction pour ajouter des voitures de trafic intelligentes
+    function addTrafficCars() {
+        if (gameState.trafficCarsAdded) {
+            showNotification('Les voitures de trafic sont déjà ajoutées', 'warning');
+            return;
+        }
+
+        if (activeStations.length < 2) {
+            showNotification('Veuillez d\'abord sélectionner un bus avec des gares actives', 'warning');
+            return;
+        }
+
+        showNotification(`Ajout de ${CONFIG.TRAFFIC_CARS_COUNT} voitures de trafic intelligentes...`, 'success');
+
+        const departureStation = activeStations.find(s => s.type === 'DEPARTURE');
+        const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+
+        for (let i = 0; i < CONFIG.TRAFFIC_CARS_COUNT; i++) {
+            // Position intelligente le long des routes
+            let x, z;
+            const roadSpacing = 200;
+
+            // Choisir une route au hasard
+            if (Math.random() > 0.5) {
+                // Route horizontale
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
+                z = Math.floor((Math.random() - 0.5) * (CONFIG.WORLD_SIZE / roadSpacing)) * roadSpacing;
+                z += (Math.random() - 0.5) * CONFIG.ROAD_WIDTH * 0.8;
+            } else {
+                // Route verticale
+                x = Math.floor((Math.random() - 0.5) * (CONFIG.WORLD_SIZE / roadSpacing)) * roadSpacing;
+                x += (Math.random() - 0.5) * CONFIG.ROAD_WIDTH * 0.8;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8;
+            }
+
+            const trafficCar = new Vehicle(x, z, 'sports_car');
+            trafficCar.isTrafficCar = true;
+            trafficCar.targetSpeed = 40 + Math.random() * 40;
+
+            // Couleurs réalistes pour les voitures de trafic
+            if (trafficCar.mesh.children[0]) {
+                const trafficColors = [0x808080, 0x555555, 0xAAAAAA, 0x777777, 0x999999, 0x444444];
+                trafficCar.mesh.children[0].material.color.setHex(
+                    trafficColors[Math.floor(Math.random() * trafficColors.length)]
+                );
+            }
+
+            // Ajouter à l'IA manager
+            if (aiManager) {
+                aiManager.addVehicle(trafficCar);
+            }
+
+            vehicles.push(trafficCar);
+            trafficCars.push(trafficCar);
+        }
+
+        gameState.trafficCarsAdded = true;
+        document.getElementById('trafficControlButton').textContent = '🚗 Trafic Ajouté';
+        document.getElementById('trafficControlButton').disabled = true;
+
+        showNotification(`${CONFIG.TRAFFIC_CARS_COUNT} voitures de trafic intelligentes ajoutées!`, 'success');
+    }
+
+    // Fonction pour activer/désactiver les piétons
+    function togglePedestrians() {
+        gameState.pedestriansEnabled = !gameState.pedestriansEnabled;
+
+        if (gameState.pedestriansEnabled) {
+            for (let i = 0; i < CONFIG.PEDESTRIAN_COUNT; i++) {
+                let x, z;
+                do {
+                    x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.7;
+                    z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.7;
+                } while (Math.abs(x) % 200 < 50 && Math.abs(z) % 200 < 50);
+
+                const pedestrian = new Pedestrian(x, z);
+                pedestrians.push(pedestrian);
+            }
+
+            showNotification(`${CONFIG.PEDESTRIAN_COUNT} piétons ajoutés et visibles`, 'success');
+        } else {
+            pedestrians.forEach(pedestrian => pedestrian.remove());
+            pedestrians = [];
+            showNotification('Piétons supprimés', 'warning');
+        }
+    }
+
+    // Nouvelles fonctions de gestion des données
+    function clearAllVehicles() {
+        if (vehicles.length === 0) {
+            showNotification('Aucun véhicule à supprimer', 'warning');
+            return;
+        }
+
+        // Sauvegarder les données avant suppression
+        gameState.savedVehicleData = vehicles.map(v => ({
+            position: {...v.position},
+            type: v.type,
+            isPlayer: v.isPlayer,
+            busData: v.busData,
+            isTrafficCar: v.isTrafficCar
+        }));
+
+        // Supprimer tous les véhicules
+        vehicles.forEach(vehicle => {
+            scene.remove(vehicle.mesh);
+            if (aiManager) {
+                aiManager.removeVehicle(vehicle);
+            }
+        });
+
+        vehicles = [];
+        trafficCars = [];
+        simulationBuses = [];
+
+        if (playerCar) {
+            playerCar = null;
+        }
+
+        gameState.currentSimulationBus = null;
+        gameState.trafficCarsAdded = false;
+
+        // Réactiver le bouton de trafic
+        document.getElementById('trafficControlButton').textContent = '🚗 Ajouter du Trafic';
+        document.getElementById('trafficControlButton').disabled = false;
+
+        showNotification('Tous les véhicules supprimés', 'success');
+    }
+
+    function restoreVehicles() {
+        if (gameState.savedVehicleData.length === 0) {
+            showNotification('Aucune donnée de véhicule sauvegardée', 'warning');
+            return;
+        }
+
+        // Restaurer les véhicules
+        gameState.savedVehicleData.forEach(data => {
+            const vehicle = new Vehicle(data.position.x, data.position.z, data.type);
+            vehicle.isPlayer = data.isPlayer;
+            vehicle.busData = data.busData;
+            vehicle.isTrafficCar = data.isTrafficCar;
+
+            if (data.isPlayer) {
+                playerCar = vehicle;
+                vehicle.mesh.children[1].material.color.setHex(0x00FF00);
+            } else if (data.busData && !data.isTrafficCar) {
+                simulationBuses.push(vehicle);
+                vehicle.isAutoSimulation = true;
+                vehicle.mesh.children[1].material.color.setHex(0xFF8800);
+            } else if (data.isTrafficCar) {
+                trafficCars.push(vehicle);
+                const trafficColors = [0x808080, 0x555555, 0xAAAAAA, 0x777777, 0x999999];
+                vehicle.mesh.children[0].material.color.setHex(
+                    trafficColors[Math.floor(Math.random() * trafficColors.length)]
+                );
+            }
+
+            if (aiManager) {
+                aiManager.addVehicle(vehicle);
+            }
+
+            vehicles.push(vehicle);
+        });
+
+        if (trafficCars.length > 0) {
+            gameState.trafficCarsAdded = true;
+            document.getElementById('trafficControlButton').textContent = '🚗 Trafic Ajouté';
+            document.getElementById('trafficControlButton').disabled = true;
+        }
+
+        showNotification(`${gameState.savedVehicleData.length} véhicules restaurés`, 'success');
+    }
+
+    function clearBusStations() {
+        if (busStations.length === 0) {
+            showNotification('Aucune gare à supprimer', 'warning');
+            return;
+        }
+
+        // Sauvegarder les données
+        gameState.savedStationData = busStations.map(station => ({
+            position: {...station.position},
+            name: station.name,
+            type: station.type,
+            routeInfo: station.routeInfo
+        }));
+
+        StationManager.clearStations();
+        showNotification('Toutes les gares supprimées', 'success');
+    }
+
+    function restoreBusStations() {
+        if (gameState.savedStationData.length === 0) {
+            showNotification('Aucune donnée de gare sauvegardée', 'warning');
+            return;
+        }
+
+        // Restaurer les gares
+        gameState.savedStationData.forEach(data => {
+            const station = new BusStation(
+                data.position.x,
+                data.position.z,
+                data.name,
+                data.type,
+                data.routeInfo
+            );
+            station.activate();
+            busStations.push(station);
+            activeStations.push(station);
+        });
+
+        gameState.activeStations = busStations.length;
+        StationManager.updateUI();
+
+        showNotification(`${gameState.savedStationData.length} gares restaurées`, 'success');
+    }
+
+    function resetSimulation() {
+        // Confirmation
+        if (!confirm('Êtes-vous sûr de vouloir réinitialiser complètement la simulation ?')) {
+            return;
+        }
+
+        // Arrêter toutes les mises à jour
+        stopDatabaseUpdates();
+
+        // Supprimer tous les éléments
+        clearAllVehicles();
+        clearBusStations();
+
+        // Supprimer les piétons
+        pedestrians.forEach(p => p.remove());
+        pedestrians = [];
+
+        // Réinitialiser l'état du jeu
+        gameState = {
+            speed: 0,
+            accidents: 0,
+            isPaused: false,
+            isAutoSimulation: false,
+            selectedBus: null,
+            busProgress: {},
+            routes: [],
+            activeBuses: [],
+            uiMinimized: false,
+            activeStations: 0,
+            trafficCarsAdded: false,
+            pedestriansEnabled: false,
+            currentSimulationBus: null,
+            aiDebugEnabled: false,
+            savedVehicleData: [],
+            savedStationData: []
+        };
+
+        // Réinitialiser les compteurs UI
+        document.getElementById('selectedBus').textContent = 'Aucun';
+        document.getElementById('simulationMode').textContent = 'Manuelle';
+
+        // Créer de nouveaux véhicules IA
+        createAIVehicles();
+
+        showNotification('Simulation complètement réinitialisée', 'success');
+    }
+
+    function toggleAIDebug() {
+        gameState.aiDebugEnabled = !gameState.aiDebugEnabled;
+        const debugPanel = document.getElementById('aiDebug');
+
+        if (gameState.aiDebugEnabled) {
+            debugPanel.classList.add('active');
+
+            // Définir le véhicule à déboguer (le bus actuel ou le premier véhicule)
+            const debugVehicle = playerCar || gameState.currentSimulationBus || vehicles[0];
+            if (debugVehicle && aiManager) {
+                aiManager.debugEnabled = true;
+                aiManager.setDebugVehicle(debugVehicle);
+            }
+
+            showNotification('Debug IA activé', 'success');
+        } else {
+            debugPanel.classList.remove('active');
+            if (aiManager) {
+                aiManager.debugEnabled = false;
+            }
+            showNotification('Debug IA désactivé', 'warning');
+        }
+
+        document.getElementById('aiStatus').textContent = gameState.aiDebugEnabled ? 'Debug' : 'Active';
+    }
+
+    // Mise à jour automatique de la base de données
+    function startDatabaseUpdates() {
+        if (dbUpdateInterval) {
+            clearInterval(dbUpdateInterval);
+        }
+
+        dbUpdateInterval = setInterval(() => {
+            if (!gameState.isPaused) {
+                // Mise à jour du bus joueur
+                if (playerCar && playerCar.busData) {
+                    const progress = gameState.busProgress[playerCar.busData.id] || 0;
+                    BackendAPI.updateBusProgress(
+                        playerCar.busData.id,
+                        progress,
+                        playerCar.position.x,
+                        playerCar.position.z
+                    );
+
+                    document.getElementById('dbProgress').textContent = `${Math.round(progress)}%`;
+                }
+
+                // Mise à jour du bus en simulation automatique suivi
+                if (gameState.currentSimulationBus && gameState.currentSimulationBus.busData) {
+                    const progress = gameState.busProgress[gameState.currentSimulationBus.busData.id] || 0;
+                    BackendAPI.updateBusProgress(
+                        gameState.currentSimulationBus.busData.id,
+                        progress,
+                        gameState.currentSimulationBus.position.x,
+                        gameState.currentSimulationBus.position.z
+                    );
+
+                    document.getElementById('dbProgress').textContent = `${Math.round(progress)}%`;
+                }
+
+                // Mise à jour des autres bus en simulation
+                simulationBuses.forEach(bus => {
+                    if (bus.busData && bus !== gameState.currentSimulationBus) {
+                        const progress = gameState.busProgress[bus.busData.id] || 0;
+                        BackendAPI.updateBusProgress(
+                            bus.busData.id,
+                            progress,
+                            bus.position.x,
+                            bus.position.z
+                        );
+                    }
+                });
+            }
+        }, 2000);
+    }
+
+    function stopDatabaseUpdates() {
+        if (dbUpdateInterval) {
+            clearInterval(dbUpdateInterval);
+            dbUpdateInterval = null;
+        }
+    }
+
+    // Système de notification amélioré
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+
+        notificationText.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.style.display = 'block';
+
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, type === 'arrival' ? 5000 : 3000);
+    }
+
+    // Notification d'arrivée spéciale
+    function showArrivalNotification(busName, stationName) {
+        showNotification(`🎉 ${busName} est arrivé à ${stationName}! 🎉`, 'arrival');
+        createArrivalParticles();
+    }
+
+    // Créer des particules pour l'arrivée
+    function createArrivalParticles() {
+        const targetCar = playerCar || gameState.currentSimulationBus;
+        if (!targetCar) return;
+
+        const particleCount = 40;
+        for (let i = 0; i < particleCount; i++) {
+            const particleGeometry = new THREE.SphereGeometry(1.2, 8, 8);
+            const particleMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00FF00,
+                transparent: true,
+                opacity: 0.9
+            });
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+
+            particle.position.set(
+                targetCar.position.x + (Math.random() - 0.5) * 60,
+                10 + Math.random() * 20,
+                targetCar.position.z + (Math.random() - 0.5) * 60
+            );
+
+            scene.add(particle);
+
+            const animateParticle = () => {
+                particle.position.y += 1.2;
+                particle.rotation.x += 0.15;
+                particle.rotation.y += 0.1;
+                particle.material.opacity -= 0.025;
+
+                if (particle.material.opacity <= 0) {
+                    scene.remove(particle);
+                } else {
+                    requestAnimationFrame(animateParticle);
+                }
+            };
+
+            setTimeout(animateParticle, i * 25);
+        }
+    }
+
+    // Gestion des modals
+    function openBusModal() {
+        document.getElementById('busModal').style.display = 'block';
+        loadBusData();
+    }
+
+    function closeBusModal() {
+        document.getElementById('busModal').style.display = 'none';
+    }
+
+    function openControlCenter() {
+        document.getElementById('controlModal').style.display = 'block';
+        updateControlCenterData();
+    }
+
+    function closeControlModal() {
+        document.getElementById('controlModal').style.display = 'none';
+    }
+
+    function toggleMap() {
+        const mapContainer = document.getElementById('mapContainer');
+        if (mapContainer && (mapContainer.style.display === 'none' || mapContainer.style.display === '')) {
+            mapContainer.style.display = 'block';
+            loadRouteMap();
+        } else if (mapContainer) {
+            mapContainer.style.display = 'none';
+        }
+    }
+
+    // Chargement des données des bus
+    async function loadBusData() {
+        const loadingMessage = document.getElementById('busLoadingMessage');
+        const busGrid = document.getElementById('busGrid');
+
+        loadingMessage.style.display = 'block';
+        busGrid.innerHTML = '';
+
+        try {
+            const buses = await BackendAPI.loadBuses();
+            loadingMessage.style.display = 'none';
+
+            if (buses && buses.length > 0) {
+                displayBuses(buses);
+            } else {
+                busGrid.innerHTML = '<div style="color: white; text-align: center; padding: 20px;">Aucun bus trouvé dans la base de données</div>';
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement des bus:', error);
+            loadingMessage.style.display = 'none';
+            busGrid.innerHTML = '<div style="color: #ff6b6b; text-align: center; padding: 20px;">Erreur lors du chargement des bus</div>';
+        }
+    }
+
+    // Affichage des bus
+    function displayBuses(buses) {
+        const busGrid = document.getElementById('busGrid');
+        busGrid.innerHTML = '';
+
+        buses.forEach(bus => {
+            const busCard = document.createElement('div');
+            busCard.className = 'bus-card';
+
+            const status = getBusStatus(bus);
+            const statusClass = getStatusClass(status);
+            const progress = gameState.busProgress[bus.id] || bus.progress || 0;
+            const driverName = bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'Non assigné';
+            const routeName = bus.route ? bus.route.routeName : 'Route non définie';
+
+            const distance = Math.sqrt(
+                Math.pow((bus.endLat || 0) - (bus.startLat || 0), 2) +
+                Math.pow((bus.endLng || 0) - (bus.startLng || 0), 2)
+            );
+
+            busCard.innerHTML = `
+                <h3>🚌 ${bus.name}</h3>
+                <div class="bus-info">
+                    <div>Route: <span>${routeName}</span></div>
+                    <div>Ligne: <span>${bus.busLine}</span></div>
+                    <div>Conducteur: <span>${driverName}</span></div>
+                    <div>Capacité: <span>${bus.capacity} places</span></div>
+                    <div>Distance: <span>${(distance / 100).toFixed(1)} km</span></div>
+                    <div>Statut: <span class="bus-status ${statusClass}">${status}</span></div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+                <div style="text-align: center; margin: 10px 0; color: #00d4ff;">
+                    Progression: ${Math.round(progress)}%
+                </div>
+                <div class="bus-actions">
+                    <button class="btn btn-primary" onclick="selectBus(${bus.id})" ${status === 'En Panne' ? 'disabled' : ''}>
+                        🎮 Conduire
+                    </button>
+                    <button class="btn btn-secondary" onclick="startAutoSimulation(${bus.id})" ${status === 'En Panne' ? 'disabled' : ''}>
+                        🤖 Auto IA
+                    </button>
+                    <button class="btn btn-danger" onclick="stopBus(${bus.id})">
+                        🛑 Arrêter
+                    </button>
+                </div>
+            `;
+
+            busGrid.appendChild(busCard);
+        });
+    }
+
+    function getBusStatus(bus) {
+        if (bus.hasAccident) return 'En Panne';
+        if (bus.stopped || bus.isStopped) return 'Arrêté';
+        return 'En Service';
+    }
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'En Service': return 'en-service';
+            case 'En Panne': return 'en-panne';
+            case 'Arrêté': return 'arrete';
+            default: return 'arrete';
+        }
+    }
+
+    // Sélection d'un bus pour conduite manuelle
+    function selectBus(busId) {
+        const bus = busDatabase.find(b => b.id === busId);
+        if (bus && !bus.hasAccident) {
+            gameState.selectedBus = bus;
+            gameState.currentSimulationBus = null;
+
+            if (playerCar) {
+                scene.remove(playerCar.mesh);
+                if (aiManager) aiManager.removeVehicle(playerCar);
+                vehicles = vehicles.filter(v => v !== playerCar);
+            }
+
+            // Créer les gares d'abord
+            StationManager.createStationsForRoute(bus);
+
+            // Créer le bus à la gare de départ
+            const departureStation = activeStations.find(s => s.type === 'DEPARTURE');
+            const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+
+            if (departureStation && arrivalStation) {
+                playerCar = new Vehicle(departureStation.position.x, departureStation.position.z, 'city_bus');
+                playerCar.isPlayer = true;
+                playerCar.busData = bus;
+                playerCar.destination = { x: arrivalStation.position.x, z: arrivalStation.position.z };
+
+                if (playerCar.mesh.children[1]) {
+                    playerCar.mesh.children[1].material.color.setHex(0x00FF00);
+                }
+
+                vehicles.push(playerCar);
+                gameState.busProgress[bus.id] = 0;
+
+                updateRouteInfo();
+                document.getElementById('selectedBus').textContent = bus.name;
+
+                startDatabaseUpdates();
+
+                showNotification(`Bus ${bus.name} sélectionné pour conduite manuelle`, 'success');
+                closeBusModal();
+            }
+        }
+    }
+
+    // Démarrage de la simulation automatique améliorée avec IA
+    function startAutoSimulation(busId) {
+        const bus = busDatabase.find(b => b.id === busId);
+        if (bus && !bus.hasAccident) {
+            // Créer les gares si pas déjà créées pour ce bus
+            StationManager.createStationsForRoute(bus);
+
+            const departureStation = activeStations.find(s => s.type === 'DEPARTURE');
+            const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+
+            if (departureStation && arrivalStation) {
+                const autoBus = new Vehicle(departureStation.position.x, departureStation.position.z, 'city_bus');
+                autoBus.isPlayer = false;
+                autoBus.busData = bus;
+                autoBus.destination = { x: arrivalStation.position.x, z: arrivalStation.position.z };
+                autoBus.isAutoSimulation = true;
+                autoBus.targetSpeed = CONFIG.AUTO_SIMULATION_SPEED;
+                autoBus.maxSpeed = CONFIG.MAX_SPEED;
+
+                if (autoBus.mesh.children[1]) {
+                    autoBus.mesh.children[1].material.color.setHex(0xFF8800);
+                }
+
+                vehicles.push(autoBus);
+                simulationBuses.push(autoBus);
+
+                // Ajouter à l'IA manager pour navigation intelligente
+                if (aiManager) {
+                    aiManager.addVehicle(autoBus);
+                }
+
+                // Définir comme bus suivi
+                gameState.currentSimulationBus = autoBus;
+                gameState.selectedBus = bus;
+
+                gameState.busProgress[busId] = 0;
+
+                updateRouteInfo();
+                document.getElementById('selectedBus').textContent = `${bus.name} (Auto IA)`;
+
+                startDatabaseUpdates();
+
+                showNotification(`Simulation IA démarrée pour ${bus.name}. Utilisez C pour changer la vue!`, 'success');
+                closeBusModal();
+            }
+        }
+    }
+
+    // Arrêt d'un bus
+    function stopBus(busId) {
+        const bus = busDatabase.find(b => b.id === busId);
+        if (bus) {
+            simulationBuses = simulationBuses.filter(simBus => {
+                if (simBus.busData.id === busId) {
+                    scene.remove(simBus.mesh);
+                    if (aiManager) aiManager.removeVehicle(simBus);
+                    vehicles = vehicles.filter(v => v !== simBus);
+
+                    if (gameState.currentSimulationBus === simBus) {
+                        gameState.currentSimulationBus = null;
+                    }
+
+                    return false;
+                }
+                return true;
+            });
+
+            if (playerCar && playerCar.busData && playerCar.busData.id === busId) {
+                playerCar.speed = 0;
+                gameState.selectedBus = null;
+                gameState.currentSimulationBus = null;
+                document.getElementById('selectedBus').textContent = 'Aucun';
+
+                StationManager.clearStations();
+                stopDatabaseUpdates();
+            }
+
+            gameState.busProgress[busId] = 0;
+            showNotification(`Bus ${bus.name} arrêté`, 'warning');
+        }
+    }
+
+    // Mise à jour des informations de route
+    function updateRouteInfo() {
+        const routeInfo = document.getElementById('routeInfo');
+        const currentRoute = document.getElementById('currentRoute');
+        const destination = document.getElementById('destination');
+        const distance = document.getElementById('distance');
+        const estimatedTime = document.getElementById('estimatedTime');
+        const routeProgress = document.getElementById('routeProgress');
+        const nextStation = document.getElementById('nextStation');
+        const alternativeRoute = document.getElementById('alternativeRoute');
+
+        const targetBus = playerCar || gameState.currentSimulationBus;
+        const selectedBus = gameState.selectedBus;
+
+        if (selectedBus && targetBus) {
+            const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+
+            const dist = arrivalStation ? Math.sqrt(
+                Math.pow(arrivalStation.position.x - targetBus.position.x, 2) +
+                Math.pow(arrivalStation.position.z - targetBus.position.z, 2)
+            ) : 0;
+
+            const progress = gameState.busProgress[selectedBus.id] || 0;
+            const routeName = selectedBus.route ? selectedBus.route.routeName : 'Route inconnue';
+
+            currentRoute.textContent = routeName;
+            destination.textContent = arrivalStation ? arrivalStation.name : 'Destination inconnue';
+            distance.textContent = `${(dist / 100).toFixed(1)} km`;
+            estimatedTime.textContent = `${Math.round(dist / 80)} min`;
+            routeProgress.textContent = `${Math.round(progress)}%`;
+            nextStation.textContent = dist < CONFIG.STATION_DETECTION_RADIUS ? 'Arrivée proche!' : 'Gare d\'Arrivée';
+
+            // Affichage du statut de navigation IA
+            if (targetBus.aiState) {
+                alternativeRoute.textContent = `IA: ${targetBus.aiState.state}`;
+                alternativeRoute.style.color = targetBus.aiState.state === 'NAVIGATING' ? '#4CAF50' : '#FF9800';
+            } else {
+                alternativeRoute.textContent = 'Navigation Manuelle';
+                alternativeRoute.style.color = '#00d4ff';
+            }
+
+            routeInfo.style.display = 'block';
+        } else {
+            routeInfo.style.display = 'none';
+        }
+    }
+
+    // Mise à jour des données du centre de contrôle
+    function updateControlCenterData() {
+        const totalBuses = busDatabase.length;
+        const busesInService = busDatabase.filter(b => !b.hasAccident && !b.stopped).length;
+        const busesOutOfService = busDatabase.filter(b => b.hasAccident || b.stopped).length;
+
+        document.getElementById('totalBuses').textContent = totalBuses;
+        document.getElementById('busesInService').textContent = busesInService;
+        document.getElementById('busesOutOfService').textContent = busesOutOfService;
+        document.getElementById('totalIncidents').textContent = gameState.accidents;
+        document.getElementById('totalStations').textContent = busStations.length;
+        document.getElementById('totalCars').textContent = vehicles.length;
+        document.getElementById('totalPedestrians').textContent = pedestrians.length;
+    }
+
+    // Mise à jour du statut de connexion
+    function updateConnectionStatus(type, isConnected) {
+        const statusElement = document.getElementById(type === 'database' ? 'databaseStatus' : 'connectionStatus');
+        if (isConnected) {
+            statusElement.classList.add('active');
+            statusElement.textContent = type === 'database' ? '💾 Base de Données ✓' : '🌐 Connexion Backend ✓';
+        } else {
+            statusElement.classList.remove('active');
+            statusElement.textContent = type === 'database' ? '💾 Base de Données ✗' : '🌐 Connexion Backend ✗';
+        }
+    }
+
+    // Contrôles de zoom
+    function zoomIn() {
+        zoomLevel = Math.min(zoomLevel * 1.2, 3);
+        updateCameraZoom();
+    }
+
+    function zoomOut() {
+        zoomLevel = Math.max(zoomLevel / 1.2, 0.3);
+        updateCameraZoom();
+    }
+
+    function resetCamera() {
+        zoomLevel = 1;
+        cameraMode = 0;
+        updateCameraZoom();
+        document.getElementById('cameraMode').textContent = 'Troisième Personne';
+    }
+
+    function updateCameraZoom() {
+        if (camera) {
+            camera.zoom = zoomLevel;
+            camera.updateProjectionMatrix();
+        }
+    }
+
+    // Basculer la simulation automatique
+    function toggleAutoSimulation() {
+        gameState.isAutoSimulation = !gameState.isAutoSimulation;
+
+        if (gameState.isAutoSimulation) {
+            busDatabase.forEach(bus => {
+                if (!bus.hasAccident && !bus.stopped && !simulationBuses.find(sb => sb.busData.id === bus.id)) {
+                    startAutoSimulation(bus.id);
+                }
+            });
+
+            document.getElementById('simulationMode').textContent = 'Automatique IA';
+            showNotification('Simulation automatique IA activée', 'success');
+        } else {
+            simulationBuses.forEach(simBus => {
+                scene.remove(simBus.mesh);
+                if (aiManager) aiManager.removeVehicle(simBus);
+                vehicles = vehicles.filter(v => v !== simBus);
+            });
+            simulationBuses = [];
+            gameState.currentSimulationBus = null;
+
+            document.getElementById('simulationMode').textContent = 'Manuelle';
+            showNotification('Simulation automatique désactivée', 'warning');
+        }
+    }
+
+    // Basculer l'UI
+    function toggleUI() {
+        const ui = document.getElementById('ui');
+        const toggleBtn = document.getElementById('toggleUI');
+
+        gameState.uiMinimized = !gameState.uiMinimized;
+
+        if (gameState.uiMinimized) {
+            ui.classList.add('minimized');
+            toggleBtn.textContent = '👁️ Afficher UI';
+        } else {
+            ui.classList.remove('minimized');
+            toggleBtn.textContent = '👁️ Masquer UI';
+        }
+    }
+
+    // Actualiser les données des bus
+    function refreshBusData() {
+        showNotification('Actualisation des données...', 'success');
+        loadBusData();
+    }
+
+    // Exporter les données
+    function exportData() {
+        const data = {
+            buses: busDatabase,
+            accidents: gameState.accidents,
+            routes: routeDatabase,
+            stations: busStations.map(station => ({
+                name: station.name,
+                position: station.position,
+                type: station.type
+            })),
+            trafficData: {
+                totalVehicles: vehicles.length,
+                totalPedestrians: pedestrians.length,
+                trafficCarsCount: trafficCars.length,
+                congestionZones: Array.from(TrafficManager.congestionZones.entries()),
+                aiData: aiManager ? {
+                    totalManagedVehicles: aiManager.vehicles.length,
+                    debugEnabled: aiManager.debugEnabled
+                } : null
+            },
+            timestamp: new Date().toISOString()
+        };
+
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `imas_data_${new Date().toISOString().split('T')[0]}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+
+        showNotification('Données exportées avec succès', 'success');
+    }
+
+    // Classe pour les véhicules avec IA avancée
+    class Vehicle {
+        constructor(x, z, type = 'sports_car') {
+            this.type = type;
+            this.position = { x, z };
+            this.rotation = 0;
+            this.speed = 0;
+            this.maxSpeed = type === 'city_bus' ? CONFIG.MAX_SPEED : 80;
+            this.acceleration = type === 'city_bus' ? 3.0 : 2.2;
+            this.isPlayer = false;
+            this.crashed = false;
+            this.targetSpeed = type === 'city_bus' ? CONFIG.AUTO_SIMULATION_SPEED : Math.random() * this.maxSpeed;
+            this.lane = Math.floor(Math.random() * 3);
+            this.direction = Math.random() > 0.5 ? 1 : -1;
+            this.busData = null;
+            this.destination = null;
+            this.isAutoSimulation = false;
+            this.distanceTraveled = 0;
+            this.totalDistance = 0;
+            this.hasArrived = false;
+            this.isTrafficCar = false;
+
+            // État IA
+            this.aiState = null;
+
+            this.createMesh();
+        }
+
+        createMesh() {
+            const group = new THREE.Group();
+
+            if (this.type === 'sports_car') {
+                this.createSportsCar(group);
+            } else if (this.type === 'city_bus') {
+                this.createModernCityBus(group);
+            }
+
+            this.mesh = group;
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            this.mesh.castShadow = true;
+            this.mesh.receiveShadow = true;
+            scene.add(this.mesh);
+        }
+
+        createSportsCar(group) {
+            const colors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500, 0x800080];
+            const bodyColor = colors[Math.floor(Math.random() * colors.length)];
+
+            const bodyGeometry = new THREE.BoxGeometry(4.5, 2, 9);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: bodyColor,
+                shininess: 120,
+                specular: 0x333333
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 1.5;
+            group.add(body);
+
+            const roofGeometry = new THREE.BoxGeometry(3.5, 1.5, 5);
+            const roofMaterial = new THREE.MeshPhongMaterial({
+                color: bodyColor,
+                shininess: 120
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 3;
+            roof.position.z = -0.5;
+            group.add(roof);
+
+            const wheelGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.8, 16);
+            const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+
+            const wheelPositions = [
+                [-2, 0, 3.5], [2, 0, 3.5], [-2, 0, -3.5], [2, 0, -3.5]
+            ];
+
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(pos[0], pos[1], pos[2]);
+                wheel.rotation.z = Math.PI / 2;
+                group.add(wheel);
+            });
+        }
+
+        createModernCityBus(group) {
+            // Corps principal du bus moderne
+            const bodyGeometry = new THREE.BoxGeometry(12, 9, 28);
+            const bodyMaterial = new THREE.MeshPhongMaterial({
+                color: 0xE53E3E,
+                shininess: 100,
+                specular: 0x444444
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 4.5;
+            group.add(body);
+
+            // Bande décorative moderne
+            const stripeGeometry = new THREE.BoxGeometry(12.2, 2.5, 28.2);
+            const stripeMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF,
+                shininess: 120
+            });
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            stripe.position.y = 2.5;
+            group.add(stripe);
+
+            // Toit moderne
+            const roofGeometry = new THREE.BoxGeometry(12.5, 1, 28.5);
+            const roofMaterial = new THREE.MeshPhongMaterial({
+                color: 0xDDDDDD,
+                shininess: 150
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 9.5;
+            roof.castShadow = true;
+            group.add(roof);
+
+            // Roues de bus
+            const wheelGeometry = new THREE.CylinderGeometry(2, 2, 1.5, 20);
+            const wheelMaterial = new THREE.MeshPhongMaterial({
+                color: 0x1a1a1a,
+                shininess: 80
+            });
+
+            const wheelPositions = [
+                [-5, 0, 11], [5, 0, 11], [-5, 0, -11], [5, 0, -11]
+            ];
+
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.position.set(pos[0], pos[1], pos[2]);
+                wheel.rotation.z = Math.PI / 2;
+                group.add(wheel);
+
+                // Jantes
+                const rimGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.3, 16);
+                const rimMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x888888,
+                    shininess: 200
+                });
+                const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+                rim.position.set(pos[0], pos[1], pos[2]);
+                rim.rotation.z = Math.PI / 2;
+                group.add(rim);
+            });
+
+            // Fenêtres modernes
+            const windowPositions = [
+                [-6.2, 6, 10], [-6.2, 6, 5], [-6.2, 6, 0], [-6.2, 6, -5], [-6.2, 6, -10],
+                [6.2, 6, 10], [6.2, 6, 5], [6.2, 6, 0], [6.2, 6, -5], [6.2, 6, -10]
+            ];
+
+            const windowGeometry = new THREE.PlaneGeometry(4, 4);
+            const windowMaterial = new THREE.MeshPhongMaterial({
+                color: 0x87CEEB,
+                transparent: true,
+                opacity: 0.8,
+                shininess: 250,
+                specular: 0x666666
+            });
+
+            windowPositions.forEach((pos, index) => {
+                const window = new THREE.Mesh(windowGeometry, windowMaterial);
+                window.position.set(pos[0], pos[1], pos[2]);
+                window.rotation.y = index < 5 ? Math.PI / 2 : -Math.PI / 2;
+                group.add(window);
+            });
+
+            // Phares LED modernes
+            const headlightGeometry = new THREE.CylinderGeometry(1, 1, 0.5, 20);
+            const headlightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFFFFFF,
+                emissive: 0x666666,
+                shininess: 250
+            });
+
+            const headlightPositions = [[-4.5, 4, 14.5], [4.5, 4, 14.5]];
+            headlightPositions.forEach(pos => {
+                const headlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+                headlight.position.set(pos[0], pos[1], pos[2]);
+                headlight.rotation.x = Math.PI / 2;
+                group.add(headlight);
+            });
+
+            // Feux arrière
+            const taillightGeometry = new THREE.CylinderGeometry(0.8, 0.8, 0.3, 16);
+            const taillightMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFF0000,
+                emissive: 0x330000,
+                shininess: 200
+            });
+
+            const taillightPositions = [[-4.5, 4, -14.5], [4.5, 4, -14.5]];
+            taillightPositions.forEach(pos => {
+                const taillight = new THREE.Mesh(taillightGeometry, taillightMaterial);
+                taillight.position.set(pos[0], pos[1], pos[2]);
+                taillight.rotation.x = Math.PI / 2;
+                group.add(taillight);
+            });
+
+            // Portes du bus
+            const doorGeometry = new THREE.BoxGeometry(0.2, 6, 3);
+            const doorMaterial = new THREE.MeshPhongMaterial({
+                color: 0x444444,
+                shininess: 100
+            });
+
+            const doorPositions = [[6.2, 3, 8], [6.2, 3, -2]];
+            doorPositions.forEach(pos => {
+                const door = new THREE.Mesh(doorGeometry, doorMaterial);
+                door.position.set(pos[0], pos[1], pos[2]);
+                group.add(door);
+            });
+        }
+
+        update(deltaTime) {
+            if (this.crashed) return;
+
+            // Mise à jour par l'IA si applicable
+            if (!this.isPlayer && aiManager) {
+                aiManager.updateVehicle(this, deltaTime);
+            } else if (this.isPlayer) {
+                this.updatePlayerBus(deltaTime);
+            }
+
+            this.updatePhysics(deltaTime);
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            this.mesh.rotation.y = this.rotation;
+            this.checkCollisions();
+            this.updateVisualEffects();
+            this.updateProgress();
+            this.avoidPedestrians();
+        }
+
+        updatePlayerBus(deltaTime) {
+            if (this.busData) {
+                this.busData.currentLat = this.position.x;
+                this.busData.currentLng = this.position.z;
+                updateRouteInfo();
+            }
+        }
+
+        updateProgress() {
+            if (this.busData && this.destination) {
+                const startDistance = Math.sqrt(
+                    Math.pow(this.destination.x - (this.busData.startLat || 0), 2) +
+                    Math.pow(this.destination.z - (this.busData.startLng || 0), 2)
+                );
+
+                const currentDistance = Math.sqrt(
+                    Math.pow(this.destination.x - this.position.x, 2) +
+                    Math.pow(this.destination.z - this.position.z, 2)
+                );
+
+                if (this.totalDistance === 0) {
+                    this.totalDistance = startDistance;
+                }
+
+                const progress = Math.max(0, Math.min(100, ((this.totalDistance - currentDistance) / this.totalDistance) * 100));
+                gameState.busProgress[this.busData.id] = progress;
+
+                if (currentDistance < CONFIG.STATION_DETECTION_RADIUS && progress >= 80) {
+                    this.arriveAtDestination();
+                }
+            }
+        }
+
+        arriveAtDestination() {
+            if (this.busData && !this.hasArrived) {
+                this.hasArrived = true;
+                gameState.busProgress[this.busData.id] = 100;
+
+                const arrivalStation = activeStations.find(s => s.type === 'ARRIVAL');
+                const stationName = arrivalStation ? arrivalStation.name : 'Destination';
+
+                showArrivalNotification(this.busData.name, stationName);
+
+                BackendAPI.updateBusProgress(this.busData.id, 100, this.position.x, this.position.z);
+
+                this.speed = 0;
+
+                if (this.isAutoSimulation) {
+                    setTimeout(() => {
+                        this.remove();
+                    }, 5000);
+                }
+            }
+        }
+
+        updatePhysics(deltaTime) {
+            // Contrôle de la vitesse
+            if (this.speed < this.targetSpeed) {
+                this.speed = Math.min(this.targetSpeed, this.speed + this.acceleration);
+            } else if (this.speed > this.targetSpeed) {
+                this.speed = Math.max(0, this.speed - this.acceleration);
+            }
+
+            // Déplacement
+            this.position.x += Math.sin(this.rotation) * this.speed * deltaTime;
+            this.position.z += Math.cos(this.rotation) * this.speed * deltaTime;
+
+            // Limites du monde
+            const worldLimit = CONFIG.WORLD_SIZE / 2 - 100;
+            if (Math.abs(this.position.x) > worldLimit) {
+                this.position.x = Math.sign(this.position.x) * worldLimit;
+                this.rotation = Math.PI - this.rotation;
+            }
+            if (Math.abs(this.position.z) > worldLimit) {
+                this.position.z = Math.sign(this.position.z) * worldLimit;
+                this.rotation = -this.rotation;
+            }
+        }
+
+        updateVisualEffects() {
+            if (this.mesh && this.mesh.children.length > 0) {
+                const speedFactor = this.speed / this.maxSpeed;
+
+                this.mesh.children.forEach(child => {
+                    if (child.geometry && child.geometry.type === 'CylinderGeometry') {
+                        child.rotation.x += speedFactor * 0.5;
+                    }
+                });
+            }
+        }
+
+        avoidPedestrians() {
+            const detectionRange = 40;
+
+            pedestrians.forEach(pedestrian => {
+                const distance = Math.sqrt(
+                    Math.pow(pedestrian.position.x - this.position.x, 2) +
+                    Math.pow(pedestrian.position.z - this.position.z, 2)
+                );
+
+                if (distance < detectionRange) {
+                    this.speed = Math.max(10, this.speed * 0.8);
+
+                    if (distance < 15) {
+                        this.speed = Math.max(0, this.speed * 0.3);
+                    }
+                }
+            });
+        }
+
+        checkCollisions() {
+            vehicles.forEach(vehicle => {
+                if (vehicle === this || vehicle.crashed) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(vehicle.position.x - this.position.x, 2) +
+                    Math.pow(vehicle.position.z - this.position.z, 2)
+                );
+
+                const minDistance = this.type === 'city_bus' || vehicle.type === 'city_bus' ? 25 : 18;
+
+                if (distance < minDistance && Math.random() < CONFIG.ACCIDENT_PROBABILITY * 300) {
+                    this.handleCollision(vehicle);
+                }
+            });
+        }
+
+        handleCollision(otherVehicle) {
+            if (this.crashed || otherVehicle.crashed) return;
+
+            this.crashed = true;
+            otherVehicle.crashed = true;
+
+            this.speed = 0;
+            otherVehicle.speed = 0;
+
+            this.mesh.children.forEach(child => {
+                if (child.material) {
+                    child.material.color.setHex(0x444444);
+                    child.material.transparent = true;
+                    child.material.opacity = 0.7;
+                }
+            });
+
+            otherVehicle.mesh.children.forEach(child => {
+                if (child.material) {
+                    child.material.color.setHex(0x444444);
+                    child.material.transparent = true;
+                    child.material.opacity = 0.7;
+                }
+            });
+
+            this.createCollisionEffect();
+
+            gameState.accidents++;
+            showNotification('Accident détecté! Sauvegarde en cours...', 'error');
+
+            this.saveIncidentToDatabase(otherVehicle);
+
+            setTimeout(() => {
+                this.remove();
+                otherVehicle.remove();
+            }, 12000);
+        }
+
+        saveIncidentToDatabase(otherVehicle) {
+            const incidentData = {
+                incidentType: 'COLLISION',
+                location: `Kinshasa (${Math.round(this.position.x)}, ${Math.round(this.position.z)})`,
+                dateTime: new Date().toISOString(),
+                summary: `Collision entre véhicules - ${this.type} et ${otherVehicle.type}`,
+                status: 'REPORTED',
+                severity: 'HIGH',
+                busId: this.busData ? this.busData.id : null,
+                additionalDetails: {
+                    vehicle1Type: this.type,
+                    vehicle2Type: otherVehicle.type,
+                    speed1: Math.round(this.speed),
+                    speed2: Math.round(otherVehicle.speed),
+                    weatherConditions: 'Clear',
+                    roadConditions: 'Good',
+                    trafficLevel: TrafficManager.getCongestionLevel(this.position.x, this.position.z),
+                    aiState: this.aiState ? this.aiState.state : 'MANUAL',
+                    pedestriansNearby: pedestrians.filter(p => {
+                        const dist = Math.sqrt(
+                            Math.pow(p.position.x - this.position.x, 2) +
+                            Math.pow(p.position.z - this.position.z, 2)
+                        );
+                        return dist < 50;
+                    }).length
+                }
+            };
+
+            BackendAPI.saveIncident(incidentData);
+        }
+
+        createCollisionEffect() {
+            const particleCount = 50;
+            for (let i = 0; i < particleCount; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.8, 8, 8);
+                const particleMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFF6600,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+
+                particle.position.set(
+                    this.position.x + (Math.random() - 0.5) * 30,
+                    4 + Math.random() * 15,
+                    this.position.z + (Math.random() - 0.5) * 30
+                );
+
+                scene.add(particle);
+
+                const animateParticle = () => {
+                    particle.position.y += 0.6;
+                    particle.rotation.x += 0.25;
+                    particle.rotation.y += 0.2;
+                    particle.material.opacity -= 0.02;
+
+                    if (particle.material.opacity <= 0) {
+                        scene.remove(particle);
+                    } else {
+                        requestAnimationFrame(animateParticle);
+                    }
+                };
+
+                setTimeout(animateParticle, i * 20);
+            }
+        }
+
+        remove() {
+            scene.remove(this.mesh);
+
+            if (aiManager) {
+                aiManager.removeVehicle(this);
+            }
+
+            const index = vehicles.indexOf(this);
+            if (index > -1) {
+                vehicles.splice(index, 1);
+            }
+
+            const simIndex = simulationBuses.indexOf(this);
+            if (simIndex > -1) {
+                simulationBuses.splice(simIndex, 1);
+            }
+
+            const trafficIndex = trafficCars.indexOf(this);
+            if (trafficIndex > -1) {
+                trafficCars.splice(trafficIndex, 1);
+            }
+
+            if (gameState.currentSimulationBus === this) {
+                gameState.currentSimulationBus = null;
+            }
+        }
+    }
+
+    // Classe pour les feux de circulation
+    class TrafficLight {
+        constructor(x, z) {
+            this.position = { x, z };
+            this.currentState = 'red';
+            this.timer = 0;
+            this.states = ['red', 'yellow', 'green'];
+            this.stateIndex = 0;
+            this.interval = CONFIG.TRAFFIC_LIGHT_INTERVAL + (Math.random() - 0.5) * 5000;
+
+            this.createMesh();
+        }
+
+        createMesh() {
+            const group = new THREE.Group();
+
+            const poleGeometry = new THREE.CylinderGeometry(0.5, 0.5, 20, 16);
+            const poleMaterial = new THREE.MeshPhongMaterial({
+                color: 0x555555,
+                shininess: 80
+            });
+            const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+            pole.position.y = 10;
+            pole.castShadow = true;
+            group.add(pole);
+
+            const boxGeometry = new THREE.BoxGeometry(3.5, 12, 2.5);
+            const boxMaterial = new THREE.MeshPhongMaterial({
+                color: 0x222222,
+                shininess: 120
+            });
+            const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            box.position.y = 16;
+            box.castShadow = true;
+            group.add(box);
+
+            const lightGeometry = new THREE.CircleGeometry(1, 24);
+
+            this.redLight = new THREE.Mesh(lightGeometry,
+                new THREE.MeshPhongMaterial({
+                    color: 0x330000,
+                    emissive: 0x110000
+                }));
+            this.redLight.position.set(0, 19, 1.3);
+            group.add(this.redLight);
+
+            this.yellowLight = new THREE.Mesh(lightGeometry,
+                new THREE.MeshPhongMaterial({
+                    color: 0x333300,
+                    emissive: 0x111100
+                }));
+            this.yellowLight.position.set(0, 16, 1.3);
+            group.add(this.yellowLight);
+
+            this.greenLight = new THREE.Mesh(lightGeometry,
+                new THREE.MeshPhongMaterial({
+                    color: 0x003300,
+                    emissive: 0x001100
+                }));
+            this.greenLight.position.set(0, 13, 1.3);
+            group.add(this.greenLight);
+
+            this.mesh = group;
+            this.mesh.position.set(this.position.x, 0, this.position.z);
+            scene.add(this.mesh);
+
+            this.updateLights();
+        }
+
+        update(deltaTime) {
+            this.timer += deltaTime * 1000;
+
+            if (this.timer >= this.interval) {
+                this.timer = 0;
+                this.stateIndex = (this.stateIndex + 1) % this.states.length;
+                this.currentState = this.states[this.stateIndex];
+                this.updateLights();
+            }
+        }
+
+        updateLights() {
+            this.redLight.material.color.setHex(0x330000);
+            this.redLight.material.emissive.setHex(0x110000);
+            this.yellowLight.material.color.setHex(0x333300);
+            this.yellowLight.material.emissive.setHex(0x111100);
+            this.greenLight.material.color.setHex(0x003300);
+            this.greenLight.material.emissive.setHex(0x001100);
+
+            switch (this.currentState) {
+                case 'red':
+                    this.redLight.material.color.setHex(0xFF0000);
+                    this.redLight.material.emissive.setHex(0x440000);
+                    break;
+                case 'yellow':
+                    this.yellowLight.material.color.setHex(0xFFFF00);
+                    this.yellowLight.material.emissive.setHex(0x444400);
+                    break;
+                case 'green':
+                    this.greenLight.material.color.setHex(0x00FF00);
+                    this.greenLight.material.emissive.setHex(0x004400);
+                    break;
+            }
+        }
+    }
+
+    // Initialisation du jeu
+    function init() {
+        console.log('Initialisation du simulateur IMAS avec IA avancée...');
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x87CEEB, 400, 3500);
+
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 6000);
+        camera.position.set(0, 100, 200);
+
+        renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('gameCanvas'),
+            antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setClearColor(0x87CEEB, 1);
+
+        setupLighting();
+        createWorld();
+        createRoads();
+        createBuildings();
+        createTrafficLights();
+        createAIVehicles();
+        setupEventListeners();
+
+        // Initialiser les systèmes avancés
+        pathfindingGrid = new PathfindingGrid(CONFIG.WORLD_SIZE, CONFIG.PATHFINDING_GRID_SIZE);
+        aiManager = new AIManager();
+        MinimapManager.init();
+        TrafficManager.init();
+
+        Promise.all([
+            BackendAPI.loadBuses(),
+            BackendAPI.loadRoutes()
+        ]).then(([buses, routes]) => {
+            console.log('Données chargées avec succès');
+            routeDatabase = routes;
+            showNotification('Système IMAS initialisé avec IA avancée', 'success');
+        }).catch(error => {
+            console.error('Erreur lors du chargement des données:', error);
+            showNotification('Système IMAS initialisé en mode hors ligne', 'warning');
+        });
+
+        animate();
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    function setupLighting() {
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.9);
+        directionalLight.position.set(2500, 2500, 2500);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 4096;
+        directionalLight.shadow.mapSize.height = 4096;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 7000;
+        directionalLight.shadow.camera.left = -2500;
+        directionalLight.shadow.camera.right = 2500;
+        directionalLight.shadow.camera.top = 2500;
+        directionalLight.shadow.camera.bottom = -2500;
+        scene.add(directionalLight);
+
+        const goldenLight = new THREE.DirectionalLight(0xFFD700, 0.4);
+        goldenLight.position.set(-1500, 800, -1500);
+        scene.add(goldenLight);
+    }
+
+    function createWorld() {
+        const groundGeometry = new THREE.PlaneGeometry(CONFIG.WORLD_SIZE, CONFIG.WORLD_SIZE);
+        const groundMaterial = new THREE.MeshLambertMaterial({
+            color: 0x228B22,
+            shininess: 0
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const skyGeometry = new THREE.SphereGeometry(CONFIG.WORLD_SIZE * 0.9, 32, 32);
+        const skyMaterial = new THREE.MeshBasicMaterial({
+            color: 0x87CEEB,
+            side: THREE.BackSide
+        });
+        const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(sky);
+
+        createClouds();
+        createTrees();
+    }
+
+    function createClouds() {
+        const cloudGeometry = new THREE.SphereGeometry(35, 16, 16);
+        const cloudMaterial = new THREE.MeshLambertMaterial({
+            color: 0xFFFFFF,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        for (let i = 0; i < 80; i++) {
+            const cloudGroup = new THREE.Group();
+
+            for (let j = 0; j < 5 + Math.random() * 5; j++) {
+                const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                cloud.position.set(
+                    (Math.random() - 0.5) * 80,
+                    Math.random() * 30,
+                    (Math.random() - 0.5) * 80
+                );
+                cloud.scale.set(
+                    0.7 + Math.random() * 2,
+                    0.5 + Math.random() * 1,
+                    0.7 + Math.random() * 2
+                );
+                cloudGroup.add(cloud);
+            }
+
+            cloudGroup.position.set(
+                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8,
+                200 + Math.random() * 150,
+                (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.8
+            );
+
+            scene.add(cloudGroup);
+        }
+    }
+
+    function createTrees() {
+        for (let i = 0; i < 400; i++) {
+            const treeGroup = new THREE.Group();
+
+            const trunkGeometry = new THREE.CylinderGeometry(1.5, 2, 12, 12);
+            const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.y = 6;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
+            const foliageGeometry = new THREE.SphereGeometry(6 + Math.random() * 4, 12, 12);
+            const foliageMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+            const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+            foliage.position.y = 15;
+            foliage.castShadow = true;
+            treeGroup.add(foliage);
+
+            let x, z;
+            do {
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.9;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.9;
+            } while (Math.abs(x) % 200 < CONFIG.BUILDING_ROAD_CLEARANCE || Math.abs(z) % 200 < CONFIG.BUILDING_ROAD_CLEARANCE);
+
+            treeGroup.position.set(x, 0, z);
+            scene.add(treeGroup);
+        }
+    }
+
+    function createRoads() {
+        const roadMaterial = new THREE.MeshLambertMaterial({
+            color: 0x333333,
+            shininess: 20
+        });
+
+        const roadSpacing = 200;
+        const roadCount = Math.floor(CONFIG.WORLD_SIZE / roadSpacing);
+
+        for (let i = -roadCount/2; i <= roadCount/2; i++) {
+            const roadGeometry = new THREE.PlaneGeometry(CONFIG.WORLD_SIZE, CONFIG.ROAD_WIDTH);
+            const road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.set(0, 0.1, i * roadSpacing);
+            road.receiveShadow = true;
+            scene.add(road);
+            roads.push(road);
+
+            createRoadMarkings(0, i * roadSpacing, CONFIG.WORLD_SIZE, true);
+
+            const roadGeometry2 = new THREE.PlaneGeometry(CONFIG.ROAD_WIDTH, CONFIG.WORLD_SIZE);
+            const road2 = new THREE.Mesh(roadGeometry2, roadMaterial);
+            road2.rotation.x = -Math.PI / 2;
+            road2.position.set(i * roadSpacing, 0.1, 0);
+            road2.receiveShadow = true;
+            scene.add(road2);
+            roads.push(road2);
+
+            createRoadMarkings(i * roadSpacing, 0, CONFIG.WORLD_SIZE, false);
+        }
+    }
+
+    function createRoadMarkings(x, z, length, isHorizontal) {
+        const lineMaterial = new THREE.MeshLambertMaterial({
+            color: 0xFFFFFF,
+            emissive: 0x111111
+        });
+
+        const centralLineGeometry = new THREE.PlaneGeometry(
+            isHorizontal ? length : 2.5,
+            isHorizontal ? 2.5 : length
+        );
+        const centralLine = new THREE.Mesh(centralLineGeometry, lineMaterial);
+        centralLine.rotation.x = -Math.PI / 2;
+        centralLine.position.set(x, 0.15, z);
+        scene.add(centralLine);
+
+        const dashLength = 20;
+        const dashGap = 35;
+        const totalLength = length;
+        const dashCount = Math.floor(totalLength / (dashLength + dashGap));
+
+        for (let i = 0; i < dashCount; i++) {
+            const dash = new THREE.Mesh(
+                new THREE.PlaneGeometry(
+                    isHorizontal ? dashLength : 2,
+                    isHorizontal ? 2 : dashLength
+                ),
+                lineMaterial
+            );
+            dash.rotation.x = -Math.PI / 2;
+
+            const offset = (i - dashCount/2) * (dashLength + dashGap);
+
+            if (isHorizontal) {
+                dash.position.set(x + offset, 0.15, z + CONFIG.ROAD_WIDTH/3);
+                const dash2 = dash.clone();
+                dash2.position.set(x + offset, 0.15, z - CONFIG.ROAD_WIDTH/3);
+                scene.add(dash2);
+            } else {
+                dash.position.set(x + CONFIG.ROAD_WIDTH/3, 0.15, z + offset);
+                const dash2 = dash.clone();
+                dash2.position.set(x - CONFIG.ROAD_WIDTH/3, 0.15, z + offset);
+                scene.add(dash2);
+            }
+            scene.add(dash);
+        }
+    }
+
+    function createBuildings() {
+        const buildingTypes = [
+            { width: 35, height: 50, depth: 35, color: 0x8B4513, type: 'residential' },
+            { width: 40, height: 80, depth: 40, color: 0x696969, type: 'office' },
+            { width: 50, height: 100, depth: 50, color: 0x2F4F4F, type: 'skyscraper' },
+            { width: 45, height: 35, depth: 45, color: 0x8B0000, type: 'commercial' },
+            { width: 30, height: 140, depth: 30, color: 0x191970, type: 'tower' }
+        ];
+
+        const buildingSpacing = 120;
+        const buildingCount = Math.floor(CONFIG.WORLD_SIZE / buildingSpacing);
+
+        for (let i = -buildingCount/2; i <= buildingCount/2; i++) {
+            for (let j = -buildingCount/2; j <= buildingCount/2; j++) {
+                // Éviter de placer des bâtiments sur les routes (avec clearance améliorée)
+                if (Math.abs(i * buildingSpacing) % 200 < CONFIG.BUILDING_ROAD_CLEARANCE ||
+                    Math.abs(j * buildingSpacing) % 200 < CONFIG.BUILDING_ROAD_CLEARANCE) {
+                    continue;
+                }
+
+                if (Math.random() > 0.65) continue;
+
+                const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)];
+                const building = createBuilding(
+                    i * buildingSpacing + (Math.random() - 0.5) * 40, // Réduire la variation pour éviter les routes
+                    j * buildingSpacing + (Math.random() - 0.5) * 40,
+                    buildingType
+                );
+                buildings.push(building);
+            }
+        }
+    }
+
+    function createBuilding(x, z, type) {
+        const group = new THREE.Group();
+
+        const buildingGeometry = new THREE.BoxGeometry(type.width, type.height, type.depth);
+        const buildingMaterial = new THREE.MeshPhongMaterial({
+            color: type.color,
+            shininess: 80
+        });
+        const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+        building.position.y = type.height / 2;
+        building.castShadow = true;
+        building.receiveShadow = true;
+        group.add(building);
+
+        group.position.set(x, 0, z);
+        scene.add(group);
+
+        return group;
+    }
+
+    function createTrafficLights() {
+        const lightSpacing = 200;
+        const lightCount = Math.floor(CONFIG.WORLD_SIZE / lightSpacing);
+
+        for (let i = -lightCount/2; i <= lightCount/2; i++) {
+            for (let j = -lightCount/2; j <= lightCount/2; j++) {
+                if (i === 0 && j === 0) continue;
+
+                const light = new TrafficLight(i * lightSpacing, j * lightSpacing);
+                trafficLights.push(light);
+            }
+        }
+    }
+
+    function createAIVehicles() {
+        const vehicleTypes = ['sports_car', 'city_bus', 'sports_car', 'sports_car'];
+
+        for (let i = 0; i < CONFIG.VEHICLE_COUNT; i++) {
+            let x, z;
+
+            // Placer les véhicules sur les routes
+            if (Math.random() > 0.5) {
+                // Route horizontale
+                x = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.7;
+                z = Math.floor((Math.random() - 0.5) * (CONFIG.WORLD_SIZE / 200)) * 200;
+                z += (Math.random() - 0.5) * CONFIG.ROAD_WIDTH * 0.8;
+            } else {
+                // Route verticale
+                x = Math.floor((Math.random() - 0.5) * (CONFIG.WORLD_SIZE / 200)) * 200;
+                x += (Math.random() - 0.5) * CONFIG.ROAD_WIDTH * 0.8;
+                z = (Math.random() - 0.5) * CONFIG.WORLD_SIZE * 0.7;
+            }
+
+            const type = vehicleTypes[Math.floor(Math.random() * vehicleTypes.length)];
+            const vehicle = new Vehicle(x, z, type);
+
+            // Ajouter à l'IA manager
+            if (aiManager) {
+                aiManager.addVehicle(vehicle);
+            }
+
+            vehicles.push(vehicle);
+        }
+    }
+
+    function setupEventListeners() {
+        document.addEventListener('keydown', (event) => {
+            keys[event.code] = true;
+
+            switch(event.code) {
+                case 'KeyC':
+                    changeCameraMode();
+                    break;
+                case 'KeyR':
+                    resetGame();
+                    break;
+                case 'KeyP':
+                    togglePause();
+                    break;
+                case 'KeyM':
+                    openBusModal();
+                    break;
+                case 'KeyA':
+                    toggleAutoSimulation();
+                    break;
+                case 'KeyT':
+                    addTrafficCars();
+                    break;
+                case 'KeyG':
+                    togglePedestrians();
+                    break;
+                case 'KeyF':
+                    toggleAIDebug();
+                    break;
+                case 'Tab':
+                    event.preventDefault();
+                    toggleMap();
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            keys[event.code] = false;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        document.getElementById('toggleUI').addEventListener('click', toggleUI);
+
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+    }
+
+    function handlePlayerInput() {
+        const targetVehicle = playerCar || gameState.currentSimulationBus;
+        if (!targetVehicle || targetVehicle.crashed) return;
+
+        // Si c'est un bus en simulation automatique, ne pas traiter les entrées manuelles
+        if (gameState.currentSimulationBus && !playerCar) return;
+
+        const acceleration = 3.5;
+        const steering = 0.06;
+        const friction = 0.94;
+
+        if (keys['KeyW'] || keys['ArrowUp']) {
+            targetVehicle.speed = Math.min(targetVehicle.maxSpeed, targetVehicle.speed + acceleration);
+        }
+
+        if (keys['KeyS'] || keys['ArrowDown']) {
+            targetVehicle.speed = Math.max(-targetVehicle.maxSpeed/2, targetVehicle.speed - acceleration);
+        }
+
+        if (keys['Space']) {
+            targetVehicle.speed *= 0.75;
+        }
+
+        if (keys['KeyA'] || keys['ArrowLeft']) {
+            targetVehicle.rotation -= steering * Math.abs(targetVehicle.speed) / targetVehicle.maxSpeed;
+        }
+        if (keys['KeyD'] || keys['ArrowRight']) {
+            targetVehicle.rotation += steering * Math.abs(targetVehicle.speed) / targetVehicle.maxSpeed;
+        }
+
+        if (!keys['KeyW'] && !keys['ArrowUp'] && !keys['KeyS'] && !keys['ArrowDown']) {
+            targetVehicle.speed *= friction;
+        }
+
+        targetVehicle.rotation = targetVehicle.rotation % (Math.PI * 2);
+    }
+
+    function changeCameraMode() {
+        cameraMode = (cameraMode + 1) % 3;
+
+        const modes = ['Troisième Personne', 'Première Personne', 'Vue d\'Oiseau'];
+        document.getElementById('cameraMode').textContent = modes[cameraMode];
+    }
+
+    function updateCamera() {
+        const targetVehicle = playerCar || gameState.currentSimulationBus;
+
+        if (!targetVehicle) {
+            camera.position.set(0, 400, 0);
+            camera.lookAt(0, 0, 0);
+            return;
+        }
+
+        const vehiclePos = targetVehicle.position;
+        const vehicleRot = targetVehicle.rotation;
+
+        switch(cameraMode) {
+            case 0: // Troisième personne
+                camera.position.x = vehiclePos.x - Math.sin(vehicleRot) * 80 / zoomLevel;
+                camera.position.y = 35 * zoomLevel;
+                camera.position.z = vehiclePos.z - Math.cos(vehicleRot) * 80 / zoomLevel;
+                camera.lookAt(vehiclePos.x, 10, vehiclePos.z);
+                break;
+
+            case 1: // Première personne
+                camera.position.x = vehiclePos.x + Math.sin(vehicleRot) * 12;
+                camera.position.y = 15;
+                camera.position.z = vehiclePos.z + Math.cos(vehicleRot) * 12;
+                camera.lookAt(
+                    vehiclePos.x + Math.sin(vehicleRot) * 100,
+                    12,
+                    vehiclePos.z + Math.cos(vehicleRot) * 100
+                );
+                break;
+
+            case 2: // Vue d'oiseau
+                camera.position.x = vehiclePos.x;
+                camera.position.y = 350 * zoomLevel;
+                camera.position.z = vehiclePos.z;
+                camera.lookAt(vehiclePos.x, 0, vehiclePos.z);
+                break;
+        }
+    }
+
+    function updateUI() {
+        const targetVehicle = playerCar || gameState.currentSimulationBus;
+        const speed = targetVehicle ? Math.round(Math.abs(targetVehicle.speed)) : 0;
+
+        document.getElementById('speed').textContent = speed;
+        document.getElementById('speedDisplay').textContent = speed;
+        document.getElementById('accidents').textContent = gameState.accidents;
+        document.getElementById('vehicleCount').textContent = vehicles.length;
+        document.getElementById('fps').textContent = Math.round(1000 / (performance.now() - lastTime));
+        document.getElementById('activeStations').textContent = gameState.activeStations;
+
+        StationManager.checkBusArrivals();
+    }
+
+    function resetGame() {
+        const targetVehicle = playerCar || gameState.currentSimulationBus;
+
+        if (targetVehicle) {
+            const departureStation = activeStations.find(s => s.type === 'DEPARTURE');
+            if (departureStation) {
+                targetVehicle.position.x = departureStation.position.x;
+                targetVehicle.position.z = departureStation.position.z;
+            } else {
+                const busData = gameState.selectedBus || (gameState.currentSimulationBus ? gameState.currentSimulationBus.busData : null);
+                if (busData) {
+                    targetVehicle.position.x = busData.startLat || 0;
+                    targetVehicle.position.z = busData.startLng || 0;
+                }
+            }
+
+            targetVehicle.rotation = 0;
+            targetVehicle.speed = 0;
+            targetVehicle.crashed = false;
+            targetVehicle.hasArrived = false;
+
+            if (targetVehicle.mesh.children[1]) {
+                const color = playerCar ? 0x00FF00 : 0xFF8800;
+                targetVehicle.mesh.children[1].material.color.setHex(color);
+                targetVehicle.mesh.children[1].material.transparent = false;
+                targetVehicle.mesh.children[1].material.opacity = 1;
+            }
+
+            const busData = gameState.selectedBus || (gameState.currentSimulationBus ? gameState.currentSimulationBus.busData : null);
+            if (busData) {
+                gameState.busProgress[busData.id] = 0;
+            }
+
+            // Réinitialiser l'état IA
+            if (aiManager && targetVehicle.aiState) {
+                targetVehicle.aiState = aiManager.createAIState(targetVehicle);
+            }
+        }
+
+        gameState.accidents = 0;
+        gameState.speed = 0;
+
+        showNotification('Simulation redémarrée avec IA réinitialisée', 'success');
+    }
+
+    function togglePause() {
+        gameState.isPaused = !gameState.isPaused;
+        showNotification(gameState.isPaused ? 'Simulation en pause' : 'Simulation reprise', 'success');
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        if (gameState.isPaused) return;
+
+        handlePlayerInput();
+
+        vehicles.forEach(vehicle => {
+            vehicle.update(CONFIG.PHYSICS_TIMESTEP);
+        });
+
+        trafficLights.forEach(light => {
+            light.update(CONFIG.PHYSICS_TIMESTEP);
+        });
+
+        pedestrians.forEach(pedestrian => {
+            pedestrian.update(CONFIG.PHYSICS_TIMESTEP);
+        });
+
+        updateCamera();
+        updateUI();
+
+        MinimapManager.update();
+        StationManager.updateLabels();
+        TrafficManager.update();
+
+        // Mise à jour périodique de la grille de pathfinding
+        if (pathfindingGrid && Math.floor(currentTime / 1000) % 10 === 0) {
+            pathfindingGrid.updateCongestion();
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('load', init);
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

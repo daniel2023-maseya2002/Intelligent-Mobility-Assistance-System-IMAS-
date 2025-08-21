@@ -1,0 +1,3727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced IMAS - Intelligent Mobility Assistance System</title>
+
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 280px;
+            --header-height: 80px;
+            --border-radius: 16px;
+            --shadow: 0 10px 40px rgba(0,0,0,0.1);
+            --shadow-hover: 0 20px 60px rgba(0,0,0,0.15);
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+            --shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Enhanced Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .sidebar-toggle {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .theme-toggle {
+            background: var(--gradient-secondary);
+            border: none;
+            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .user-profile:hover {
+            background: var(--gradient-success);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Enhanced Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.2);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 800;
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 30px 30px 0;
+            margin-right: 1rem;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-menu a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .sidebar-menu a:hover::before,
+        .sidebar-menu a.active::before {
+            left: 0;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            color: white;
+            transform: translateX(10px);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.3rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-text {
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: var(--secondary-red);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            width: 100%;
+            border: none;
+            background: rgba(220,38,38,0.1);
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-red);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Enhanced Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        /* Enhanced Cards */
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-primary);
+            opacity: 0.1;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover::before {
+            left: 0;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-icon.buses {
+            background: var(--gradient-primary);
+        }
+
+        .stat-icon.tickets {
+            background: var(--gradient-success);
+        }
+
+        .stat-icon.drivers {
+            background: var(--gradient-secondary);
+        }
+
+        .stat-icon.routes {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .stat-info h3 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .stat-change {
+            font-size: 0.9rem;
+            color: var(--green);
+            font-weight: 700;
+            margin-top: 0.5rem;
+        }
+
+        /* Enhanced Tables */
+        .table-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .table th,
+        .table td {
+            padding: 1.5rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .table th {
+            background: var(--gradient-primary);
+            color: white;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table tbody tr {
+            transition: var(--transition);
+        }
+
+        .table tbody tr:hover {
+            background: rgba(102,126,234,0.05);
+            transform: scale(1.01);
+        }
+
+        /* Enhanced Buttons */
+        .btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 700;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .btn-danger {
+            background: var(--gradient-secondary);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Enhanced Forms */
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+            font-size: 1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(102,126,234,0.2);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: rgba(255,255,255,0.9);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px rgba(102,126,234,0.1);
+            background: white;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Enhanced Status Badges */
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .status-stopped {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .status-accident {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Enhanced Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .action-btn.start {
+            background: var(--gradient-success);
+        }
+
+        .action-btn.stop {
+            background: var(--gradient-secondary);
+        }
+
+        .action-btn.view {
+            background: var(--gradient-primary);
+        }
+
+        .action-btn.edit {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .action-btn.delete {
+            background: var(--gradient-secondary);
+        }
+
+        /* Enhanced Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+            box-shadow: var(--shadow-hover);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(102,126,234,0.1);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .close-btn {
+            background: var(--gradient-secondary);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        /* Enhanced Map Styles */
+        #map {
+            height: 600px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .tracking-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            height: 700px;
+        }
+
+        .tracking-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .tracking-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .bus-tracking-item {
+            background: rgba(102,126,234,0.05);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+            border: 1px solid rgba(102,126,234,0.1);
+        }
+
+        .bus-tracking-item:hover {
+            background: rgba(102,126,234,0.1);
+            transform: translateX(10px);
+            border-left-color: var(--primary-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .bus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .bus-name {
+            font-weight: 700;
+            color: var(--gray-dark);
+            font-size: 1.1rem;
+        }
+
+        .bus-line {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(102,126,234,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.6s ease;
+        }
+
+        /* Enhanced Bus Markers */
+        .bus-marker {
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .bus-marker.moving {
+            background: var(--gradient-success);
+            animation: pulse 2s infinite;
+        }
+
+        .bus-marker.stopped {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .bus-marker.accident {
+            background: var(--gradient-secondary);
+            animation: urgentPulse 1s infinite;
+        }
+
+        .bus-marker.completed {
+            background: var(--gradient-success);
+            animation: completedPulse 2s infinite;
+        }
+
+        /* Enhanced QR Scanner */
+        .qr-scanner {
+            text-align: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .qr-video {
+            width: 100%;
+            max-width: 500px;
+            border-radius: var(--border-radius);
+            border: 3px solid var(--primary-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .qr-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 3px solid var(--green);
+            border-radius: 12px;
+            pointer-events: none;
+            animation: scanLine 2s linear infinite;
+        }
+
+        .qr-result {
+            margin-top: 2rem;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+        }
+
+        .qr-result.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 20%);
+            color: white;
+            border: 1px solid var(--green);
+        }
+
+        .qr-result.error {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: 1px solid var(--secondary-red);
+        }
+
+        /* Enhanced Detail Cards */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .detail-item {
+            background: rgba(102,126,234,0.05);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .detail-item:hover {
+            background: rgba(102,126,234,0.1);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .detail-label {
+            font-weight: 700;
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+        }
+
+        @keyframes completedPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        @keyframes scanLine {
+            0%, 100% { border-color: var(--green); }
+            50% { border-color: var(--primary-blue); }
+        }
+
+        /* Enhanced Responsive Design */
+        @media (max-width: 1200px) {
+            .tracking-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Enhanced Search and Filter Styles */
+        .search-filter-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .filter-select {
+            min-width: 150px;
+        }
+
+        /* Enhanced Chart Container */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 2rem 0;
+            background: rgba(255,255,255,0.95);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        /* Enhanced Progress Display */
+        .progress-display {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .progress-display .progress-bar {
+            flex: 1;
+            margin: 0;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: var(--primary-blue);
+            min-width: 50px;
+        }
+    </style>
+</head>
+<body data-theme="light">
+<!-- Enhanced Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-bus"></i>
+        </div>
+        <span class="logo-text">IMAS</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="#" class="active" onclick="showSection('dashboard', event)">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('buses', event)">
+                    <i class="fas fa-bus"></i>
+                    <span class="menu-text">Bus Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('tickets', event)">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span class="menu-text">Tickets</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('routes', event)">
+                    <i class="fas fa-route"></i>
+                    <span class="menu-text">Routes</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('drivers', event)">
+                    <i class="fas fa-users"></i>
+                    <span class="menu-text">Drivers</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('tracking', event)">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="menu-text">Live Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('reports', event)">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="menu-text">Reports & Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('settings', event)">
+                    <i class="fas fa-cog"></i>
+                    <span class="menu-text">Settings</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="menu-text">Logout</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Enhanced Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">Enhanced IMAS - Live Tracking System</h1>
+    </div>
+    <div class="header-right">
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName">Admin User</span>
+        </div>
+    </div>
+</header>
+
+<!-- Enhanced Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <h1 style="margin-bottom: 3rem; color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Dashboard Overview</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card" onclick="showSection('buses')">
+                <div class="stat-icon buses">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalBuses">24</h3>
+                    <p>Total Buses</p>
+                    <span class="stat-change">+12% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('tickets')">
+                <div class="stat-icon tickets">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalTickets">1,250</h3>
+                    <p>Tickets Sold</p>
+                    <span class="stat-change">+25% this week</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('drivers')">
+                <div class="stat-icon drivers">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalDrivers">18</h3>
+                    <p>Active Drivers</p>
+                    <span class="stat-change">+8% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('routes')">
+                <div class="stat-icon routes">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRoutes">12</h3>
+                    <p>Active Routes</p>
+                    <span class="stat-change">+5% this month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 2rem; font-size: 1.5rem; font-weight: 700;">Live Bus Status</h3>
+            <div id="activeBusesList">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                    <!-- Dynamic content will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Revenue Overview</h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Bus Performance</h3>
+                <div class="chart-container">
+                    <canvas id="busPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Bus Management Section -->
+    <section id="buses-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Bus Management</h1>
+            <button class="btn" onclick="openModal('addBusModal')">
+                <i class="fas fa-plus"></i>
+                Add New Bus
+            </button>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>All Buses</h3>
+                <div class="table-actions">
+                    <div class="search-filter-container">
+                        <input type="text" placeholder="Search buses..." class="form-control search-input" id="busSearchInput">
+                        <select class="form-control filter-select" id="busStatusFilter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="stopped">Stopped</option>
+                            <option value="accident">Accident</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-success" onclick="startAllBuses()">
+                            <i class="fas fa-play"></i>
+                            Start All
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportBusData()">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Line</th>
+                    <th>Capacity</th>
+                    <th>Driver</th>
+                    <th>Route</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="busesTableBody">
+                <!-- Dynamic content will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Enhanced Tickets Section -->
+    <section id="tickets-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Ticket Management</h1>
+            <button class="btn" onclick="openModal('addTicketModal')">
+                <i class="fas fa-plus"></i>
+                Add New Ticket
+            </button>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h3>Enhanced QR Code Scanner</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-success" id="startScannerBtn" onclick="startAdvancedQRScanner()">
+                        <i class="fas fa-qrcode"></i>
+                        Start Scanner
+                    </button>
+                    <button class="btn btn-secondary" onclick="uploadQRImage()">
+                        <i class="fas fa-upload"></i>
+                        Upload QR Image
+                    </button>
+                </div>
+            </div>
+            <div class="qr-scanner">
+                <div style="position: relative; display: inline-block;">
+                    <video id="qrVideo" class="qr-video hidden" autoplay muted playsinline></video>
+                    <div id="qrOverlay" class="qr-overlay hidden"></div>
+                </div>
+                <input type="file" id="qrImageInput" accept="image/*" class="hidden" onchange="processQRImage(this)">
+                <div id="qrResult" class="qr-result hidden"></div>
+                <div style="margin-top: 1rem;">
+                    <button id="stopScannerBtn" class="btn btn-danger hidden" onclick="stopAdvancedQRScanner()">
+                        <i class="fas fa-stop"></i>
+                        Stop Scanner
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>All Tickets</h3>
+                <div class="table-actions">
+                    <div class="search-filter-container">
+                        <input type="text" placeholder="Search tickets..." class="form-control search-input" id="ticketSearchInput">
+                        <select class="form-control filter-select" id="ticketStatusFilter">
+                            <option value="">All Status</option>
+                            <option value="PAID">Paid</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="BOARDED">Boarded</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Ticket #</th>
+                    <th>Passenger</th>
+                    <th>Bus</th>
+                    <th>Route</th>
+                    <th>Price (FC)</th>
+                    <th>Status</th>
+                    <th>Departure</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="ticketsTableBody">
+                <!-- Dynamic content will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Enhanced Routes Section -->
+    <section id="routes-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Route Management</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-success" onclick="createKinshasaRoutes()">
+                    <i class="fas fa-map"></i>
+                    Create Kinshasa Routes
+                </button>
+                <button class="btn" onclick="openModal('addRouteModal')">
+                    <i class="fas fa-plus"></i>
+                    Add Custom Route
+                </button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Distance (km)</th>
+                    <th>Duration (min)</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="routesTableBody">
+                <!-- Dynamic content will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Enhanced Drivers Section -->
+    <section id="drivers-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Driver Management</h1>
+            <button class="btn" onclick="openModal('addDriverModal')">
+                <i class="fas fa-plus"></i>
+                Add New Driver
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Assigned Bus</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="driversTableBody">
+                <!-- Dynamic content will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Enhanced Live Tracking Section -->
+    <section id="tracking-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+            <h1 style="color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Real-Time Live Bus Tracking</h1>
+            <div class="tracking-controls">
+                <button class="btn btn-success" onclick="startAllBuses()">
+                    <i class="fas fa-play"></i>
+                    Start All Buses
+                </button>
+                <button class="btn btn-warning" onclick="refreshTracking()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Tracking
+                </button>
+                <button class="btn btn-secondary" onclick="resetAllBuses()">
+                    <i class="fas fa-undo"></i>
+                    Reset All
+                </button>
+                <button class="btn btn-danger" onclick="stopAllBuses()">
+                    <i class="fas fa-stop"></i>
+                    Stop All
+                </button>
+            </div>
+        </div>
+
+        <div class="tracking-container">
+            <div class="card" style="margin: 0; padding: 0; overflow: hidden;">
+                <div id="map"></div>
+            </div>
+
+            <div class="tracking-panel">
+                <h3 style="margin-bottom: 2rem;">Live Bus Status</h3>
+                <div id="activeBusesTracking">
+                    <p style="color: var(--gray-medium);">Loading tracking data...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Reports Section -->
+    <section id="reports-section" class="section hidden">
+        <h1 style="margin-bottom: 3rem; color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">Enhanced Reports & Analytics</h1>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+            <div class="card" style="cursor: pointer;" onclick="generateReport('daily')">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <h3>Daily Report</h3>
+                    <p>Today's operations summary</p>
+                </div>
+            </div>
+            <div class="card" style="cursor: pointer;" onclick="generateReport('weekly')">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: var(--gradient-success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <h3>Weekly Report</h3>
+                    <p>Last 7 days performance</p>
+                </div>
+            </div>
+            <div class="card" style="cursor: pointer;" onclick="generateReport('monthly')">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: var(--gradient-secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3>Monthly Report</h3>
+                    <p>Monthly analytics</p>
+                </div>
+            </div>
+            <div class="card" style="cursor: pointer;" onclick="generateDetailedReport()">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3>Detailed Report</h3>
+                    <p>Complete system analysis</p>
+                </div>
+            </div>
+            <div class="card" style="cursor: pointer;" onclick="exportToExcel()">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: var(--gradient-success); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <h3>Excel Export</h3>
+                    <p>Export all data to Excel</p>
+                </div>
+            </div>
+            <div class="card" style="cursor: pointer;" onclick="generateReport('yearly')">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 1rem; background: var(--gradient-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <h3>Yearly Report</h3>
+                    <p>Annual performance</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+            <div class="card">
+                <h3 style="margin-bottom: 2rem;">Enhanced Revenue Analytics</h3>
+                <div class="chart-container">
+                    <canvas id="revenueAnalyticsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: 1fr;">
+                <div class="stat-card">
+                    <div class="stat-icon tickets">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayRevenue">45,000 FC</h3>
+                        <p>Today's Revenue</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon buses">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="monthlyRevenue">1,250,000 FC</h3>
+                        <p>Monthly Revenue</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settings-section" class="section hidden">
+        <h1 style="margin-bottom: 3rem; color: var(--gray-dark); font-size: 2.5rem; font-weight: 800;">System Settings</h1>
+
+        <div class="card">
+            <h3 style="margin-bottom: 2rem;">Pricing Configuration</h3>
+            <form id="settingsForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Base Ticket Price (FC)</label>
+                        <input type="number" class="form-control" id="basePrice" value="2000">
+                    </div>
+                    <div class="form-group">
+                        <label>Luggage Fee (FC)</label>
+                        <input type="number" class="form-control" id="luggagePrice" value="500">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Station Wait Time (seconds)</label>
+                        <input type="number" class="form-control" id="stationWaitTime" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Bus Start Buffer (minutes)</label>
+                        <input type="number" class="form-control" id="startBuffer" value="5">
+                    </div>
+                </div>
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i>
+                    Save Settings
+                </button>
+            </form>
+        </div>
+    </section>
+</main>
+
+<!-- Enhanced Modals -->
+
+<!-- Add Bus Modal -->
+<div id="addBusModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add New Bus</h2>
+            <button class="close-btn" onclick="closeModal('addBusModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addBusForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Bus Name</label>
+                    <input type="text" class="form-control" id="busName" required>
+                </div>
+                <div class="form-group">
+                    <label>Bus Line</label>
+                    <input type="text" class="form-control" id="busLine" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="number" class="form-control" id="busCapacity" required>
+                </div>
+                <div class="form-group">
+                    <label>Route</label>
+                    <select class="form-control" id="busRoute" required>
+                        <option value="">Select a route</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Driver</label>
+                    <select class="form-control" id="busDriver">
+                        <option value="">Select a driver</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Departure Time</label>
+                    <input type="datetime-local" class="form-control" id="busDepartureTime" required>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addBusModal')">Cancel</button>
+                <button type="submit" class="btn">Add Bus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Bus Modal -->
+<div id="viewBusModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Bus Details</h2>
+            <button class="close-btn" onclick="closeModal('viewBusModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="viewBusContent">
+            <!-- Content will be populated dynamically -->
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <button class="btn" onclick="closeModal('viewBusModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Ticket Modal -->
+<div id="addTicketModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add New Ticket</h2>
+            <button class="close-btn" onclick="closeModal('addTicketModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addTicketForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" id="ticketFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" class="form-control" id="ticketLastName" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Bus</label>
+                <select class="form-control" id="ticketBus" required>
+                    <option value="">Select a bus</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Origin</label>
+                    <input type="text" class="form-control" id="ticketOrigin" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Destination</label>
+                    <input type="text" class="form-control" id="ticketDestination" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Seat Number</label>
+                    <input type="text" class="form-control" id="ticketSeat" placeholder="e.g., A1">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="hasLuggage" style="margin-right: 0.5rem;">
+                        Has Luggage (+500 FC)
+                    </label>
+                    <input type="number" class="form-control" id="luggageWeight" step="0.1" placeholder="Weight (kg)" disabled>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Total Price: <span id="totalPrice" style="color: var(--primary-blue); font-weight: 700;">2000 FC</span></label>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addTicketModal')">Cancel</button>
+                <button type="submit" class="btn">Create Ticket</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Route Modal -->
+<div id="addRouteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add New Route</h2>
+            <button class="close-btn" onclick="closeModal('addRouteModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addRouteForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Route Code</label>
+                    <input type="text" class="form-control" id="routeCode" required>
+                </div>
+                <div class="form-group">
+                    <label>Route Name</label>
+                    <input type="text" class="form-control" id="routeName" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" id="routeDescription" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Distance (km)</label>
+                    <input type="number" step="0.1" class="form-control" id="routeDistance" required>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Duration (min)</label>
+                    <input type="number" class="form-control" id="routeDuration" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Route Type</label>
+                    <select class="form-control" id="routeType" required>
+                        <option value="URBAN">Urban</option>
+                        <option value="SUBURBAN">Suburban</option>
+                        <option value="INTERCITY">Intercity</option>
+                        <option value="EXPRESS">Express</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="color" class="form-control" id="routeColor" value="#667eea">
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addRouteModal')">Cancel</button>
+                <button type="submit" class="btn">Add Route</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Driver Modal -->
+<div id="addDriverModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add New Driver</h2>
+            <button class="close-btn" onclick="closeModal('addDriverModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addDriverForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" id="driverFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" class="form-control" id="driverLastName" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" id="driverEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" class="form-control" id="driverPhone" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>License Number</label>
+                    <input type="text" class="form-control" id="driverLicense" required>
+                </div>
+                <div class="form-group">
+                    <label>Experience (years)</label>
+                    <input type="number" class="form-control" id="driverExperience" min="0" required>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addDriverModal')">Cancel</button>
+                <button type="submit" class="btn">Add Driver</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Global Variables
+    let currentUser = null;
+    let map = null;
+    let busMarkers = {};
+    let routeLines = {};
+    let charts = {};
+    let qrScanner = null;
+    let isScanning = false;
+    let busSimulations = {};
+    let videoStream = null;
+    let scanningInterval = null;
+
+    // Mock data for demonstration
+    let mockBuses = [
+        {
+            id: 1,
+            name: "Bus Express 001",
+            busLine: "Line A",
+            capacity: 45,
+            passengers: 32,
+            driver: { firstName: "Jean", lastName: "Kalala" },
+            route: { routeName: "Gare Centrale - Matete" },
+            status: "active",
+            progress: 65,
+            currentSpeed: 35,
+            hasAccident: false,
+            isStopped: false,
+            currentLat: -4.3400,
+            currentLng: 15.3400
+        },
+        {
+            id: 2,
+            name: "Urban Bus 002",
+            busLine: "Line B",
+            capacity: 40,
+            passengers: 28,
+            driver: { firstName: "Marie", lastName: "Tshala" },
+            route: { routeName: "Bandalungwa - Ndjili" },
+            status: "active",
+            progress: 40,
+            currentSpeed: 42,
+            hasAccident: false,
+            isStopped: false,
+            currentLat: -4.3200,
+            currentLng: 15.2900
+        },
+        {
+            id: 3,
+            name: "City Bus 003",
+            busLine: "Line C",
+            capacity: 50,
+            passengers: 0,
+            driver: { firstName: "Paul", lastName: "Mukendi" },
+            route: { routeName: "Limete - Kimbanseke" },
+            status: "stopped",
+            progress: 0,
+            currentSpeed: 0,
+            hasAccident: false,
+            isStopped: true,
+            currentLat: -4.3333,
+            currentLng: 15.3333
+        }
+    ];
+
+    let mockTickets = [
+        {
+            id: 1,
+            ticketNumber: "TK001234",
+            firstName: "Albert",
+            lastName: "Mbeki",
+            origin: "Gare Centrale",
+            destination: "Matete",
+            bus: { name: "Bus Express 001" },
+            status: "PAID",
+            hasLuggage: false,
+            departureTime: new Date().toISOString()
+        },
+        {
+            id: 2,
+            ticketNumber: "TK001235",
+            firstName: "Grace",
+            lastName: "Mwanza",
+            origin: "Bandalungwa",
+            destination: "Ndjili",
+            bus: { name: "Urban Bus 002" },
+            status: "BOARDED",
+            hasLuggage: true,
+            departureTime: new Date().toISOString()
+        }
+    ];
+
+    let mockRoutes = [
+        {
+            id: 1,
+            routeCode: "R001",
+            routeName: "Gare Centrale - Matete",
+            totalDistance: 15.5,
+            estimatedDuration: 45,
+            routeType: "URBAN",
+            active: true
+        },
+        {
+            id: 2,
+            routeCode: "R002",
+            routeName: "Bandalungwa - Ndjili",
+            totalDistance: 22.3,
+            estimatedDuration: 60,
+            routeType: "SUBURBAN",
+            active: true
+        }
+    ];
+
+    let mockDrivers = [
+        {
+            id: 1,
+            firstName: "Jean",
+            lastName: "Kalala",
+            email: "jean.kalala@imas.cd",
+            phoneNumber: "+243901234567",
+            licenseNumber: "DL001234",
+            experience: 8,
+            active: true
+        },
+        {
+            id: 2,
+            firstName: "Marie",
+            lastName: "Tshala",
+            email: "marie.tshala@imas.cd",
+            phoneNumber: "+243901234568",
+            licenseNumber: "DL001235",
+            experience: 5,
+            active: true
+        }
+    ];
+
+    // Real Kinshasa coordinates
+    const KINSHASA_STATIONS = {
+        'Gare Centrale': { lat: -4.3276, lng: 15.3136 },
+        'Matete': { lat: -4.3833, lng: 15.3667 },
+        'Limete': { lat: -4.3333, lng: 15.3333 },
+        'Bandalungwa': { lat: -4.3167, lng: 15.2833 },
+        'Ndjili': { lat: -4.3833, lng: 15.3833 },
+        'Masina': { lat: -4.3833, lng: 15.4000 },
+        'Kimbanseke': { lat: -4.4500, lng: 15.4167 },
+        'Ngaliema': { lat: -4.3167, lng: 15.2333 }
+    };
+
+    // Bus route paths
+    const BUS_ROUTES = {
+        1: [
+            { lat: -4.3276, lng: 15.3136, station: 'Gare Centrale' },
+            { lat: -4.3400, lng: 15.3400 },
+            { lat: -4.3600, lng: 15.3600 },
+            { lat: -4.3833, lng: 15.3667, station: 'Matete' }
+        ],
+        2: [
+            { lat: -4.3167, lng: 15.2833, station: 'Bandalungwa' },
+            { lat: -4.3400, lng: 15.3100 },
+            { lat: -4.3700, lng: 15.3400 },
+            { lat: -4.3833, lng: 15.3833, station: 'Ndjili' }
+        ]
+    };
+
+    // Initialize Application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeUser();
+        initializeEventListeners();
+        showSection('dashboard');
+        loadAllData();
+        updateLiveTime();
+        setInterval(updateLiveTime, 1000);
+    });
+
+    // Initialize user information
+    function initializeUser() {
+        currentUser = { firstName: 'Admin', lastName: 'User', role: 'ADMIN' };
+        document.getElementById('userName').textContent = 'Admin User';
+        document.getElementById('userAvatar').textContent = 'A';
+    }
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('addBusForm').addEventListener('submit', handleAddBus);
+        document.getElementById('addTicketForm').addEventListener('submit', handleAddTicket);
+        document.getElementById('addRouteForm').addEventListener('submit', handleAddRoute);
+        document.getElementById('addDriverForm').addEventListener('submit', handleAddDriver);
+        document.getElementById('settingsForm').addEventListener('submit', handleSaveSettings);
+
+        // Search functionality
+        document.getElementById('busSearchInput')?.addEventListener('input', filterBuses);
+        document.getElementById('busStatusFilter')?.addEventListener('change', filterBuses);
+        document.getElementById('ticketSearchInput')?.addEventListener('input', filterTickets);
+        document.getElementById('ticketStatusFilter')?.addEventListener('change', filterTickets);
+
+        // Luggage handling
+        document.getElementById('hasLuggage').addEventListener('change', function() {
+            const luggageWeight = document.getElementById('luggageWeight');
+            luggageWeight.disabled = !this.checked;
+            if (!this.checked) luggageWeight.value = '';
+            updateTicketPrice();
+        });
+    }
+
+    // Load all data
+    function loadAllData() {
+        loadDashboardData();
+        loadBuses();
+        loadTickets();
+        loadRoutes();
+        loadDrivers();
+        loadReports();
+    }
+
+    // Dashboard functions
+    function loadDashboardData() {
+        // Update statistics
+        document.getElementById('totalBuses').textContent = mockBuses.length;
+        document.getElementById('totalTickets').textContent = mockTickets.length;
+        document.getElementById('totalDrivers').textContent = mockDrivers.length;
+        document.getElementById('totalRoutes').textContent = mockRoutes.length;
+
+        // Display active buses
+        displayActiveBuses();
+
+        // Create charts
+        createRevenueChart();
+        createBusPerformanceChart();
+    }
+
+    function displayActiveBuses() {
+        const container = document.getElementById('activeBusesList');
+        const activeBuses = mockBuses.filter(bus => !bus.isStopped && !bus.hasAccident);
+
+        if (activeBuses.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium); text-align: center;">No active buses</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+                ${activeBuses.map(bus => `
+                    <div class="bus-tracking-item">
+                        <div class="bus-header">
+                            <div>
+                                <span class="bus-name">${bus.name}</span>
+                                <span class="bus-line">${bus.busLine}</span>
+                            </div>
+                            <span class="status-badge status-active">Moving</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-display">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${bus.progress}%"></div>
+                                </div>
+                                <span class="progress-percentage">${bus.progress}%</span>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem; font-size: 0.9rem; color: var(--gray-medium);">
+                            <div><i class="fas fa-users"></i> ${bus.passengers}/${bus.capacity}</div>
+                            <div><i class="fas fa-tachometer-alt"></i> ${bus.currentSpeed} km/h</div>
+                            <div><i class="fas fa-route"></i> ${bus.route.routeName}</div>
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <button class="action-btn view" onclick="centerMapOnBus(${bus.id})" title="View on Map">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </button>
+                            <button class="action-btn stop" onclick="stopBus(${bus.id})" title="Stop Bus">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function createRevenueChart() {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+
+        if (charts.revenue) {
+            charts.revenue.destroy();
+        }
+
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Revenue (FC)',
+                data: [120000, 190000, 300000, 500000, 200000, 300000],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' FC';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createBusPerformanceChart() {
+        const ctx = document.getElementById('busPerformanceChart');
+        if (!ctx) return;
+
+        if (charts.busPerformance) {
+            charts.busPerformance.destroy();
+        }
+
+        const activeBuses = mockBuses.filter(bus => !bus.isStopped && !bus.hasAccident).length;
+        const stoppedBuses = mockBuses.filter(bus => bus.isStopped).length;
+        const accidentBuses = mockBuses.filter(bus => bus.hasAccident).length;
+
+        charts.busPerformance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Stopped', 'Accident'],
+                datasets: [{
+                    data: [activeBuses, stoppedBuses, accidentBuses],
+                    backgroundColor: ['#10B981', '#F59E0B', '#DC2626'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // Bus Management Functions
+    function loadBuses() {
+        displayBuses(mockBuses);
+        populateBusSelects();
+    }
+
+    function displayBuses(buses) {
+        const tbody = document.getElementById('busesTableBody');
+        if (buses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--gray-medium);">No buses found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = buses.map(bus => {
+            const status = bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active');
+            const statusClass = bus.hasAccident ? 'status-accident' : (bus.isStopped ? 'status-stopped' : 'status-active');
+            const driverName = bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'Not assigned';
+            const routeName = bus.route ? bus.route.routeName : 'Not assigned';
+
+            return `
+                <tr>
+                    <td>${bus.id}</td>
+                    <td>${bus.name}</td>
+                    <td>${bus.busLine}</td>
+                    <td>${bus.capacity}</td>
+                    <td>${driverName}</td>
+                    <td>${routeName}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    <td>
+                        <div class="progress-display">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${bus.progress}%"></div>
+                            </div>
+                            <span class="progress-percentage">${bus.progress}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn start" onclick="startBus(${bus.id})" title="Start Bus">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="action-btn stop" onclick="stopBus(${bus.id})" title="Stop Bus">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                            <button class="action-btn view" onclick="viewBusDetails(${bus.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="editBus(${bus.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteBus(${bus.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function populateBusSelects() {
+        const select = document.getElementById('ticketBus');
+        if (select) {
+            select.innerHTML = '<option value="">Select a bus</option>';
+            mockBuses.forEach(bus => {
+                const routeInfo = bus.route ? ` (${bus.route.routeName})` : '';
+                select.innerHTML += `<option value="${bus.id}">${bus.name} - ${bus.busLine}${routeInfo}</option>`;
+            });
+        }
+
+        const routeSelect = document.getElementById('busRoute');
+        if (routeSelect) {
+            routeSelect.innerHTML = '<option value="">Select a route</option>';
+            mockRoutes.forEach(route => {
+                routeSelect.innerHTML += `<option value="${route.id}">${route.routeName}</option>`;
+            });
+        }
+
+        const driverSelect = document.getElementById('busDriver');
+        if (driverSelect) {
+            driverSelect.innerHTML = '<option value="">Select a driver</option>';
+            mockDrivers.forEach(driver => {
+                driverSelect.innerHTML += `<option value="${driver.id}">${driver.firstName} ${driver.lastName}</option>`;
+            });
+        }
+    }
+
+    function startBus(busId) {
+        const busIndex = mockBuses.findIndex(bus => bus.id === busId);
+        if (busIndex !== -1) {
+            mockBuses[busIndex].isStopped = false;
+            mockBuses[busIndex].status = 'active';
+            loadBuses();
+            loadDashboardData();
+            showNotification(`Bus ${mockBuses[busIndex].name} started successfully!`, 'success');
+
+            // Start simulation
+            startBusSimulation(busId);
+        }
+    }
+
+    function stopBus(busId) {
+        const busIndex = mockBuses.findIndex(bus => bus.id === busId);
+        if (busIndex !== -1) {
+            mockBuses[busIndex].isStopped = true;
+            mockBuses[busIndex].status = 'stopped';
+            mockBuses[busIndex].currentSpeed = 0;
+
+            // Stop simulation
+            if (busSimulations[busId]) {
+                clearInterval(busSimulations[busId]);
+                delete busSimulations[busId];
+            }
+
+            loadBuses();
+            loadDashboardData();
+            showNotification(`Bus ${mockBuses[busIndex].name} stopped successfully!`, 'success');
+        }
+    }
+
+    function startBusSimulation(busId) {
+        if (busSimulations[busId]) {
+            clearInterval(busSimulations[busId]);
+        }
+
+        busSimulations[busId] = setInterval(() => {
+            const busIndex = mockBuses.findIndex(bus => bus.id === busId);
+            if (busIndex !== -1 && !mockBuses[busIndex].isStopped) {
+                if (mockBuses[busIndex].progress < 100) {
+                    mockBuses[busIndex].progress += Math.random() * 2;
+                    mockBuses[busIndex].currentSpeed = Math.floor(Math.random() * 30) + 20;
+
+                    if (mockBuses[busIndex].progress >= 100) {
+                        mockBuses[busIndex].progress = 100;
+                        mockBuses[busIndex].currentSpeed = 0;
+                        mockBuses[busIndex].isStopped = true;
+                        clearInterval(busSimulations[busId]);
+                        delete busSimulations[busId];
+                        showNotification(`Bus ${mockBuses[busIndex].name} has completed its journey!`, 'success');
+                    }
+
+                    if (!document.getElementById('buses-section').classList.contains('hidden')) {
+                        loadBuses();
+                    }
+                    if (!document.getElementById('dashboard-section').classList.contains('hidden')) {
+                        loadDashboardData();
+                    }
+                }
+            }
+        }, 2000);
+    }
+
+    function viewBusDetails(busId) {
+        const bus = mockBuses.find(bus => bus.id === busId);
+        if (!bus) return;
+
+        const content = `
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <div class="detail-label">Bus ID</div>
+                    <div class="detail-value">${bus.id}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Bus Name</div>
+                    <div class="detail-value">${bus.name}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Bus Line</div>
+                    <div class="detail-value">${bus.busLine}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Capacity</div>
+                    <div class="detail-value">${bus.capacity} passengers</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Current Passengers</div>
+                    <div class="detail-value">${bus.passengers}/${bus.capacity}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Driver</div>
+                    <div class="detail-value">${bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'Not assigned'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Route</div>
+                    <div class="detail-value">${bus.route ? bus.route.routeName : 'Not assigned'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">
+                        <span class="status-badge ${bus.hasAccident ? 'status-accident' : (bus.isStopped ? 'status-stopped' : 'status-active')}">
+                            ${bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active')}
+                        </span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Progress</div>
+                    <div class="detail-value">
+                        <div class="progress-bar" style="margin-top: 0.5rem;">
+                            <div class="progress-fill" style="width: ${bus.progress}%"></div>
+                        </div>
+                        ${bus.progress}%
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Current Speed</div>
+                    <div class="detail-value">${bus.currentSpeed} km/h</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('viewBusContent').innerHTML = content;
+        openModal('viewBusModal');
+    }
+
+    function handleAddBus(e) {
+        e.preventDefault();
+
+        const newBus = {
+            id: mockBuses.length + 1,
+            name: document.getElementById('busName').value,
+            busLine: document.getElementById('busLine').value,
+            capacity: parseInt(document.getElementById('busCapacity').value),
+            passengers: 0,
+            driver: mockDrivers.find(d => d.id == document.getElementById('busDriver').value) || null,
+            route: mockRoutes.find(r => r.id == document.getElementById('busRoute').value) || null,
+            status: 'stopped',
+            progress: 0,
+            currentSpeed: 0,
+            hasAccident: false,
+            isStopped: true,
+            currentLat: -4.3276,
+            currentLng: 15.3136
+        };
+
+        mockBuses.push(newBus);
+        closeModal('addBusModal');
+        loadBuses();
+        loadDashboardData();
+        document.getElementById('addBusForm').reset();
+        showNotification('Bus added successfully!', 'success');
+    }
+
+    function deleteBus(busId) {
+        if (!confirm('Are you sure you want to delete this bus?')) return;
+
+        const busIndex = mockBuses.findIndex(bus => bus.id === busId);
+        if (busIndex !== -1) {
+            mockBuses.splice(busIndex, 1);
+            loadBuses();
+            loadDashboardData();
+            showNotification('Bus deleted successfully!', 'success');
+        }
+    }
+
+    function startAllBuses() {
+        const stoppedBuses = mockBuses.filter(bus => bus.isStopped);
+        stoppedBuses.forEach(bus => {
+            startBus(bus.id);
+        });
+        showNotification(`Started ${stoppedBuses.length} buses!`, 'success');
+    }
+
+    function exportBusData() {
+        // Create Excel workbook
+        const workbook = XLSX.utils.book_new();
+        const busData = mockBuses.map(bus => ({
+            'Bus ID': bus.id,
+            'Name': bus.name,
+            'Line': bus.busLine,
+            'Capacity': bus.capacity,
+            'Passengers': bus.passengers,
+            'Driver': bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'Not assigned',
+            'Route': bus.route ? bus.route.routeName : 'Not assigned',
+            'Status': bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active'),
+            'Progress': bus.progress + '%',
+            'Speed': bus.currentSpeed + ' km/h'
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(busData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Buses');
+        XLSX.writeFile(workbook, `IMAS_Buses_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showNotification('Bus data exported successfully!', 'success');
+    }
+
+    function filterBuses() {
+        const searchTerm = document.getElementById('busSearchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('busStatusFilter').value;
+        const rows = document.querySelectorAll('#busesTableBody tr');
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const statusCell = row.cells[6];
+            const status = statusCell ? statusCell.textContent.toLowerCase() : '';
+
+            const matchesSearch = text.includes(searchTerm);
+            const matchesStatus = !statusFilter || status.includes(statusFilter);
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    // Ticket Management Functions
+    function loadTickets() {
+        displayTickets(mockTickets);
+    }
+
+    function displayTickets(tickets) {
+        const tbody = document.getElementById('ticketsTableBody');
+        if (tickets.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-medium);">No tickets found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = tickets.map(ticket => {
+            const statusClass = ticket.status === 'PAID' ? 'status-active' :
+                              ticket.status === 'BOARDED' ? 'status-stopped' : 'status-pending';
+            const price = calculateTicketPrice(ticket.hasLuggage);
+            const departureTime = new Date(ticket.departureTime).toLocaleString();
+
+            return `
+                <tr>
+                    <td>${ticket.ticketNumber}</td>
+                    <td>${ticket.firstName} ${ticket.lastName}</td>
+                    <td>${ticket.bus ? ticket.bus.name : 'N/A'}</td>
+                    <td>${ticket.origin} → ${ticket.destination}</td>
+                    <td>${price.toLocaleString()} FC</td>
+                    <td><span class="status-badge ${statusClass}">${ticket.status}</span></td>
+                    <td>${departureTime}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewTicketDetails(${ticket.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn start" onclick="scanTicket(${ticket.id})" title="Scan Ticket">
+                                <i class="fas fa-qrcode"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteTicket(${ticket.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function handleAddTicket(e) {
+        e.preventDefault();
+
+        const newTicket = {
+            id: mockTickets.length + 1,
+            ticketNumber: `TK${String(mockTickets.length + 1).padStart(6, '0')}`,
+            firstName: document.getElementById('ticketFirstName').value,
+            lastName: document.getElementById('ticketLastName').value,
+            origin: document.getElementById('ticketOrigin').value || 'Gare Centrale',
+            destination: document.getElementById('ticketDestination').value || 'Matete',
+            bus: mockBuses.find(b => b.id == document.getElementById('ticketBus').value),
+            status: 'PAID',
+            hasLuggage: document.getElementById('hasLuggage').checked,
+            departureTime: new Date().toISOString()
+        };
+
+        mockTickets.push(newTicket);
+        closeModal('addTicketModal');
+        loadTickets();
+        loadDashboardData();
+        document.getElementById('addTicketForm').reset();
+        showNotification(`Ticket created successfully! Ticket number: ${newTicket.ticketNumber}`, 'success');
+    }
+
+    function viewTicketDetails(ticketId) {
+        const ticket = mockTickets.find(t => t.id === ticketId);
+        if (!ticket) return;
+
+        showNotification(`Viewing details for ticket ${ticket.ticketNumber}`, 'info');
+    }
+
+    function scanTicket(ticketId) {
+        const ticket = mockTickets.find(t => t.id === ticketId);
+        if (!ticket) return;
+
+        if (ticket.status === 'PAID') {
+            ticket.status = 'BOARDED';
+            loadTickets();
+            showNotification(`Ticket ${ticket.ticketNumber} scanned successfully! Passenger boarded.`, 'success');
+        } else {
+            showNotification(`Ticket ${ticket.ticketNumber} has already been processed.`, 'warning');
+        }
+    }
+
+    function deleteTicket(ticketId) {
+        if (!confirm('Are you sure you want to delete this ticket?')) return;
+
+        const ticketIndex = mockTickets.findIndex(t => t.id === ticketId);
+        if (ticketIndex !== -1) {
+            mockTickets.splice(ticketIndex, 1);
+            loadTickets();
+            loadDashboardData();
+            showNotification('Ticket deleted successfully!', 'success');
+        }
+    }
+
+    function calculateTicketPrice(hasLuggage) {
+        const basePrice = 2000;
+        const luggagePrice = hasLuggage ? 500 : 0;
+        return basePrice + luggagePrice;
+    }
+
+    function updateTicketPrice() {
+        const hasLuggage = document.getElementById('hasLuggage').checked;
+        const price = calculateTicketPrice(hasLuggage);
+        document.getElementById('totalPrice').textContent = `${price.toLocaleString()} FC`;
+    }
+
+    function filterTickets() {
+        const searchTerm = document.getElementById('ticketSearchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('ticketStatusFilter').value;
+        const rows = document.querySelectorAll('#ticketsTableBody tr');
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const statusCell = row.cells[5];
+            const status = statusCell ? statusCell.textContent.trim() : '';
+
+            const matchesSearch = text.includes(searchTerm);
+            const matchesStatus = !statusFilter || status === statusFilter;
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    // Route Management Functions
+    function loadRoutes() {
+        displayRoutes(mockRoutes);
+    }
+
+    function displayRoutes(routes) {
+        const tbody = document.getElementById('routesTableBody');
+        if (routes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--gray-medium);">No routes found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = routes.map(route => `
+            <tr>
+                <td>${route.routeCode}</td>
+                <td>${route.routeName}</td>
+                <td>${route.totalDistance || 'N/A'}</td>
+                <td>${route.estimatedDuration || 'N/A'}</td>
+                <td>${route.routeType}</td>
+                <td><span class="status-badge ${route.active ? 'status-active' : 'status-stopped'}">${route.active ? 'Active' : 'Inactive'}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn view" onclick="viewRouteDetails(${route.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit" onclick="editRoute(${route.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deleteRoute(${route.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function handleAddRoute(e) {
+        e.preventDefault();
+
+        const newRoute = {
+            id: mockRoutes.length + 1,
+            routeCode: document.getElementById('routeCode').value,
+            routeName: document.getElementById('routeName').value,
+            description: document.getElementById('routeDescription').value,
+            totalDistance: parseFloat(document.getElementById('routeDistance').value),
+            estimatedDuration: parseInt(document.getElementById('routeDuration').value),
+            routeType: document.getElementById('routeType').value,
+            active: true
+        };
+
+        mockRoutes.push(newRoute);
+        closeModal('addRouteModal');
+        loadRoutes();
+        loadDashboardData();
+        populateBusSelects();
+        document.getElementById('addRouteForm').reset();
+        showNotification('Route added successfully!', 'success');
+    }
+
+    function viewRouteDetails(routeId) {
+        const route = mockRoutes.find(r => r.id === routeId);
+        if (!route) return;
+        showNotification(`Viewing details for route ${route.routeName}`, 'info');
+    }
+
+    function deleteRoute(routeId) {
+        if (!confirm('Are you sure you want to delete this route?')) return;
+
+        const routeIndex = mockRoutes.findIndex(r => r.id === routeId);
+        if (routeIndex !== -1) {
+            mockRoutes.splice(routeIndex, 1);
+            loadRoutes();
+            loadDashboardData();
+            showNotification('Route deleted successfully!', 'success');
+        }
+    }
+
+    function createKinshasaRoutes() {
+        const kinshasaRoutes = [
+            {
+                id: mockRoutes.length + 1,
+                routeCode: "KIN001",
+                routeName: "Gare Centrale - Matete",
+                totalDistance: 15.5,
+                estimatedDuration: 45,
+                routeType: "URBAN",
+                active: true
+            },
+            {
+                id: mockRoutes.length + 2,
+                routeCode: "KIN002",
+                routeName: "Bandalungwa - Ndjili",
+                totalDistance: 22.3,
+                estimatedDuration: 60,
+                routeType: "SUBURBAN",
+                active: true
+            }
+        ];
+
+        mockRoutes.push(...kinshasaRoutes);
+        loadRoutes();
+        loadDashboardData();
+        populateBusSelects();
+        showNotification('Kinshasa routes created successfully!', 'success');
+    }
+
+    // Driver Management Functions
+    function loadDrivers() {
+        displayDrivers(mockDrivers);
+    }
+
+    function displayDrivers(drivers) {
+        const tbody = document.getElementById('driversTableBody');
+        if (drivers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--gray-medium);">No drivers found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = drivers.map(driver => `
+            <tr>
+                <td>${driver.id}</td>
+                <td>${driver.firstName} ${driver.lastName}</td>
+                <td>${driver.email}</td>
+                <td>${driver.phoneNumber || 'N/A'}</td>
+                <td>Not assigned</td>
+                <td><span class="status-badge ${driver.active ? 'status-active' : 'status-stopped'}">${driver.active ? 'Active' : 'Inactive'}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn view" onclick="viewDriverDetails(${driver.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit" onclick="editDriver(${driver.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deleteDriver(${driver.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function handleAddDriver(e) {
+        e.preventDefault();
+
+        const newDriver = {
+            id: mockDrivers.length + 1,
+            firstName: document.getElementById('driverFirstName').value,
+            lastName: document.getElementById('driverLastName').value,
+            email: document.getElementById('driverEmail').value,
+            phoneNumber: document.getElementById('driverPhone').value,
+            licenseNumber: document.getElementById('driverLicense').value,
+            experience: parseInt(document.getElementById('driverExperience').value),
+            active: true
+        };
+
+        mockDrivers.push(newDriver);
+        closeModal('addDriverModal');
+        loadDrivers();
+        loadDashboardData();
+        populateBusSelects();
+        document.getElementById('addDriverForm').reset();
+        showNotification('Driver added successfully!', 'success');
+    }
+
+    function viewDriverDetails(driverId) {
+        const driver = mockDrivers.find(d => d.id === driverId);
+        if (!driver) return;
+        showNotification(`Viewing details for driver ${driver.firstName} ${driver.lastName}`, 'info');
+    }
+
+    function deleteDriver(driverId) {
+        if (!confirm('Are you sure you want to delete this driver?')) return;
+
+        const driverIndex = mockDrivers.findIndex(d => d.id === driverId);
+        if (driverIndex !== -1) {
+            mockDrivers.splice(driverIndex, 1);
+            loadDrivers();
+            loadDashboardData();
+            showNotification('Driver deleted successfully!', 'success');
+        }
+    }
+
+    // Live Tracking Functions
+    function initializeMap() {
+        if (map) return;
+
+        map = L.map('map').setView([-4.3276, 15.3136], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Add bus stations
+        Object.entries(KINSHASA_STATIONS).forEach(([name, coords]) => {
+            L.marker([coords.lat, coords.lng], {
+                icon: L.divIcon({
+                    className: 'station-marker',
+                    html: '<i class="fas fa-map-marker-alt" style="color: #DC2626; font-size: 20px;"></i>',
+                    iconSize: [25, 25],
+                    iconAnchor: [12, 25]
+                })
+            }).addTo(map).bindPopup(`<strong>${name}</strong><br>Bus Station`);
+        });
+
+        // Add route lines
+        Object.entries(BUS_ROUTES).forEach(([routeId, path]) => {
+            const routeLine = L.polyline(path.map(p => [p.lat, p.lng]), {
+                color: '#667eea',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 5'
+            }).addTo(map);
+            routeLines[routeId] = routeLine;
+        });
+
+        loadBusTracking();
+    }
+
+    function loadBusTracking() {
+        if (!map) {
+            initializeMap();
+            return;
+        }
+
+        const activeBuses = mockBuses.filter(bus => !bus.isStopped);
+
+        // Update bus markers
+        activeBuses.forEach(bus => {
+            if (bus.currentLat && bus.currentLng) {
+                updateBusMarkerRealTime(bus.id, bus.currentLat, bus.currentLng, bus.progress, bus.currentSpeed / 120, false);
+            }
+        });
+
+        // Update tracking panel
+        displayLiveTrackingPanel(activeBuses);
+    }
+
+    function updateBusMarkerRealTime(busId, lat, lng, progress, speed, isAtStation) {
+        if (!map) return;
+
+        const statusClass = progress >= 100 ? 'completed' :
+                           isAtStation ? 'stopped' : 'moving';
+
+        if (!busMarkers[busId]) {
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: `bus-marker ${statusClass}`,
+                    html: `
+                        <div style="position: relative;">
+                            <i class="fas fa-bus" style="color: white; font-size: 16px;"></i>
+                            <div style="position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
+                                        background: white; padding: 2px 6px; border-radius: 10px;
+                                        font-size: 10px; font-weight: bold; border: 1px solid #ccc;
+                                        min-width: 35px; text-align: center;">
+                                ${Math.round(progress)}%
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [35, 35],
+                    iconAnchor: [17, 17]
+                })
+            });
+
+            marker.addTo(map);
+            busMarkers[busId] = marker;
+            marker.bindPopup(`<strong>Bus ${busId}</strong><br>Progress: ${Math.round(progress)}%`);
+        } else {
+            busMarkers[busId].setLatLng([lat, lng]);
+        }
+    }
+
+    function displayLiveTrackingPanel(buses) {
+        const container = document.getElementById('activeBusesTracking');
+        if (!container) return;
+
+        if (buses.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No buses currently active</p>';
+            return;
+        }
+
+        container.innerHTML = buses.map(bus => {
+            const progress = Math.round(bus.progress || 0);
+            const speed = Math.round(bus.currentSpeed || 0);
+            const statusClass = bus.hasAccident ? 'status-accident' : 'status-active';
+            const statusText = bus.hasAccident ? 'Accident' : 'Moving';
+
+            return `
+                <div class="bus-tracking-item" onclick="centerMapOnBus(${bus.id})">
+                    <div class="bus-header">
+                        <div>
+                            <span class="bus-name">${bus.name}</span>
+                            <span class="bus-line">${bus.busLine}</span>
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <small>${progress}% completed</small>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; font-size: 0.9rem; color: var(--gray-medium);">
+                        <div><i class="fas fa-tachometer-alt"></i> ${speed} km/h</div>
+                        <div><i class="fas fa-users"></i> ${bus.passengers || 0}/${bus.capacity}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function centerMapOnBus(busId) {
+        if (busMarkers[busId] && map) {
+            map.setView(busMarkers[busId].getLatLng(), 15);
+            busMarkers[busId].openPopup();
+            showNotification(`Centered on Bus ${busId}`, 'info');
+        }
+    }
+
+    function refreshTracking() {
+        loadBusTracking();
+        showNotification('Tracking data refreshed!', 'success');
+    }
+
+    function resetAllBuses() {
+        if (confirm('Are you sure you want to reset all buses?')) {
+            mockBuses.forEach(bus => {
+                bus.progress = 0;
+                bus.currentSpeed = 0;
+                bus.isStopped = true;
+                bus.passengers = 0;
+            });
+
+            Object.keys(busSimulations).forEach(busId => {
+                clearInterval(busSimulations[busId]);
+                delete busSimulations[busId];
+            });
+
+            loadBuses();
+            loadDashboardData();
+            loadBusTracking();
+            showNotification('All buses have been reset!', 'success');
+        }
+    }
+
+    function stopAllBuses() {
+        const activeBuses = mockBuses.filter(bus => !bus.isStopped);
+        activeBuses.forEach(bus => {
+            stopBus(bus.id);
+        });
+        showNotification(`Stopped ${activeBuses.length} buses`, 'success');
+    }
+
+    // Enhanced QR Scanner Functions
+    async function startAdvancedQRScanner() {
+        try {
+            const video = document.getElementById('qrVideo');
+            const overlay = document.getElementById('qrOverlay');
+            const resultDiv = document.getElementById('qrResult');
+            const stopBtn = document.getElementById('stopScannerBtn');
+            const startBtn = document.getElementById('startScannerBtn');
+
+            video.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+            stopBtn.classList.remove('hidden');
+            startBtn.classList.add('hidden');
+            resultDiv.classList.add('hidden');
+
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = videoStream;
+            await video.play();
+
+            isScanning = true;
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            function scanFrame() {
+                if (!isScanning) return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (qrCode) {
+                        isScanning = false;
+                        processDetectedQR(qrCode.data, resultDiv);
+                        return;
+                    }
+                }
+
+                requestAnimationFrame(scanFrame);
+            }
+
+            requestAnimationFrame(scanFrame);
+            showNotification('QR Scanner started! Point camera at QR code', 'info');
+
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            showNotification('Error accessing camera: ' + error.message, 'error');
+            stopAdvancedQRScanner();
+        }
+    }
+
+    function processDetectedQR(qrData, resultDiv) {
+        stopAdvancedQRScanner();
+        resultDiv.classList.remove('hidden');
+
+        // Simulate QR processing
+        if (qrData.includes('TK')) {
+            resultDiv.className = 'qr-result success';
+            resultDiv.innerHTML = `
+                <h4><i class="fas fa-check-circle"></i> Valid Ticket</h4>
+                <p><strong>QR Data:</strong> ${qrData}</p>
+                <p><strong>Status:</strong> Ticket validated successfully!</p>
+            `;
+            showNotification('QR code scanned successfully!', 'success');
+        } else {
+            resultDiv.className = 'qr-result error';
+            resultDiv.innerHTML = `
+                <h4><i class="fas fa-times-circle"></i> Invalid QR Code</h4>
+                <p><strong>Data:</strong> ${qrData}</p>
+                <p>This is not a valid ticket QR code.</p>
+            `;
+            showNotification('Invalid QR code detected', 'error');
+        }
+    }
+
+    function stopAdvancedQRScanner() {
+        const video = document.getElementById('qrVideo');
+        const overlay = document.getElementById('qrOverlay');
+        const stopBtn = document.getElementById('stopScannerBtn');
+        const startBtn = document.getElementById('startScannerBtn');
+
+        isScanning = false;
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+
+        video.srcObject = null;
+        video.classList.add('hidden');
+        overlay.classList.add('hidden');
+        stopBtn.classList.add('hidden');
+        startBtn.classList.remove('hidden');
+    }
+
+    function uploadQRImage() {
+        document.getElementById('qrImageInput').click();
+    }
+
+    function processQRImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        showNotification('Processing QR image...', 'info');
+        // Simulate processing
+        setTimeout(() => {
+            showNotification('QR code processed successfully!', 'success');
+        }, 1000);
+    }
+
+    // Reports Functions
+    function loadReports() {
+        createAnalyticsChart();
+    }
+
+    function createAnalyticsChart() {
+        const ctx = document.getElementById('revenueAnalyticsChart');
+        if (!ctx) return;
+
+        if (charts.analytics) {
+            charts.analytics.destroy();
+        }
+
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Revenue (FC)',
+                data: [500000, 750000, 900000, 1200000, 800000, 1100000],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.1)',
+                tension: 0.4
+            }, {
+                label: 'Tickets',
+                data: [250, 375, 450, 600, 400, 550],
+                borderColor: '#f093fb',
+                backgroundColor: 'rgba(240,147,251,0.1)',
+                tension: 0.4
+            }]
+        };
+
+        charts.analytics = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+    }
+
+    // Enhanced PDF Report Generation
+    async function generateReport(type) {
+        try {
+            showNotification(`Generating ${type} report...`, 'info');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Enhanced header with gradient effect
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, 210, 50, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(32);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS', 20, 30);
+
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Enhanced Intelligent Mobility Assistance System', 20, 42);
+
+            // Report title
+            doc.setTextColor(102, 126, 234);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${type.charAt(0).toUpperCase() + type.slice(1)} Report`, 20, 70);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 85);
+            doc.text(`Report Period: ${getReportPeriod(type)}`, 20, 95);
+
+            let yPosition = 110;
+
+            // System Overview Table
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('System Overview', 20, yPosition);
+            yPosition += 15;
+
+            const overviewData = [
+                ['Metric', 'Count', 'Status'],
+                ['Total Buses', mockBuses.length.toString(), `${mockBuses.filter(b => !b.isStopped).length} Active`],
+                ['Total Tickets', mockTickets.length.toString(), `${mockTickets.filter(t => t.status === 'PAID').length} Paid`],
+                ['Active Drivers', mockDrivers.filter(d => d.active).length.toString(), `${mockDrivers.length} Total`],
+                ['Active Routes', mockRoutes.filter(r => r.active).length.toString(), `${mockRoutes.length} Total`]
+            ];
+
+            drawEnhancedTable(doc, overviewData, 20, yPosition, [60, 40, 60]);
+            yPosition += (overviewData.length * 10) + 25;
+
+            // Bus Performance Table
+            if (yPosition > 220) {
+                doc.addPage();
+                yPosition = 30;
+            }
+
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Bus Performance Details', 20, yPosition);
+            yPosition += 15;
+
+            const busData = [
+                ['Bus ID', 'Name', 'Line', 'Status', 'Progress', 'Passengers']
+            ];
+
+            mockBuses.forEach(bus => {
+                busData.push([
+                    bus.id.toString(),
+                    bus.name,
+                    bus.busLine,
+                    bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active'),
+                    `${Math.round(bus.progress || 0)}%`,
+                    `${bus.passengers || 0}/${bus.capacity}`
+                ]);
+            });
+
+            drawEnhancedTable(doc, busData, 20, yPosition, [20, 35, 25, 25, 25, 30]);
+
+            // Enhanced footer
+            doc.setFontSize(10);
+            doc.setTextColor(128, 128, 128);
+            doc.text('This report was automatically generated by Enhanced IMAS', 20, 280);
+            doc.text(`Kinshasa, Democratic Republic of Congo`, 20, 290);
+
+            doc.save(`Enhanced_IMAS_${type}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Error generating report:', error);
+            showNotification('Error generating report: ' + error.message, 'error');
+        }
+    }
+
+    function drawEnhancedTable(doc, data, x, y, columnWidths) {
+        const rowHeight = 10;
+        const cellPadding = 3;
+
+        data.forEach((row, rowIndex) => {
+            let currentX = x;
+
+            row.forEach((cell, colIndex) => {
+                const cellWidth = columnWidths[colIndex] || 30;
+
+                // Enhanced cell styling
+                if (rowIndex === 0) {
+                    // Header row with gradient-like effect
+                    doc.setFillColor(102, 126, 234);
+                    doc.rect(currentX, y + (rowIndex * rowHeight), cellWidth, rowHeight, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(10);
+                } else {
+                    // Alternating row colors
+                    if (rowIndex % 2 === 0) {
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(currentX, y + (rowIndex * rowHeight), cellWidth, rowHeight, 'F');
+                    }
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(9);
+                }
+
+                // Draw cell border
+                doc.setDrawColor(200, 200, 200);
+                doc.rect(currentX, y + (rowIndex * rowHeight), cellWidth, rowHeight);
+
+                // Add cell text
+                doc.text(
+                    cell.toString(),
+                    currentX + cellPadding,
+                    y + (rowIndex * rowHeight) + rowHeight - cellPadding
+                );
+
+                currentX += cellWidth;
+            });
+        });
+    }
+
+    async function generateDetailedReport() {
+        try {
+            showNotification('Generating comprehensive detailed report...', 'info');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cover page with enhanced design
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, 210, 297, 'F');
+
+            // Add subtle pattern overlay
+            doc.setFillColor(255, 255, 255);
+            for (let i = 0; i < 210; i += 20) {
+                for (let j = 0; j < 297; j += 20) {
+                    doc.circle(i, j, 1, 'F');
+                }
+            }
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(48);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS', 105, 120, { align: 'center' });
+
+            doc.setFontSize(28);
+            doc.text('Enhanced System Report', 105, 140, { align: 'center' });
+
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Comprehensive Analysis with Advanced Analytics', 105, 160, { align: 'center' });
+
+            doc.setFontSize(14);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 220, { align: 'center' });
+            doc.text('Kinshasa, Democratic Republic of Congo', 105, 240, { align: 'center' });
+
+            // Page 2 - Complete Bus Inventory
+            doc.addPage();
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Complete Bus Inventory', 20, 30);
+
+            let yPos = 45;
+            const busTableData = [
+                ['ID', 'Name', 'Line', 'Capacity', 'Driver', 'Route', 'Status', 'Progress']
+            ];
+
+            mockBuses.forEach(bus => {
+                busTableData.push([
+                    bus.id.toString(),
+                    bus.name,
+                    bus.busLine,
+                    bus.capacity.toString(),
+                    bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'None',
+                    bus.route ? bus.route.routeName : 'None',
+                    bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active'),
+                    `${Math.round(bus.progress || 0)}%`
+                ]);
+            });
+
+            drawEnhancedTable(doc, busTableData, 10, yPos, [15, 25, 20, 20, 30, 35, 25, 20]);
+
+            doc.save(`Enhanced_IMAS_detailed_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Comprehensive detailed report generated successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating detailed report:', error);
+            showNotification('Error generating detailed report: ' + error.message, 'error');
+        }
+    }
+
+    async function exportToExcel() {
+        try {
+            showNotification('Generating Excel export...', 'info');
+
+            const workbook = XLSX.utils.book_new();
+
+            // Enhanced Buses worksheet
+            const busesData = mockBuses.map(bus => ({
+                'Bus ID': bus.id,
+                'Name': bus.name,
+                'Line': bus.busLine,
+                'Capacity': bus.capacity,
+                'Current Passengers': bus.passengers || 0,
+                'Driver': bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'Not assigned',
+                'Route': bus.route ? bus.route.routeName : 'Not assigned',
+                'Status': bus.hasAccident ? 'Accident' : (bus.isStopped ? 'Stopped' : 'Active'),
+                'Progress (%)': Math.round(bus.progress || 0),
+                'Current Speed (km/h)': bus.currentSpeed || 0
+            }));
+
+            const busesWs = XLSX.utils.json_to_sheet(busesData);
+            XLSX.utils.book_append_sheet(workbook, busesWs, 'Buses');
+
+            // Enhanced Tickets worksheet
+            const ticketsData = mockTickets.map(ticket => ({
+                'Ticket Number': ticket.ticketNumber,
+                'Passenger': `${ticket.firstName} ${ticket.lastName}`,
+                'Bus': ticket.bus ? ticket.bus.name : 'N/A',
+                'Route': `${ticket.origin} → ${ticket.destination}`,
+                'Price (FC)': calculateTicketPrice(ticket.hasLuggage),
+                'Has Luggage': ticket.hasLuggage ? 'Yes' : 'No',
+                'Status': ticket.status,
+                'Departure Time': new Date(ticket.departureTime).toLocaleString()
+            }));
+
+            const ticketsWs = XLSX.utils.json_to_sheet(ticketsData);
+            XLSX.utils.book_append_sheet(workbook, ticketsWs, 'Tickets');
+
+            // Enhanced Routes worksheet
+            const routesData = mockRoutes.map(route => ({
+                'Route ID': route.id,
+                'Code': route.routeCode,
+                'Name': route.routeName,
+                'Type': route.routeType,
+                'Distance (km)': route.totalDistance || 'N/A',
+                'Duration (min)': route.estimatedDuration || 'N/A',
+                'Status': route.active ? 'Active' : 'Inactive'
+            }));
+
+            const routesWs = XLSX.utils.json_to_sheet(routesData);
+            XLSX.utils.book_append_sheet(workbook, routesWs, 'Routes');
+
+            // Enhanced Drivers worksheet
+            const driversData = mockDrivers.map(driver => ({
+                'Driver ID': driver.id,
+                'First Name': driver.firstName,
+                'Last Name': driver.lastName,
+                'Email': driver.email,
+                'Phone Number': driver.phoneNumber || 'N/A',
+                'License Number': driver.licenseNumber || 'N/A',
+                'Experience (years)': driver.experience || 0,
+                'Status': driver.active ? 'Active' : 'Inactive'
+            }));
+
+            const driversWs = XLSX.utils.json_to_sheet(driversData);
+            XLSX.utils.book_append_sheet(workbook, driversWs, 'Drivers');
+
+            // Enhanced Summary worksheet
+            const summaryData = [
+                { 'Metric': 'Total Buses', 'Value': mockBuses.length },
+                { 'Metric': 'Active Buses', 'Value': mockBuses.filter(b => !b.isStopped).length },
+                { 'Metric': 'Total Tickets Sold', 'Value': mockTickets.length },
+                { 'Metric': 'Active Drivers', 'Value': mockDrivers.filter(d => d.active).length },
+                { 'Metric': 'Total Routes', 'Value': mockRoutes.length },
+                { 'Metric': 'Report Generated', 'Value': new Date().toLocaleString() }
+            ];
+
+            const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(workbook, summaryWs, 'Summary');
+
+            XLSX.writeFile(workbook, `Enhanced_IMAS_complete_data_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showNotification('Excel export completed successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+            showNotification('Error exporting to Excel: ' + error.message, 'error');
+        }
+    }
+
+    function getReportPeriod(type) {
+        const today = new Date();
+        switch(type) {
+            case 'daily':
+                return today.toLocaleDateString();
+            case 'weekly':
+                const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+                return `${weekStart.toLocaleDateString()} - ${new Date().toLocaleDateString()}`;
+            case 'monthly':
+                return `${today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+            case 'yearly':
+                return today.getFullYear().toString();
+            default:
+                return 'All Time';
+        }
+    }
+
+    // Settings Functions
+    function handleSaveSettings(e) {
+        e.preventDefault();
+
+        const settings = {
+            basePrice: parseInt(document.getElementById('basePrice').value),
+            luggagePrice: parseInt(document.getElementById('luggagePrice').value),
+            stationWaitTime: parseInt(document.getElementById('stationWaitTime').value),
+            startBuffer: parseInt(document.getElementById('startBuffer').value)
+        };
+
+        localStorage.setItem('enhancedImasSettings', JSON.stringify(settings));
+        showNotification('Settings saved successfully!', 'success');
+    }
+
+    // Navigation Functions
+    function showSection(sectionName, event) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        // Update active menu item
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        if (event) {
+            const clickedLink = event.target.closest('a');
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        } else {
+            const targetLink = document.querySelector(`[onclick*="${sectionName}"]`);
+            if (targetLink) {
+                targetLink.classList.add('active');
+            }
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'dashboard':
+                loadDashboardData();
+                break;
+            case 'buses':
+                loadBuses();
+                break;
+            case 'tickets':
+                loadTickets();
+                break;
+            case 'routes':
+                loadRoutes();
+                break;
+            case 'drivers':
+                loadDrivers();
+                break;
+            case 'tracking':
+                initializeMap();
+                break;
+            case 'reports':
+                loadReports();
+                break;
+        }
+    }
+
+    // UI Functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const header = document.getElementById('header');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        header.classList.toggle('expanded');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+            showNotification('Switched to light theme', 'success');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+            showNotification('Switched to dark theme', 'success');
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function updateLiveTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        const dateString = now.toLocaleDateString();
+
+        const titleElement = document.querySelector('.header-title');
+        if (titleElement) {
+            titleElement.textContent = `Enhanced IMAS - Live Tracking System | ${dateString} ${timeString}`;
+        }
+    }
+
+    // Enhanced notification function
+    function showNotification(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+
+        const colors = {
+            success: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            error: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            warning: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            info: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        };
+
+        notification.style.cssText = `
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 10000;
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            color: white;
+            font-weight: 600;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            backdrop-filter: blur(20px);
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: ${colors[type] || colors.info};
+            border: 1px solid rgba(255,255,255,0.2);
+        `;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        notification.innerHTML = `${icons[type] || icons.info} ${message}`;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 400);
+        }, 5000);
+    }
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            showNotification('Logging out...', 'info');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 1000);
+        }
+    }
+
+    // Add enhanced CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%) scale(0.9); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0) scale(1); opacity: 1; }
+            to { transform: translateX(100%) scale(0.9); opacity: 0; }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>
