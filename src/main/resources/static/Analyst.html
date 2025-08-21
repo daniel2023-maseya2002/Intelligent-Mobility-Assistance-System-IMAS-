@@ -1,0 +1,3675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Analyst Dashboard with ML Analytics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --purple: #8B5CF6;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 240px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .notification-btn:hover {
+            background: var(--gray-light);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            background: var(--secondary-red);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-text {
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .logout-item {
+            margin-top: auto;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 1rem;
+        }
+
+        .logout-item a {
+            color: #ff6b6b !important;
+        }
+
+        .logout-item a:hover {
+            background-color: rgba(255, 107, 107, 0.1) !important;
+            color: #ff5252 !important;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        .section {
+            display: block;
+        }
+
+        .section.hidden {
+            display: none;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .stat-icon.buses {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .stat-icon.tickets {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+        }
+
+        .stat-icon.revenue {
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+        }
+
+        .stat-icon.routes {
+            background: linear-gradient(135deg, var(--purple), #A855F7);
+        }
+
+        .stat-icon.emergencies {
+            background: linear-gradient(135deg, var(--secondary-red), var(--light-red));
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* ML Prediction Cards */
+        .prediction-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .prediction-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--green);
+            transition: var(--transition);
+        }
+
+        .prediction-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .prediction-card.warning {
+            border-left-color: var(--gold);
+        }
+
+        .prediction-card.critical {
+            border-left-color: var(--secondary-red);
+        }
+
+        .prediction-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .prediction-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--white);
+            background: var(--green);
+        }
+
+        .prediction-icon.warning {
+            background: var(--gold);
+        }
+
+        .prediction-icon.critical {
+            background: var(--secondary-red);
+        }
+
+        .prediction-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .prediction-subtitle {
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+        }
+
+        .prediction-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--green);
+            margin: 1rem 0;
+        }
+
+        .prediction-value.warning {
+            color: var(--gold);
+        }
+
+        .prediction-value.critical {
+            color: var(--secondary-red);
+        }
+
+        /* Route Tracking */
+        .route-tracking {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            height: 600px;
+        }
+
+        #analystMap {
+            height: 100%;
+            width: 100%;
+            border-radius: var(--border-radius);
+        }
+
+        .route-status {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+        }
+
+        .route-item {
+            background: var(--gray-light);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid var(--green);
+        }
+
+        .route-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .route-item.warning {
+            border-left-color: var(--gold);
+        }
+
+        .route-item.critical {
+            border-left-color: var(--secondary-red);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-medium);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Notifications */
+        .notification-item {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-blue);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .notification-item.unread {
+            background: rgba(30, 64, 175, 0.05);
+        }
+
+        .notification-item.urgent {
+            border-left-color: var(--secondary-red);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .notification-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--gray-medium);
+        }
+
+        .notification-message {
+            color: var(--gray-medium);
+            line-height: 1.4;
+        }
+
+        /* Real-time indicators */
+        .real-time-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .pulse-danger {
+            background: var(--secondary-red);
+            animation: pulse-danger 1s infinite;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Analytics specific styles */
+        .analytics-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-label {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+
+        /* Emergency status */
+        .emergency-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .emergency-status.active {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--secondary-red);
+        }
+
+        .emergency-status.resolved {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+        }
+
+        .emergency-status.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar .menu-text,
+            .sidebar .logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .route-tracking {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            #analystMap {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .prediction-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse-danger {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+            50% {
+                opacity: 0.8;
+                box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Notification Toast */
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification-toast.success {
+            background: var(--green);
+        }
+
+        .notification-toast.error {
+            background: var(--secondary-red);
+        }
+
+        .notification-toast.warning {
+            background: var(--gold);
+        }
+
+        .notification-toast.info {
+            background: var(--primary-blue);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        /* Emergency Alert */
+        .emergency-alert {
+            position: fixed;
+            top: var(--header-height);
+            left: var(--sidebar-width);
+            right: 0;
+            background: linear-gradient(90deg, var(--secondary-red), var(--light-red));
+            color: white;
+            padding: 1rem 2rem;
+            z-index: 1001;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            animation: emergencyFlash 2s infinite;
+        }
+
+        .emergency-alert.active {
+            display: flex;
+        }
+
+        @keyframes emergencyFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+
+<body data-theme="light">
+<!-- Emergency Alert -->
+<div class="emergency-alert" id="emergencyAlert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div>
+        <strong>EMERGENCY ALERT:</strong>
+        <span id="emergencyMessage">Emergency situation detected</span>
+    </div>
+    <button onclick="dismissEmergencyAlert()" style="margin-left: auto; background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <span class="logo-text">IMAS Analytics</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="#" class="active" onclick="showSection('dashboard', event)">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('analytics', event)">
+                    <i class="fas fa-brain"></i>
+                    <span class="menu-text">ML Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('tracking', event)">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="menu-text">Route Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('charts', event)">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="menu-text">Comparison Charts</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('reports', event)">
+                    <i class="fas fa-file-medical-alt"></i>
+                    <span class="menu-text">Emergency Reports</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('notifications', event)">
+                    <i class="fas fa-bell"></i>
+                    <span class="menu-text">Notifications</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('predictions', event)">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="menu-text">Predictions</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="AnalystPassengersDashboard.html">
+                    <i class="fas fa-tools"></i>
+                    <span class="menu-text">Passengers Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('bookings', event)">
+                    <i class="fas fa-users"></i>
+                    <span class="menu-text">Booking Analytics</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="WhatsApp.html">
+                    <i class="fas fa-comments"></i>
+                    <span class="menu-text">WhatsApp</span>
+                </a>
+            </li>
+
+            <li class="logout-item">
+                <a href="#" onclick="handleLogout(event)">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="menu-text">Logout</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">IMAS Analyst Dashboard with ML Analytics</h1>
+    </div>
+    <div class="header-right">
+        <button class="notification-btn" onclick="showSection('notifications')">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notificationCount">0</span>
+        </button>
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName">Analyst</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 style="color: var(--gray-dark);" id="welcomeMessage">Good Morning, Analyst! Welcome to Your ML-Powered Dashboard</h1>
+            <div class="real-time-indicator">
+                <div class="pulse-dot"></div>
+                Real-time Monitoring Active
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon buses">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalBuses">0</h3>
+                    <p>Active Buses</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon tickets">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalTickets">0</h3>
+                    <p>Total Bookings</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRevenue">0 FC</h3>
+                    <p>Total Revenue</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon routes">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRoutes">0</h3>
+                    <p>Active Routes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon emergencies">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalEmergencies">0</h3>
+                    <p>Emergency Reports</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Daily Revenue Trend</h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Bus Utilization</h3>
+                <div class="chart-container">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Recent System Activity</h3>
+            <div id="recentActivity">
+                <p style="color: var(--gray-medium);">Loading recent activity...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ML Analytics Section -->
+    <section id="analytics-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Machine Learning Analytics</h1>
+
+        <div class="analytics-summary">
+            <div class="summary-card">
+                <div class="summary-value" id="predictionAccuracy">94%</div>
+                <div class="summary-label">ML Prediction Accuracy</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="dataPoints">12,456</div>
+                <div class="summary-label">Data Points Analyzed</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="modelsRunning">8</div>
+                <div class="summary-label">ML Models Running</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value" id="anomaliesDetected">3</div>
+                <div class="summary-label">Anomalies Detected</div>
+            </div>
+        </div>
+
+        <div class="prediction-cards">
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Demand Forecasting</div>
+                        <div class="prediction-subtitle">Next 7 days prediction</div>
+                    </div>
+                </div>
+                <div class="prediction-value" id="demandPrediction">+18%</div>
+                <p>Expected increase in passenger demand based on historical patterns and current trends.</p>
+            </div>
+
+            <div class="prediction-card warning">
+                <div class="prediction-header">
+                    <div class="prediction-icon warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Route Optimization</div>
+                        <div class="prediction-subtitle">Efficiency analysis</div>
+                    </div>
+                </div>
+                <div class="prediction-value warning" id="routeEfficiency">76%</div>
+                <p>Current route efficiency. ML suggests 3 route modifications for 12% improvement.</p>
+            </div>
+
+            <div class="prediction-card critical">
+                <div class="prediction-header">
+                    <div class="prediction-icon critical">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Maintenance Prediction</div>
+                        <div class="prediction-subtitle">Predictive maintenance</div>
+                    </div>
+                </div>
+                <div class="prediction-value critical" id="maintenanceAlert">2 Buses</div>
+                <p>ML predicts maintenance needs within 72 hours for optimal performance.</p>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">ML Demand Prediction</h3>
+                <div class="chart-container">
+                    <canvas id="demandPredictionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Route Efficiency ML Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="routeEfficiencyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Passenger Behavior Patterns</h3>
+                <div class="chart-container">
+                    <canvas id="behaviorPatternsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Anomaly Detection</h3>
+                <div class="chart-container">
+                    <canvas id="anomalyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Route Tracking Section -->
+    <section id="tracking-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Real-time Route Tracking</h1>
+
+        <div class="route-tracking">
+            <div class="card" style="margin: 0; padding: 0; overflow: hidden;">
+                <div id="analystMap" style="height: 100%; width: 100%;"></div>
+            </div>
+
+            <div class="route-status">
+                <h3 style="margin-bottom: 1.5rem;">Active Routes Status</h3>
+                <div id="routeStatusList">
+                    <p style="color: var(--gray-medium);">Loading route status...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Charts Section -->
+    <section id="charts-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Comparison Charts & Analytics</h1>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Revenue vs Expenses</h3>
+                <div class="chart-container">
+                    <canvas id="revenueExpensesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Bus Performance Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="busPerformanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Route Popularity Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="routePopularityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Monthly Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Peak Hours Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="peakHoursChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Driver Performance Metrics</h3>
+                <div class="chart-container">
+                    <canvas id="driverPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Emergency Reports Section -->
+    <section id="reports-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Emergency Reports Management</h1>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                <button class="btn btn-danger" onclick="openEmergencyModal()">
+                    <i class="fas fa-plus"></i>
+                    Create Emergency Report
+                </button>
+            </div>
+            <div>
+                <select class="form-control" style="width: 200px;" id="reportStatusFilter" onchange="loadEmergencyReports()">
+                    <option value="">All Reports</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="RESOLVED">Resolved</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Emergency Reports</h3>
+            <div id="emergencyReportsList">
+                <p style="color: var(--gray-medium);">Loading emergency reports...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notifications Section -->
+    <section id="notifications-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">System Notifications</h1>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h3>All Notifications</h3>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="markAllNotificationsAsRead()">
+                        <i class="fas fa-check-double"></i>
+                        Mark All as Read
+                    </button>
+                </div>
+            </div>
+            <div id="notificationsList">
+                <!-- Notifications will be populated here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Predictions Section -->
+    <section id="predictions-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">AI Predictions & Forecasting</h1>
+
+        <div class="prediction-cards">
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Passenger Flow Prediction</div>
+                        <div class="prediction-subtitle">Next 24 hours</div>
+                    </div>
+                </div>
+                <div class="prediction-value" id="passengerFlowPrediction">+23%</div>
+                <p>ML predicts increased passenger flow tomorrow based on weather, events, and historical data.</p>
+            </div>
+
+            <div class="prediction-card warning">
+                <div class="prediction-header">
+                    <div class="prediction-icon warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Delay Risk Assessment</div>
+                        <div class="prediction-subtitle">Route reliability</div>
+                    </div>
+                </div>
+                <div class="prediction-value warning" id="delayRisk">Medium</div>
+                <p>Traffic patterns suggest potential delays on Routes 3 and 7 during evening hours.</p>
+            </div>
+
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-icon">
+                        <i class="fas fa-money-bill-trend-up"></i>
+                    </div>
+                    <div>
+                        <div class="prediction-title">Revenue Forecast</div>
+                        <div class="prediction-subtitle">Next 30 days</div>
+                    </div>
+                </div>
+                <div class="prediction-value" id="revenueForecast">+12%</div>
+                <p>AI forecasts 12% revenue increase based on booking trends and seasonal patterns.</p>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Passenger Volume Forecast</h3>
+                <div class="chart-container">
+                    <canvas id="passengerForecastChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Revenue Prediction Model</h3>
+                <div class="chart-container">
+                    <canvas id="revenuePredictionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Booking Analytics Section -->
+    <section id="bookings-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Booking Analytics & Passenger Insights</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon tickets">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="bookingRate">87%</h3>
+                    <p>Average Booking Rate</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon buses">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="avgBookingTime">2.3h</h3>
+                    <p>Avg. Advance Booking</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="repeatCustomers">64%</h3>
+                    <p>Repeat Customers</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Bus Occupancy Rates</h3>
+                <div class="chart-container">
+                    <canvas id="occupancyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Booking Patterns by Time</h3>
+                <div class="chart-container">
+                    <canvas id="bookingPatternsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Route Demand Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="routeDemandChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Customer Satisfaction Trends</h3>
+                <div class="chart-container">
+                    <canvas id="satisfactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Recent Bookings Analysis</h3>
+            <div id="recentBookings">
+                <p style="color: var(--gray-medium);">Loading recent bookings data...</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+
+
+<!-- Emergency Report Modal -->
+<div id="emergencyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Create Emergency Report</h2>
+            <button class="close-btn" onclick="closeModal('emergencyModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="emergencyReportForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Emergency Type</label>
+                    <select class="form-control" id="emergencyType" required>
+                        <option value="">Select Type</option>
+                        <option value="ACCIDENT">Accident</option>
+                        <option value="BREAKDOWN">Breakdown</option>
+                        <option value="MEDICAL">Medical Emergency</option>
+                        <option value="FIRE">Fire</option>
+                        <option value="SECURITY">Security Incident</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Severity</label>
+                    <select class="form-control" id="emergencySeverity" required>
+                        <option value="">Select Severity</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Bus</label>
+                    <select class="form-control" id="emergencyBus">
+                        <option value="">Select Bus (Optional)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Driver</label>
+                    <select class="form-control" id="emergencyDriver">
+                        <option value="">Select Driver (Optional)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" class="form-control" id="emergencyLocation" placeholder="Emergency location" required>
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" id="emergencyDescription" rows="4" placeholder="Detailed description of the emergency..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-danger" style="width: 100%;">
+                <i class="fas fa-exclamation-triangle"></i>
+                Submit Emergency Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let currentUser = null;
+    let analystMap = null;
+    let charts = {};
+    let notifications = [];
+    let emergencyReports = [];
+    let busData = [];
+    let ticketData = [];
+    let routeData = [];
+    let realTimeInterval = null;
+    let emergencyInterval = null;
+
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Initialize application
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Initializing IMAS Analyst Dashboard with ML Analytics...');
+
+        initializeUser();
+        initializeEventListeners();
+        showSection('dashboard');
+        loadDashboardData();
+        startRealTimeUpdates();
+        startEmergencyMonitoring();
+    });
+
+    // Initialize user
+    function initializeUser() {
+        const userSession = localStorage.getItem('userSession');
+        if (userSession) {
+            currentUser = JSON.parse(userSession);
+        } else {
+            currentUser = {
+                id: 1,
+                firstName: 'System',
+                lastName: 'Analyst',
+                email: 'analyst@imas.com',
+                role: 'ANALYST'
+            };
+            localStorage.setItem('userSession', JSON.stringify(currentUser));
+        }
+
+        document.getElementById('userName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+        document.getElementById('userAvatar').textContent = currentUser.firstName.charAt(0);
+    }
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('emergencyReportForm').addEventListener('submit', handleEmergencyReportSubmission);
+    }
+
+    // Start real-time updates
+    function startRealTimeUpdates() {
+        realTimeInterval = setInterval(async () => {
+            await updateRealTimeData();
+        }, 10000); // Update every 10 seconds
+    }
+
+    // Start emergency monitoring
+    function startEmergencyMonitoring() {
+        emergencyInterval = setInterval(async () => {
+            await checkForEmergencies();
+        }, 5000); // Check every 5 seconds
+    }
+
+    // Update real-time data
+    async function updateRealTimeData() {
+        try {
+            await Promise.all([
+                loadBusData(),
+                loadTicketData(),
+                loadRouteData(),
+                loadNotifications(),
+                loadEmergencyReports()
+            ]);
+
+            updateDashboardStats();
+
+            const currentSection = document.querySelector('.section:not(.hidden)');
+            if (currentSection) {
+                const sectionId = currentSection.id;
+                if (sectionId === 'tracking-section') {
+                    updateRouteTracking();
+                } else if (sectionId === 'analytics-section') {
+                    updateMLAnalytics();
+                }
+            }
+        } catch (error) {
+            console.error('Real-time update error:', error);
+        }
+    }
+
+    // Check for emergencies
+    async function checkForEmergencies() {
+        try {
+            const response = await fetch(`${API_BASE}/emergency-reports/high-priority`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                const highPriorityReports = await response.json();
+
+                // Check for new critical emergencies
+                const newEmergencies = highPriorityReports.filter(report =>
+                    report.severity === 'CRITICAL' &&
+                    report.status === 'ACTIVE' &&
+                    !emergencyReports.find(existing => existing.id === report.id)
+                );
+
+                if (newEmergencies.length > 0) {
+                    showEmergencyAlert(newEmergencies[0]);
+                    sendEmergencyNotification(newEmergencies[0]);
+                }
+            }
+        } catch (error) {
+            console.error('Emergency monitoring error:', error);
+        }
+    }
+
+    // Show emergency alert
+    function showEmergencyAlert(emergency) {
+        const alertElement = document.getElementById('emergencyAlert');
+        const messageElement = document.getElementById('emergencyMessage');
+
+        messageElement.textContent = `${emergency.type} - ${emergency.location}: ${emergency.description}`;
+        alertElement.classList.add('active');
+
+        // Auto-dismiss after 30 seconds
+        setTimeout(() => {
+            dismissEmergencyAlert();
+        }, 30000);
+    }
+
+    // Dismiss emergency alert
+    function dismissEmergencyAlert() {
+        const alertElement = document.getElementById('emergencyAlert');
+        alertElement.classList.remove('active');
+    }
+
+    // Send emergency notification
+    function sendEmergencyNotification(emergency) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('🚨 CRITICAL EMERGENCY', {
+                body: `${emergency.type} at ${emergency.location}`,
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚨</text></svg>',
+                requireInteraction: true
+            });
+        }
+
+        addNotification({
+            title: '🚨 CRITICAL EMERGENCY ALERT',
+            message: `${emergency.type} reported at ${emergency.location}. Immediate attention required.`,
+            type: 'emergency',
+            urgent: true,
+            time: new Date(),
+            read: false
+        });
+    }
+
+    // Load dashboard data
+    async function loadDashboardData() {
+        try {
+            await Promise.all([
+                loadBusData(),
+                loadTicketData(),
+                loadRouteData(),
+                loadNotifications(),
+                loadEmergencyReports()
+            ]);
+
+            updateDashboardStats();
+            createDashboardCharts();
+            loadRecentActivity();
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            showNotification('Error loading dashboard data', 'error');
+        }
+    }
+
+    // Load bus data
+    async function loadBusData() {
+        try {
+            const response = await fetch(`${API_BASE}/buses`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                busData = await response.json();
+                console.log('✅ Loaded bus data:', busData.length);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('❌ Error loading bus data:', error);
+            busData = [];
+        }
+    }
+
+
+
+
+
+
+
+    // Load ticket data
+    async function loadTicketData() {
+        try {
+            const response = await fetch(`${API_BASE}/tickets`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                ticketData = await response.json();
+                console.log('✅ Loaded ticket data:', ticketData.length);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('❌ Error loading ticket data:', error);
+            ticketData = [];
+        }
+    }
+
+    // Load route data
+    async function loadRouteData() {
+        try {
+            const response = await fetch(`${API_BASE}/routes`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                routeData = await response.json();
+                console.log('✅ Loaded route data:', routeData.length);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('❌ Error loading route data:', error);
+            routeData = [];
+        }
+    }
+
+    // Load notifications
+    async function loadNotifications() {
+        try {
+            // Try to get notifications for the current user
+            const response = await fetch(`${API_BASE}/notifications/user/${currentUser.id}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                notifications = data.map(notif => ({
+                    id: notif.id,
+                    title: notif.title || 'System Notification',
+                    message: notif.message,
+                    time: new Date(notif.timestamp || notif.createdAt),
+                    read: notif.read,
+                    type: notif.type || 'system',
+                    urgent: notif.type === 'emergency' || notif.severity === 'CRITICAL'
+                }));
+                console.log('✅ Loaded notifications:', notifications.length);
+            } else {
+                // If no notifications found, create some system notifications
+                notifications = [];
+            }
+        } catch (error) {
+            console.error('❌ Error loading notifications:', error);
+            notifications = [];
+        }
+
+        updateNotificationBadge();
+        displayNotifications();
+    }
+
+    // Load emergency reports
+    async function loadEmergencyReports() {
+        try {
+            const response = await fetch(`${API_BASE}/emergency-reports`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (response.ok) {
+                emergencyReports = await response.json();
+                console.log('✅ Loaded emergency reports:', emergencyReports.length);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('❌ Error loading emergency reports:', error);
+            emergencyReports = [];
+        }
+
+        displayEmergencyReports();
+    }
+
+    // Update dashboard stats
+    function updateDashboardStats() {
+        // Total buses
+        const activeBuses = busData.filter(bus => !bus.hasAccident).length;
+        document.getElementById('totalBuses').textContent = activeBuses;
+
+        // Total tickets
+        document.getElementById('totalTickets').textContent = ticketData.length;
+
+        // Total revenue (estimate based on tickets)
+        const totalRevenue = ticketData.reduce((sum, ticket) => {
+            return sum + (ticket.status === 'PAID' ? 2500 : 0); // Average ticket price
+        }, 0);
+        document.getElementById('totalRevenue').textContent = totalRevenue.toLocaleString() + ' FC';
+
+        // Active routes
+        const activeRoutes = routeData.filter(route => route.active !== false).length;
+        document.getElementById('totalRoutes').textContent = activeRoutes;
+
+        // Emergency reports
+        const activeEmergencies = emergencyReports.filter(report => report.status === 'ACTIVE').length;
+        document.getElementById('totalEmergencies').textContent = activeEmergencies;
+
+        // Update booking analytics
+        if (document.getElementById('bookingRate')) {
+            const bookingRate = Math.round((ticketData.filter(t => t.status === 'PAID').length / Math.max(ticketData.length, 1)) * 100);
+            document.getElementById('bookingRate').textContent = bookingRate + '%';
+
+            document.getElementById('avgBookingTime').textContent = '2.3h';
+            document.getElementById('repeatCustomers').textContent = '64%';
+        }
+    }
+
+    // Create dashboard charts
+    function createDashboardCharts() {
+        createRevenueChart();
+        createUtilizationChart();
+    }
+
+    // Create revenue chart
+    function createRevenueChart() {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+
+        destroyChart('revenue');
+
+        const last7Days = [];
+        const revenueData = [];
+        const now = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            last7Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+            // Calculate revenue for this day
+            const dayRevenue = ticketData.filter(ticket => {
+                const ticketDate = new Date(ticket.issuedAt || ticket.createdAt);
+                return ticketDate.toDateString() === date.toDateString() && ticket.status === 'PAID';
+            }).reduce((sum, ticket) => sum + 2500, 0);
+
+            revenueData.push(dayRevenue);
+        }
+
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Daily Revenue (FC)',
+                    data: revenueData,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' FC';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create utilization chart
+    function createUtilizationChart() {
+        const ctx = document.getElementById('utilizationChart');
+        if (!ctx) return;
+
+        destroyChart('utilization');
+
+        // Calculate bus utilization
+        const utilizationData = busData.map(bus => {
+            const busTickets = ticketData.filter(ticket => ticket.busId === bus.id);
+            const utilization = Math.min((busTickets.length / Math.max(bus.capacity, 1)) * 100, 100);
+            return {
+                busName: bus.name || `Bus ${bus.id}`,
+                utilization: Math.round(utilization)
+            };
+        }).slice(0, 10); // Show top 10 buses
+
+        charts.utilization = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: utilizationData.map(item => item.busName),
+                datasets: [{
+                    label: 'Utilization %',
+                    data: utilizationData.map(item => item.utilization),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10B981',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Load recent activity
+    function loadRecentActivity() {
+        const container = document.getElementById('recentActivity');
+
+        if (ticketData.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No recent activity</p>';
+            return;
+        }
+
+        const recentTickets = ticketData
+            .sort((a, b) => new Date(b.issuedAt || b.createdAt) - new Date(a.issuedAt || a.createdAt))
+            .slice(0, 10);
+
+        container.innerHTML = recentTickets.map(ticket => {
+            const date = new Date(ticket.issuedAt || ticket.createdAt).toLocaleString();
+            const bus = busData.find(b => b.id === ticket.busId);
+            const busName = bus ? bus.name : `Bus ${ticket.busId}`;
+
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--gray-light);">
+                    <div>
+                        <strong>New Booking: ${ticket.ticketNumber}</strong><br>
+                        <small style="color: var(--gray-medium);">${busName} • ${ticket.origin} → ${ticket.destination} • ${date}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong style="color: var(--green);">2,500 FC</strong><br>
+                        <span class="emergency-status ${ticket.status.toLowerCase()}">${ticket.status}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Initialize analyst map
+    function initializeAnalystMap() {
+        if (analystMap) {
+            console.log('ℹ️ Analyst map already initialized');
+            return;
+        }
+
+        console.log('🗺️ Initializing analyst tracking map...');
+
+        try {
+            analystMap = L.map('analystMap').setView([-4.3276, 15.3136], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors | IMAS Analyst Dashboard',
+                maxZoom: 20,
+                minZoom: 8
+            }).addTo(analystMap);
+
+            // Add Kinshasa landmarks
+            const landmarks = [
+                { name: 'Gare Centrale', lat: -4.3276, lng: 15.3136, icon: '🚉' },
+                { name: 'Aéroport de N\'djili', lat: -4.3857, lng: 15.4446, icon: '✈️' },
+                { name: 'Université de Kinshasa', lat: -4.4326, lng: 15.2973, icon: '🎓' },
+                { name: 'Marché Central', lat: -4.3200, lng: 15.3100, icon: '🏪' },
+                { name: 'Limete', lat: -4.3500, lng: 15.3200, icon: '🏘️' },
+                { name: 'Bandalungwa', lat: -4.3100, lng: 15.2900, icon: '🏘️' },
+                { name: 'Matete', lat: -4.3400, lng: 15.3600, icon: '🏘️' },
+                { name: 'Masina', lat: -4.3800, lng: 15.3900, icon: '🏘️' },
+                { name: 'Kimbanseke', lat: -4.4200, lng: 15.3500, icon: '🏘️' }
+            ];
+
+            landmarks.forEach(landmark => {
+                L.marker([landmark.lat, landmark.lng], {
+                    icon: L.divIcon({
+                        className: 'landmark-marker',
+                        html: `<div style="background: white; border: 3px solid var(--primary-blue); border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">${landmark.icon}</div>`,
+                        iconSize: [35, 35],
+                        iconAnchor: [17, 17]
+                    })
+                }).addTo(analystMap).bindPopup(`<strong>${landmark.name}</strong>`);
+            });
+
+            console.log('✅ Analyst map initialized');
+            updateRouteTracking();
+
+        } catch (error) {
+            console.error('❌ Error initializing analyst map:', error);
+            document.getElementById('analystMap').innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--gray-light);">
+                    <div style="text-align: center;">
+                        <i class="fas fa-map-marked-alt" style="font-size: 3rem; color: var(--gray-medium); margin-bottom: 1rem;"></i>
+                        <p style="color: var(--gray-medium);">Map failed to load</p>
+                        <button class="btn" onclick="initializeAnalystMap()" style="margin-top: 1rem;">
+                            <i class="fas fa-refresh"></i>
+                            Retry Map Loading
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Update route tracking
+    function updateRouteTracking() {
+        if (!analystMap) return;
+
+        // Add bus markers to map
+        busData.forEach(bus => {
+            if (bus.currentLat && bus.currentLng) {
+                let markerColor = '#10B981';
+                let statusEmoji = '🚌';
+
+                if (bus.hasAccident) {
+                    markerColor = '#DC2626';
+                    statusEmoji = '🚨';
+                } else if (bus.isStopped) {
+                    markerColor = '#F59E0B';
+                    statusEmoji = '⏸️';
+                }
+
+                const marker = L.marker([bus.currentLat, bus.currentLng], {
+                    icon: L.divIcon({
+                        className: 'bus-marker',
+                        html: `
+                            <div style="background: ${markerColor}; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 3px solid white;">
+                                ${statusEmoji}
+                            </div>
+                        `,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    })
+                }).addTo(analystMap);
+
+                marker.bindPopup(`
+                    <div style="text-align: center; min-width: 200px;">
+                        <h4 style="margin: 0 0 8px 0; color: ${markerColor};">${bus.name}</h4>
+                        <div style="background: rgba(0,0,0,0.05); padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                            <small>🚌 Bus ID: ${bus.id}</small><br>
+                            <small>📊 Progress: ${Math.round(bus.progress || 0)}%</small><br>
+                            <small>🚦 Status: ${bus.hasAccident ? 'Emergency' : bus.isStopped ? 'Stopped' : 'Moving'}</small><br>
+                            <small>👥 Passengers: ${bus.passengers || 0}/${bus.capacity || 50}</small>
+                        </div>
+                    </div>
+                `);
+            }
+        });
+
+        updateRouteStatusList();
+    }
+
+    // Update route status list
+    function updateRouteStatusList() {
+        const container = document.getElementById('routeStatusList');
+
+        if (busData.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No active routes</p>';
+            return;
+        }
+
+        container.innerHTML = busData.map(bus => {
+            let statusClass = '';
+            let statusText = 'Active';
+            let statusIcon = '🚌';
+
+            if (bus.hasAccident) {
+                statusClass = 'critical';
+                statusText = 'Emergency';
+                statusIcon = '🚨';
+            } else if (bus.isStopped) {
+                statusClass = 'warning';
+                statusText = 'Stopped';
+                statusIcon = '⏸️';
+            }
+
+            return `
+                <div class="route-item ${statusClass}" onclick="focusOnBus(${bus.id})">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>${bus.name}</strong>
+                        <span style="font-size: 1.2rem;">${statusIcon}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--gray-medium);">
+                        <div>Status: ${statusText}</div>
+                        <div>Progress: ${Math.round(bus.progress || 0)}%</div>
+                        <div>Passengers: ${bus.passengers || 0}/${bus.capacity || 50}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Focus on specific bus
+    function focusOnBus(busId) {
+        const bus = busData.find(b => b.id === busId);
+        if (bus && bus.currentLat && bus.currentLng && analystMap) {
+            analystMap.flyTo([bus.currentLat, bus.currentLng], 16, {
+                duration: 2
+            });
+        }
+    }
+
+    // Display emergency reports
+    function displayEmergencyReports() {
+        const container = document.getElementById('emergencyReportsList');
+
+        if (emergencyReports.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No emergency reports</p>';
+            return;
+        }
+
+        const filteredReports = emergencyReports.filter(report => {
+            const statusFilter = document.getElementById('reportStatusFilter')?.value;
+            return !statusFilter || report.status === statusFilter;
+        });
+
+        container.innerHTML = filteredReports.map(report => {
+            const date = new Date(report.timestamp || report.createdAt).toLocaleString();
+            let statusClass = report.status?.toLowerCase() || 'pending';
+
+            return `
+                <div class="notification-item ${report.severity === 'CRITICAL' ? 'urgent' : ''}">
+                    <div class="notification-header">
+                        <div class="notification-title">
+                            ${report.type} - ${report.severity}
+                        </div>
+                        <div class="notification-time">${date}</div>
+                    </div>
+                    <div class="notification-message">
+                        <strong>Location:</strong> ${report.location}<br>
+                        <strong>Description:</strong> ${report.description}<br>
+                        <span class="emergency-status ${statusClass}">${report.status}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Create ML Analytics Charts
+    function createMLAnalyticsCharts() {
+        createDemandPredictionChart();
+        createRouteEfficiencyChart();
+        createBehaviorPatternsChart();
+        createAnomalyChart();
+    }
+
+    // Create demand prediction chart
+    function createDemandPredictionChart() {
+        const ctx = document.getElementById('demandPredictionChart');
+        if (!ctx) return;
+
+        destroyChart('demandPrediction');
+
+        const next7Days = [];
+        const historicalData = [];
+        const predictedData = [];
+
+        for (let i = -7; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+            next7Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+            if (i < 0) {
+                // Historical data
+                const dayTickets = ticketData.filter(ticket => {
+                    const ticketDate = new Date(ticket.issuedAt || ticket.createdAt);
+                    return ticketDate.toDateString() === date.toDateString();
+                }).length;
+                historicalData.push(dayTickets);
+                predictedData.push(null);
+            } else {
+                // Predicted data using simple ML algorithm
+                const avgDemand = historicalData.reduce((sum, val) => sum + val, 0) / historicalData.length;
+                const trend = i === 0 ? 0 : (historicalData[historicalData.length - 1] - historicalData[0]) / 7;
+                const seasonalFactor = 1 + (Math.sin(i / 7 * Math.PI * 2) * 0.1);
+                const predicted = Math.round((avgDemand + trend * i) * seasonalFactor);
+
+                historicalData.push(null);
+                predictedData.push(predicted);
+            }
+        }
+
+        charts.demandPrediction = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: next7Days,
+                datasets: [{
+                    label: 'Historical Demand',
+                    data: historicalData,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 2,
+                    fill: false
+                }, {
+                    label: 'ML Prediction',
+                    data: predictedData,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Bookings'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create route efficiency chart
+    function createRouteEfficiencyChart() {
+        const ctx = document.getElementById('routeEfficiencyChart');
+        if (!ctx) return;
+
+        destroyChart('routeEfficiency');
+
+        const routeEfficiency = busData.map(bus => {
+            const busTickets = ticketData.filter(ticket => ticket.busId === bus.id);
+            const efficiency = Math.min((busTickets.length / Math.max(bus.capacity, 1)), 1) * 100;
+
+            return {
+                name: bus.name || `Bus ${bus.id}`,
+                efficiency: Math.round(efficiency),
+                optimal: 85 // ML-suggested optimal efficiency
+            };
+        }).slice(0, 8);
+
+        charts.routeEfficiency = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: routeEfficiency.map(item => item.name),
+                datasets: [{
+                    label: 'Current Efficiency',
+                    data: routeEfficiency.map(item => item.efficiency),
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.2)',
+                    borderWidth: 2
+                }, {
+                    label: 'ML Optimal',
+                    data: routeEfficiency.map(item => item.optimal),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    // Create behavior patterns chart
+    function createBehaviorPatternsChart() {
+        const ctx = document.getElementById('behaviorPatternsChart');
+        if (!ctx) return;
+
+        destroyChart('behaviorPatterns');
+
+        const hourlyBookings = new Array(24).fill(0);
+
+        ticketData.forEach(ticket => {
+            const hour = new Date(ticket.issuedAt || ticket.createdAt).getHours();
+            hourlyBookings[hour]++;
+        });
+
+        const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+
+        charts.behaviorPatterns = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Booking Patterns',
+                    data: hourlyBookings,
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Passenger Booking Behavior by Hour'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Bookings'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hour of Day'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create anomaly detection chart
+    function createAnomalyChart() {
+        const ctx = document.getElementById('anomalyChart');
+        if (!ctx) return;
+
+        destroyChart('anomaly');
+
+        const last30Days = [];
+        const normalData = [];
+        const anomalies = [];
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            last30Days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+            const dayTickets = ticketData.filter(ticket => {
+                const ticketDate = new Date(ticket.issuedAt || ticket.createdAt);
+                return ticketDate.toDateString() === date.toDateString();
+            }).length;
+
+            // Simple anomaly detection: values more than 2 std deviations from mean
+            const mean = ticketData.length / 30;
+            const isAnomaly = Math.abs(dayTickets - mean) > (mean * 0.5);
+
+            normalData.push(isAnomaly ? null : dayTickets);
+            anomalies.push(isAnomaly ? dayTickets : null);
+        }
+
+        charts.anomaly = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                labels: last30Days,
+                datasets: [{
+                    label: 'Normal Activity',
+                    data: normalData.map((val, idx) => ({ x: idx, y: val })).filter(point => point.y !== null),
+                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                    borderColor: '#10B981',
+                    pointRadius: 4
+                }, {
+                    label: 'Anomalies Detected',
+                    data: anomalies.map((val, idx) => ({ x: idx, y: val })).filter(point => point.y !== null),
+                    backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                    borderColor: '#DC2626',
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'ML Anomaly Detection in Booking Patterns'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Bookings'
+                        }
+                    },
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: 'Days (Last 30)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return last30Days[Math.floor(value)] || '';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create comparison charts
+    function createComparisonCharts() {
+        createRevenueExpensesChart();
+        createBusPerformanceChart();
+        createRoutePopularityChart();
+        createMonthlyComparisonChart();
+        createPeakHoursChart();
+        createDriverPerformanceChart();
+    }
+
+    // Create revenue vs expenses chart
+    function createRevenueExpensesChart() {
+        const ctx = document.getElementById('revenueExpensesChart');
+        if (!ctx) return;
+
+        destroyChart('revenueExpenses');
+
+        const months = [];
+        const revenueData = [];
+        const expensesData = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+            const monthRevenue = ticketData.filter(ticket => {
+                const ticketDate = new Date(ticket.issuedAt || ticket.createdAt);
+                return ticketDate.getMonth() === date.getMonth() &&
+                    ticketDate.getFullYear() === date.getFullYear() &&
+                    ticket.status === 'PAID';
+            }).reduce((sum, ticket) => sum + 2500, 0);
+
+            revenueData.push(monthRevenue);
+            expensesData.push(monthRevenue * 0.6); // Estimated expenses as 60% of revenue
+        }
+
+        charts.revenueExpenses = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Revenue',
+                    data: revenueData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10B981',
+                    borderWidth: 1
+                }, {
+                    label: 'Expenses',
+                    data: expensesData,
+                    backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                    borderColor: '#DC2626',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' FC';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create bus performance chart
+    function createBusPerformanceChart() {
+        const ctx = document.getElementById('busPerformanceChart');
+        if (!ctx) return;
+
+        destroyChart('busPerformance');
+
+        const busPerformance = busData.slice(0, 10).map(bus => {
+            const busTickets = ticketData.filter(ticket => ticket.busId === bus.id);
+            const performance = busTickets.length;
+
+            return {
+                name: bus.name || `Bus ${bus.id}`,
+                performance: performance,
+                capacity: bus.capacity || 50
+            };
+        });
+
+        charts.busPerformance = new Chart(ctx, {
+            type: 'horizontalBar',
+            data: {
+                labels: busPerformance.map(item => item.name),
+                datasets: [{
+                    label: 'Total Bookings',
+                    data: busPerformance.map(item => item.performance),
+                    backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                    borderColor: '#1E40AF',
+                    borderWidth: 1
+                }, {
+                    label: 'Capacity',
+                    data: busPerformance.map(item => item.capacity),
+                    backgroundColor: 'rgba(107, 114, 128, 0.3)',
+                    borderColor: '#6B7280',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Create route popularity chart
+    function createRoutePopularityChart() {
+        const ctx = document.getElementById('routePopularityChart');
+        if (!ctx) return;
+
+        destroyChart('routePopularity');
+
+        const routePopularity = {};
+        ticketData.forEach(ticket => {
+            const route = `${ticket.origin} → ${ticket.destination}`;
+            routePopularity[route] = (routePopularity[route] || 0) + 1;
+        });
+
+        const sortedRoutes = Object.entries(routePopularity)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+
+        charts.routePopularity = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: sortedRoutes.map(item => item[0]),
+                datasets: [{
+                    data: sortedRoutes.map(item => item[1]),
+                    backgroundColor: [
+                        '#1E40AF', '#DC2626', '#10B981', '#F59E0B',
+                        '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Create monthly comparison chart
+    function createMonthlyComparisonChart() {
+        const ctx = document.getElementById('monthlyComparisonChart');
+        if (!ctx) return;
+
+        destroyChart('monthlyComparison');
+
+        const months = [];
+        const currentYearData = [];
+        const previousYearData = [];
+
+        for (let i = 11; i >= 0; i--) {
+            const currentDate = new Date();
+            currentDate.setMonth(currentDate.getMonth() - i);
+
+            const previousDate = new Date(currentDate);
+            previousDate.setFullYear(previousDate.getFullYear() - 1);
+
+            months.push(currentDate.toLocaleDateString('en-US', { month: 'short' }));
+
+            const currentMonthTickets = ticketData.filter(ticket => {
+                const ticketDate = new Date(ticket.issuedAt || ticket.createdAt);
+                return ticketDate.getMonth() === currentDate.getMonth() &&
+                    ticketDate.getFullYear() === currentDate.getFullYear();
+            }).length;
+
+            currentYearData.push(currentMonthTickets);
+            previousYearData.push(Math.max(0, currentMonthTickets + Math.random() * 20 - 10)); // Simulated previous year data
+        }
+
+        charts.monthlyComparison = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: '2024',
+                    data: currentYearData,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 2,
+                    fill: false
+                }, {
+                    label: '2023',
+                    data: previousYearData,
+                    borderColor: '#6B7280',
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Year-over-Year Comparison'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Create peak hours chart
+    function createPeakHoursChart() {
+        const ctx = document.getElementById('peakHoursChart');
+        if (!ctx) return;
+
+        destroyChart('peakHours');
+
+        const hourlyData = new Array(24).fill(0);
+        ticketData.forEach(ticket => {
+            const hour = new Date(ticket.issuedAt || ticket.createdAt).getHours();
+            hourlyData[hour]++;
+        });
+
+        const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+
+        charts.peakHours = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Bookings per Hour',
+                    data: hourlyData,
+                    backgroundColor: hourlyData.map(value => {
+                        const max = Math.max(...hourlyData);
+                        const intensity = value / max;
+                        return `rgba(30, 64, 175, ${0.3 + intensity * 0.7})`;
+                    }),
+                    borderColor: '#1E40AF',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Create driver performance chart
+    function createDriverPerformanceChart() {
+        const ctx = document.getElementById('driverPerformanceChart');
+        if (!ctx) return;
+
+        destroyChart('driverPerformance');
+
+        const driverPerformance = {};
+        busData.forEach(bus => {
+            if (bus.driver && bus.driver.firstName) {
+                const driverName = `${bus.driver.firstName} ${bus.driver.lastName}`;
+                const busTickets = ticketData.filter(ticket => ticket.busId === bus.id).length;
+                driverPerformance[driverName] = (driverPerformance[driverName] || 0) + busTickets;
+            }
+        });
+
+        const sortedDrivers = Object.entries(driverPerformance)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+
+        if (sortedDrivers.length === 0) {
+            ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+            return;
+        }
+
+        charts.driverPerformance = new Chart(ctx, {
+            type: 'horizontalBar',
+            data: {
+                labels: sortedDrivers.map(item => item[0]),
+                datasets: [{
+                    label: 'Total Trips',
+                    data: sortedDrivers.map(item => item[1]),
+                    backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                    borderColor: '#8B5CF6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Create booking analytics charts
+    function createBookingAnalyticsCharts() {
+        createOccupancyChart();
+        createBookingPatternsChart();
+        createRouteDemandChart();
+        createSatisfactionChart();
+    }
+
+    // Create occupancy chart
+    function createOccupancyChart() {
+        const ctx = document.getElementById('occupancyChart');
+        if (!ctx) return;
+
+        destroyChart('occupancy');
+
+        const occupancyData = busData.map(bus => {
+            const busTickets = ticketData.filter(ticket => ticket.busId === bus.id && ticket.status === 'PAID');
+            const occupancyRate = Math.min((busTickets.length / Math.max(bus.capacity, 1)) * 100, 100);
+
+            return {
+                name: bus.name || `Bus ${bus.id}`,
+                occupancy: Math.round(occupancyRate)
+            };
+        }).slice(0, 10);
+
+        charts.occupancy = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: occupancyData.map(item => item.name),
+                datasets: [{
+                    label: 'Occupancy Rate %',
+                    data: occupancyData.map(item => item.occupancy),
+                    backgroundColor: occupancyData.map(item => {
+                        if (item.occupancy >= 90) return 'rgba(220, 38, 38, 0.8)';
+                        if (item.occupancy >= 70) return 'rgba(245, 158, 11, 0.8)';
+                        return 'rgba(16, 185, 129, 0.8)';
+                    }),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Create booking patterns chart
+    function createBookingPatternsChart() {
+        const ctx = document.getElementById('bookingPatternsChart');
+        if (!ctx) return;
+
+        destroyChart('bookingPatterns');
+
+        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const weeklyBookings = new Array(7).fill(0);
+
+        ticketData.forEach(ticket => {
+            const date = new Date(ticket.issuedAt || ticket.createdAt);
+            const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1; // Adjust for Monday start
+            weeklyBookings[dayIndex]++;
+        });
+
+        charts.bookingPatterns = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: daysOfWeek,
+                datasets: [{
+                    label: 'Bookings by Day',
+                    data: weeklyBookings,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Create route demand chart
+    function createRouteDemandChart() {
+        const ctx = document.getElementById('routeDemandChart');
+        if (!ctx) return;
+
+        destroyChart('routeDemand');
+
+        const routeDemand = {};
+        ticketData.forEach(ticket => {
+            const route = `${ticket.origin} → ${ticket.destination}`;
+            routeDemand[route] = (routeDemand[route] || 0) + 1;
+        });
+
+        const sortedRoutes = Object.entries(routeDemand)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+
+        charts.routeDemand = new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: sortedRoutes.map(item => item[0]),
+                datasets: [{
+                    data: sortedRoutes.map(item => item[1]),
+                    backgroundColor: [
+                        'rgba(30, 64, 175, 0.8)',
+                        'rgba(220, 38, 38, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(236, 72, 153, 0.8)',
+                        'rgba(6, 182, 212, 0.8)',
+                        'rgba(132, 204, 22, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Create satisfaction chart
+    function createSatisfactionChart() {
+        const ctx = document.getElementById('satisfactionChart');
+        if (!ctx) return;
+
+        destroyChart('satisfaction');
+
+        // Simulate satisfaction data
+        const months = [];
+        const satisfactionData = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+            // Simulate satisfaction score between 3.5 and 4.8
+            const score = 3.5 + Math.random() * 1.3;
+            satisfactionData.push(parseFloat(score.toFixed(1)));
+        }
+
+        charts.satisfaction = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Satisfaction Score',
+                    data: satisfactionData,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 3,
+                        max: 5,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '/5';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Load recent bookings
+    function loadRecentBookings() {
+        const container = document.getElementById('recentBookings');
+
+        if (ticketData.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No recent bookings</p>';
+            return;
+        }
+
+        const recentBookings = ticketData
+            .sort((a, b) => new Date(b.issuedAt || b.createdAt) - new Date(a.issuedAt || a.createdAt))
+            .slice(0, 15);
+
+        // Group bookings by bus
+        const bookingsByBus = {};
+        recentBookings.forEach(ticket => {
+            const busKey = ticket.busId || 'Unknown';
+            if (!bookingsByBus[busKey]) {
+                bookingsByBus[busKey] = {
+                    bus: busData.find(b => b.id === ticket.busId) || { name: `Bus ${busKey}`, capacity: 50 },
+                    bookings: []
+                };
+            }
+            bookingsByBus[busKey].bookings.push(ticket);
+        });
+
+        container.innerHTML = Object.entries(bookingsByBus).map(([busKey, data]) => {
+            const { bus, bookings } = data;
+            const occupancyRate = Math.round((bookings.length / bus.capacity) * 100);
+
+            return `
+                <div style="background: var(--gray-light); padding: 1.5rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="color: var(--gray-dark);">${bus.name}</h4>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span style="color: var(--gray-medium);">Bookings: ${bookings.length}/${bus.capacity}</span>
+                            <span style="padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600; background: ${occupancyRate >= 90 ? 'rgba(220, 38, 38, 0.1)' : occupancyRate >= 70 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)'}; color: ${occupancyRate >= 90 ? 'var(--secondary-red)' : occupancyRate >= 70 ? 'var(--gold)' : 'var(--green)'}">${occupancyRate}% Full</span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem;">
+                        ${bookings.slice(0, 6).map(booking => {
+                const date = new Date(booking.issuedAt || booking.createdAt).toLocaleString();
+                return `
+                                <div style="font-size: 0.85rem; padding: 0.5rem; background: var(--white); border-radius: 6px; border-left: 3px solid var(--primary-blue);">
+                                    <div><strong>${booking.ticketNumber}</strong></div>
+                                    <div style="color: var(--gray-medium);">${booking.origin} → ${booking.destination}</div>
+                                    <div style="color: var(--gray-medium);">Seat: ${booking.seatNumber || 'N/A'}</div>
+                                    <div style="color: var(--gray-medium); font-size: 0.75rem;">${date}</div>
+                                </div>
+                            `;
+            }).join('')}
+                        ${bookings.length > 6 ? `
+                            <div style="font-size: 0.85rem; padding: 0.5rem; background: var(--white); border-radius: 6px; border-left: 3px solid var(--gold); display: flex; align-items: center; justify-content: center; color: var(--gray-medium);">
+                                +${bookings.length - 6} more bookings
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Update ML Analytics
+    function updateMLAnalytics() {
+        // Update prediction values
+        const demandIncrease = Math.round(15 + Math.random() * 10);
+        document.getElementById('demandPrediction').textContent = `+${demandIncrease}%`;
+
+        const efficiency = Math.round(70 + Math.random() * 20);
+        document.getElementById('routeEfficiency').textContent = `${efficiency}%`;
+
+        const maintenanceNeeded = Math.floor(1 + Math.random() * 4);
+        document.getElementById('maintenanceAlert').textContent = `${maintenanceNeeded} Buses`;
+
+        // Update analytics summary
+        document.getElementById('predictionAccuracy').textContent = `${Math.round(92 + Math.random() * 6)}%`;
+        document.getElementById('dataPoints').textContent = (12000 + Math.floor(Math.random() * 2000)).toLocaleString();
+        document.getElementById('anomaliesDetected').textContent = Math.floor(Math.random() * 5);
+    }
+
+    // Handle emergency report submission
+    async function handleEmergencyReportSubmission(e) {
+        e.preventDefault();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<div class="loading"></div> Submitting...';
+
+            const formData = {
+                driverId: currentUser.id,
+                busId: document.getElementById('emergencyBus').value || null,
+                type: document.getElementById('emergencyType').value,
+                severity: document.getElementById('emergencySeverity').value,
+                location: document.getElementById('emergencyLocation').value,
+                description: document.getElementById('emergencyDescription').value,
+                coordinates: null // Could be added later
+            };
+
+            console.log('Submitting emergency report:', formData);
+
+            const response = await fetch(`${API_BASE}/emergency-reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to submit emergency report');
+            }
+
+            const result = await response.json();
+            console.log('Emergency report submitted successfully:', result);
+
+            closeModal('emergencyModal');
+            document.getElementById('emergencyReportForm').reset();
+
+            showNotification('Emergency report submitted successfully!', 'success');
+
+            // Reload emergency reports
+            await loadEmergencyReports();
+
+            // Add notification about the new emergency report
+            addNotification({
+                title: '🚨 Emergency Report Submitted',
+                message: `${formData.type} reported at ${formData.location}`,
+                type: 'emergency',
+                urgent: formData.severity === 'CRITICAL',
+                time: new Date(),
+                read: false
+            });
+
+        } catch (error) {
+            console.error('Emergency report submission error:', error);
+            showNotification('Failed to submit emergency report: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    // Open emergency modal
+    async function openEmergencyModal() {
+        try {
+            // Load buses for the dropdown
+            const busSelect = document.getElementById('emergencyBus');
+            busSelect.innerHTML = '<option value="">Select Bus (Optional)</option>';
+
+            busData.forEach(bus => {
+                busSelect.innerHTML += `<option value="${bus.id}">${bus.name || `Bus ${bus.id}`}</option>`;
+            });
+
+            // Load drivers (staff with role DRIVER) for the dropdown
+            const driverSelect = document.getElementById('emergencyDriver');
+            driverSelect.innerHTML = '<option value="">Select Driver (Optional)</option>';
+
+            try {
+                const response = await fetch(`${API_BASE}/staff`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                    }
+                });
+
+                if (response.ok) {
+                    const staff = await response.json();
+                    const drivers = staff.filter(person => person.role === 'DRIVER');
+
+                    drivers.forEach(driver => {
+                        driverSelect.innerHTML += `<option value="${driver.id}">${driver.firstName} ${driver.lastName}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading drivers:', error);
+            }
+
+            openModal('emergencyModal');
+        } catch (error) {
+            console.error('Error opening emergency modal:', error);
+            showNotification('Error opening emergency form', 'error');
+        }
+    }
+
+    // Display notifications
+    function displayNotifications() {
+        const container = document.getElementById('notificationsList');
+
+        if (notifications.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 4rem;">
+                    <i class="fas fa-bell" style="font-size: 4rem; color: var(--gray-medium); margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--gray-medium); margin-bottom: 0.5rem;">No notifications</h3>
+                    <p style="color: var(--gray-medium);">System notifications will appear here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = notifications
+            .sort((a, b) => new Date(b.time) - new Date(a.time))
+            .map(notification => {
+                let iconClass = 'fas fa-info-circle';
+                let iconColor = 'var(--primary-blue)';
+
+                switch (notification.type) {
+                    case 'ticket-purchase':
+                        iconClass = 'fas fa-ticket-alt';
+                        iconColor = 'var(--green)';
+                        break;
+                    case 'emergency':
+                        iconClass = 'fas fa-exclamation-triangle';
+                        iconColor = 'var(--secondary-red)';
+                        break;
+                    case 'system':
+                        iconClass = 'fas fa-cog';
+                        iconColor = 'var(--gray-medium)';
+                        break;
+                    case 'booking':
+                        iconClass = 'fas fa-calendar-check';
+                        iconColor = 'var(--primary-blue)';
+                        break;
+                }
+
+                return `
+                    <div class="notification-item ${!notification.read ? 'unread' : ''} ${notification.urgent ? 'urgent' : ''}" onclick="markNotificationAsRead('${notification.id}')">
+                        <div class="notification-header">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="${iconClass}" style="color: ${iconColor};"></i>
+                                <div class="notification-title">${notification.title}</div>
+                                ${notification.urgent ? '<span style="background: var(--secondary-red); color: white; padding: 0.1rem 0.4rem; border-radius: 10px; font-size: 0.6rem;">URGENT</span>' : ''}
+                            </div>
+                            <div class="notification-time">${formatTimeAgo(new Date(notification.time))}</div>
+                        </div>
+                        <div class="notification-message">${notification.message}</div>
+                        ${!notification.read ? '<div style="width: 8px; height: 8px; background: var(--primary-blue); border-radius: 50%; position: absolute; top: 1rem; right: 1rem;"></div>' : ''}
+                    </div>
+                `;
+            }).join('');
+    }
+
+    // Add notification to list
+    function addNotification(notification) {
+        notification.id = notification.id || `notif_${Date.now()}_${Math.random()}`;
+        notifications.unshift(notification);
+
+        // Keep only last 100 notifications
+        if (notifications.length > 100) {
+            notifications = notifications.slice(0, 100);
+        }
+
+        updateNotificationBadge();
+        displayNotifications();
+
+        // Show toast notification for urgent messages
+        if (notification.urgent) {
+            showNotification(notification.title + ': ' + notification.message, 'warning');
+        }
+    }
+
+    // Update notification badge
+    function updateNotificationBadge() {
+        const unreadCount = notifications.filter(n => !n.read).length;
+        const badge = document.getElementById('notificationCount');
+        badge.textContent = unreadCount;
+        badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+    }
+
+    // Mark notification as read
+    function markNotificationAsRead(notificationId) {
+        const notification = notifications.find(n => n.id === notificationId);
+        if (notification && !notification.read) {
+            notification.read = true;
+            updateNotificationBadge();
+            displayNotifications();
+        }
+    }
+
+    // Mark all notifications as read
+    function markAllNotificationsAsRead() {
+        notifications.forEach(n => n.read = true);
+        updateNotificationBadge();
+        displayNotifications();
+        showNotification('All notifications marked as read', 'success');
+    }
+
+    // Destroy chart if exists
+    function destroyChart(chartKey) {
+        if (charts[chartKey]) {
+            charts[chartKey].destroy();
+            charts[chartKey] = null;
+        }
+    }
+
+    // Helper functions
+    function formatTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    }
+
+    function showSection(sectionName, event) {
+        console.log('📄 Showing section:', sectionName);
+
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        if (event) {
+            const clickedLink = event.target.closest('a');
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        } else {
+            const targetLink = document.querySelector(`[onclick*="${sectionName}"]`);
+            if (targetLink) {
+                targetLink.classList.add('active');
+            }
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'dashboard':
+                loadDashboardData();
+                break;
+            case 'analytics':
+                createMLAnalyticsCharts();
+                updateMLAnalytics();
+                break;
+            case 'tracking':
+                setTimeout(() => initializeAnalystMap(), 100);
+                break;
+            case 'charts':
+                createComparisonCharts();
+                break;
+            case 'reports':
+                loadEmergencyReports();
+                break;
+            case 'notifications':
+                loadNotifications();
+                break;
+            case 'predictions':
+                // Predictions charts already created in analytics
+                break;
+            case 'bookings':
+                createBookingAnalyticsCharts();
+                loadRecentBookings();
+                break;
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const header = document.getElementById('header');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        header.classList.toggle('expanded');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    // Enhanced notification system
+    function showNotification(message, type = 'info') {
+        let notificationContainer = document.getElementById('notificationContainer');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notificationContainer';
+            notificationContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                max-width: 400px;
+            `;
+            document.body.appendChild(notificationContainer);
+        }
+
+        const notification = document.createElement('div');
+        notification.className = `notification-toast ${type}`;
+        notification.textContent = message;
+
+        notificationContainer.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+
+        notification.addEventListener('click', () => {
+            notification.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        });
+    }
+
+    function handleLogout(event) {
+        event.preventDefault();
+
+        if (confirm('Are you sure you want to logout?')) {
+            // Clean up session data
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('userSession');
+            sessionStorage.clear();
+
+            // Stop all intervals
+            if (realTimeInterval) clearInterval(realTimeInterval);
+            if (emergencyInterval) clearInterval(emergencyInterval);
+
+            // Destroy all charts
+            Object.keys(charts).forEach(key => {
+                if (charts[key]) {
+                    charts[key].destroy();
+                }
+            });
+
+            // Redirect to login
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        if (realTimeInterval) {
+            clearInterval(realTimeInterval);
+        }
+
+        if (emergencyInterval) {
+            clearInterval(emergencyInterval);
+        }
+
+        Object.keys(charts).forEach(key => {
+            if (charts[key]) {
+                charts[key].destroy();
+            }
+        });
+    });
+
+    console.log('🚀 IMAS Analyst Dashboard with ML Analytics fully initialized');
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

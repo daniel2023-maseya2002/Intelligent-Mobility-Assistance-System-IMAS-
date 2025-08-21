@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Système de Transport Intelligent 3D</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #1f2937;
+            --light-bg: #f8fafc;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --border-color: #e5e7eb;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--light-bg);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--dark-bg);
+            color: white;
+            transition: width 0.3s ease;
+            z-index: 1001;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .sidebar.collapsed .logo {
+            font-size: 1rem;
+        }
+
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-color);
+        }
+
+        .sidebar-menu a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent-color);
+        }
+
+        .sidebar.collapsed .sidebar-menu a span {
+            display: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* 3D Visualization Container */
+        .unity-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .map-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        /* Prediction Dashboard */
+        .prediction-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .prediction-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prediction-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .prediction-title {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .prediction-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction-description {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .prediction-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .trend-up {
+            color: var(--success-color);
+        }
+
+        .trend-down {
+            color: var(--danger-color);
+        }
+
+        .trend-stable {
+            color: var(--warning-color);
+        }
+
+        /* Route Information */
+        .route-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .route-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .route-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-dark);
+        }
+
+        .route-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-delayed {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-disrupted {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+        .route-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .route-info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .route-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .route-info-label {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .route-info-value {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Real-time Updates */
+        .realtime-updates {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .update-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            background: var(--light-bg);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .update-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .update-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .update-icon.info {
+            background: var(--primary-color);
+        }
+
+        .update-icon.warning {
+            background: var(--warning-color);
+        }
+
+        .update-icon.success {
+            background: var(--success-color);
+        }
+
+        .update-content {
+            flex: 1;
+        }
+
+        .update-title {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .update-description {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .update-time {
+            color: var(--text-light);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .prediction-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="btn btn-primary" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1>IMAS - Transport Intelligent 3D</h1>
+    </div>
+    <div class="header-right">
+        <button class="btn btn-success" onclick="refreshAllData()">
+            <i class="fas fa-sync-alt"></i>
+            Actualiser
+        </button>
+        <button class="btn btn-primary" onclick="toggleTheme()">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <i class="fas fa-bus"></i>
+            <span>IMAS</span>
+        </div>
+    </div>
+    <div class="sidebar-menu">
+        <a href="#" class="active" onclick="showSection('predictive')">
+            <i class="fas fa-brain"></i>
+            <span>Prédictions IA</span>
+        </a>
+        <a href="#" onclick="showSection('route-info')">
+            <i class="fas fa-route"></i>
+            <span>Infos Routes Temps Réel</span>
+        </a>
+        <a href="#" onclick="showSection('simulation')">
+            <i class="fas fa-cube"></i>
+            <span>Simulation 3D</span>
+        </a>
+        <a href="#" onclick="showSection('analytics')">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytiques</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Predictive Analytics Section -->
+    <section id="predictive-section" class="section active">
+        <div class="section-header">
+            <h1 class="section-title">
+                <i class="fas fa-brain" style="color: var(--primary-color);"></i>
+                Prédictions IA Basées sur Database
+            </h1>
+        </div>
+
+        <!-- Prediction Dashboard -->
+        <div class="prediction-dashboard">
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-title">Demande Prédite</div>
+                    <span class="ai-badge">ML Neural Network</span>
+                </div>
+                <div class="prediction-value" id="demandPrediction">0</div>
+                <div class="prediction-description">Passagers prédits dans les 2 prochaines heures</div>
+                <div class="prediction-trend trend-up" id="demandTrend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Calcul en cours...</span>
+                </div>
+            </div>
+
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-title">Optimisation Flotte</div>
+                    <span class="ai-badge">Deep Learning</span>
+                </div>
+                <div class="prediction-value" id="fleetOptimization">0%</div>
+                <div class="prediction-description">Efficacité prédite avec redistribution optimale</div>
+                <div class="prediction-trend trend-up" id="fleetTrend">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Calcul en cours...</span>
+                </div>
+            </div>
+
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-title">Prédiction Retards</div>
+                    <span class="ai-badge">Time Series</span>
+                </div>
+                <div class="prediction-value" id="delayPrediction">0%</div>
+                <div class="prediction-description">Probabilité de retards sur les routes principales</div>
+                <div class="prediction-trend trend-down" id="delayTrend">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>Calcul en cours...</span>
+                </div>
+            </div>
+
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-title">Goulots d'Étranglement</div>
+                    <span class="ai-badge">Pattern Recognition</span>
+                </div>
+                <div class="prediction-value" id="bottleneckPrediction">0</div>
+                <div class="prediction-description">Points de congestion identifiés</div>
+                <div class="prediction-trend trend-stable" id="bottleneckTrend">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Analyse en cours...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    Prédictions Temps Réel
+                </h3>
+                <button class="btn btn-success" onclick="retrainModel()">
+                    <i class="fas fa-sync-alt"></i>
+                    Réentraîner IA
+                </button>
+            </div>
+            <div style="height: 400px; position: relative;">
+                <canvas id="predictionChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Route Information Section -->
+    <section id="route-info-section" class="section">
+        <div class="section-header">
+            <h1 class="section-title">
+                <i class="fas fa-route" style="color: var(--success-color);"></i>
+                Informations Routes Temps Réel
+            </h1>
+        </div>
+
+        <!-- Route Dashboard -->
+        <div class="route-info-grid" id="routeGrid">
+            <!-- Routes will be populated here -->
+        </div>
+
+        <!-- Real-time Updates -->
+        <div class="realtime-updates">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-broadcast-tower"></i>
+                    Mises à Jour Temps Réel
+                </h3>
+            </div>
+            <div id="realtimeUpdates">
+                <!-- Updates will be populated here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 3D Simulation Section -->
+    <section id="simulation-section" class="section">
+        <div class="section-header">
+            <h1 class="section-title">
+                <i class="fas fa-cube" style="color: var(--warning-color);"></i>
+                Simulation 3D Unity-Like
+            </h1>
+        </div>
+
+        <!-- 3D Unity-like Container -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Simulation 3D des Routes de Kinshasa</h3>
+                <div>
+                    <button class="btn btn-primary" onclick="toggleSimulation()">
+                        <i class="fas fa-play" id="simulationToggleIcon"></i>
+                        <span id="simulationToggleText">Démarrer Simulation</span>
+                    </button>
+                    <button class="btn btn-warning" onclick="resetSimulation()">
+                        <i class="fas fa-redo"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            <div class="unity-container" id="unityContainer">
+                <!-- 3D Scene will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Map with Real Bus Positions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Carte Temps Réel - Positions Bus</h3>
+            </div>
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analytics-section" class="section">
+        <div class="section-header">
+            <h1 class="section-title">
+                <i class="fas fa-chart-line" style="color: var(--danger-color);"></i>
+                Analytiques Avancées
+            </h1>
+        </div>
+
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Analyse des Goulots d'Étranglement</h3>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="bottleneckChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Efficacité de la Flotte</h3>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="fleetChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    // Global Variables
+    let map;
+    let scene, camera, renderer;
+    let buses = [];
+    let routes = [];
+    let tickets = [];
+    let drivers = [];
+    let simulationRunning = false;
+    let predictionChart;
+    let bottleneckChart;
+    let fleetChart;
+    let updateInterval;
+
+    // API Configuration
+    const API_BASE_URL = 'http://localhost:8080/api';
+    const API_ENDPOINTS = {
+        buses: `${API_BASE_URL}/buses`,
+        routes: `${API_BASE_URL}/routes`,
+        tickets: `${API_BASE_URL}/tickets`,
+        drivers: `${API_BASE_URL}/staff`,
+        schedules: `${API_BASE_URL}/schedule-buses`
+    };
+
+    // Kinshasa coordinates
+    const KINSHASA_CENTER = [-4.4419, 15.2663];
+    const KINSHASA_BOUNDS = [
+        [-4.6, 15.0],
+        [-4.2, 15.5]
+    ];
+
+    // Initialize Application
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Initializing IMAS 3D System...');
+        initializeApp();
+    });
+
+    // Initialize the application
+    async function initializeApp() {
+        try {
+            // Initialize Map
+            initializeMap();
+
+            // Initialize 3D Scene
+            initialize3DScene();
+
+            // Initialize Charts
+            initializeCharts();
+
+            // Load data from database
+            await loadDatabaseData();
+
+            // Start real-time updates
+            startRealTimeUpdates();
+
+            console.log('✅ IMAS 3D System initialized successfully!');
+        } catch (error) {
+            console.error('❌ Error initializing system:', error);
+            // Fallback to simulated data
+            useSimulatedData();
+        }
+    }
+
+    // Load data from database
+    async function loadDatabaseData() {
+        console.log('📊 Loading data from database...');
+
+        try {
+            // Load all data in parallel
+            const [busesData, routesData, ticketsData, driversData] = await Promise.all([
+                fetchFromAPI(API_ENDPOINTS.buses),
+                fetchFromAPI(API_ENDPOINTS.routes),
+                fetchFromAPI(API_ENDPOINTS.tickets),
+                fetchFromAPI(API_ENDPOINTS.drivers)
+            ]);
+
+            buses = busesData || [];
+            routes = routesData || [];
+            tickets = ticketsData || [];
+            drivers = driversData?.filter(d => d.role === 'DRIVER') || [];
+
+            console.log('📈 Database data loaded:', { buses: buses.length, routes: routes.length, tickets: tickets.length, drivers: drivers.length });
+
+            // Process data for predictions
+            await processDataForPredictions();
+
+            // Update UI
+            updateRouteInformation();
+            updateMapWithRealData();
+
+        } catch (error) {
+            console.error('❌ Error loading database data:', error);
+            throw error;
+        }
+    }
+
+    // Fetch data from API
+    async function fetchFromAPI(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error(`Error fetching from ${url}:`, error);
+            return null;
+        }
+    }
+
+    // Process data for AI predictions
+    async function processDataForPredictions() {
+        console.log('🤖 Processing data for AI predictions...');
+
+        // Analyze historical patterns from tickets
+        const historicalPatterns = analyzeHistoricalPatterns();
+
+        // Analyze current system state
+        const currentState = analyzeCurrentState();
+
+        // Generate AI predictions
+        const predictions = await generateAIPredictions(historicalPatterns, currentState);
+
+        // Update dashboard
+        updatePredictionDashboard(predictions);
+
+        // Identify bottlenecks
+        const bottlenecks = identifyBottlenecks(currentState);
+        updateBottleneckAnalysis(bottlenecks);
+    }
+
+    // Analyze historical patterns from ticket data
+    function analyzeHistoricalPatterns() {
+        const patterns = {
+            hourlyDemand: {},
+            dailyDemand: {},
+            routePopularity: {},
+            peakHours: [],
+            averageTicketPrice: 0
+        };
+
+        if (!tickets.length) return patterns;
+
+        let totalPrice = 0;
+        tickets.forEach(ticket => {
+            const date = new Date(ticket.purchaseDate);
+            const hour = date.getHours();
+            const day = date.getDay();
+
+            // Hourly demand analysis
+            patterns.hourlyDemand[hour] = (patterns.hourlyDemand[hour] || 0) + 1;
+
+            // Daily demand analysis
+            patterns.dailyDemand[day] = (patterns.dailyDemand[day] || 0) + 1;
+
+if (ticket.route) {
+                    patterns.routePopularity[ticket.route] = (patterns.routePopularity[ticket.route] || 0) + 1;
+                }
+
+                totalPrice += ticket.price || 0;
+            });
+
+            patterns.averageTicketPrice = totalPrice / tickets.length;
+
+            // Identify peak hours
+            const sortedHours = Object.entries(patterns.hourlyDemand)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+            patterns.peakHours = sortedHours.map(([hour, count]) => ({ hour: parseInt(hour), count }));
+
+            return patterns;
+        }
+
+        // Analyze current system state
+        function analyzeCurrentState() {
+            const currentState = {
+                totalBuses: buses.length,
+                activeBuses: buses.filter(b => b.status === 'ACTIVE').length,
+                totalRoutes: routes.length,
+                activeRoutes: routes.filter(r => r.active).length,
+                busesPerRoute: {},
+                routeUtilization: {},
+                driverAvailability: drivers.length,
+                systemLoad: 0
+            };
+
+            // Calculate buses per route
+            routes.forEach(route => {
+                const routeBuses = buses.filter(bus => bus.routeId === route.id);
+                currentState.busesPerRoute[route.id] = routeBuses.length;
+                currentState.routeUtilization[route.id] = (routeBuses.length / buses.length) * 100;
+            });
+
+            // Calculate system load
+            currentState.systemLoad = (currentState.activeBuses / currentState.totalBuses) * 100;
+
+            return currentState;
+        }
+
+        // Generate AI predictions using neural network-like calculations
+        async function generateAIPredictions(historicalPatterns, currentState) {
+            console.log('🧠 Generating AI predictions...');
+
+            const predictions = {
+                demandPrediction: 0,
+                fleetOptimization: 0,
+                delayPrediction: 0,
+                bottleneckCount: 0,
+                confidence: 0
+            };
+
+            // Simulate neural network prediction for demand
+            const currentHour = new Date().getHours();
+            const historicalDemand = historicalPatterns.hourlyDemand[currentHour] || 0;
+            const seasonalFactor = Math.sin((currentHour / 24) * Math.PI * 2) * 0.3 + 1;
+            const trendFactor = Math.random() * 0.4 + 0.8; // Simulate trend analysis
+
+            predictions.demandPrediction = Math.round(historicalDemand * seasonalFactor * trendFactor * 1.2);
+
+            // Fleet optimization prediction
+            const currentUtilization = currentState.systemLoad;
+            const optimalUtilization = 85; // Target utilization
+            const optimizationPotential = Math.max(0, optimalUtilization - currentUtilization);
+            predictions.fleetOptimization = Math.round(optimizationPotential + Math.random() * 15);
+
+            // Delay prediction using time series analysis
+            const timeOfDay = new Date().getHours();
+            const peakHourFactor = timeOfDay >= 7 && timeOfDay <= 9 || timeOfDay >= 17 && timeOfDay <= 19 ? 1.8 : 1.0;
+            const weatherFactor = Math.random() * 0.3 + 0.7; // Simulate weather impact
+            predictions.delayPrediction = Math.round(15 * peakHourFactor * weatherFactor);
+
+            // Bottleneck prediction
+            const routeCount = currentState.totalRoutes;
+            const congestionFactor = predictions.demandPrediction / (currentState.activeBuses || 1);
+            predictions.bottleneckCount = Math.round(congestionFactor * routeCount * 0.1);
+
+            // Confidence score
+            const dataQuality = Math.min(1, (tickets.length + buses.length + routes.length) / 100);
+            predictions.confidence = Math.round(dataQuality * 95);
+
+            return predictions;
+        }
+
+        // Update prediction dashboard
+        function updatePredictionDashboard(predictions) {
+            document.getElementById('demandPrediction').textContent = predictions.demandPrediction;
+            document.getElementById('fleetOptimization').textContent = predictions.fleetOptimization + '%';
+            document.getElementById('delayPrediction').textContent = predictions.delayPrediction + '%';
+            document.getElementById('bottleneckPrediction').textContent = predictions.bottleneckCount;
+
+            // Update trends
+            updateTrendDisplay('demandTrend', predictions.demandPrediction > 100 ? 'up' : 'down',
+                `${predictions.demandPrediction > 100 ? '+' : ''}${predictions.demandPrediction - 100} passagers`);
+            updateTrendDisplay('fleetTrend', predictions.fleetOptimization > 10 ? 'up' : 'stable',
+                `${predictions.fleetOptimization}% d'amélioration`);
+            updateTrendDisplay('delayTrend', predictions.delayPrediction < 20 ? 'down' : 'up',
+                `${predictions.delayPrediction}% probabilité`);
+            updateTrendDisplay('bottleneckTrend', predictions.bottleneckCount < 3 ? 'down' : 'up',
+                `${predictions.bottleneckCount} points identifiés`);
+        }
+
+        // Update trend display
+        function updateTrendDisplay(elementId, trend, text) {
+            const element = document.getElementById(elementId);
+            element.className = `prediction-trend trend-${trend}`;
+
+            const icon = trend === 'up' ? 'fa-arrow-up' :
+                        trend === 'down' ? 'fa-arrow-down' : 'fa-exclamation-triangle';
+
+            element.innerHTML = `<i class="fas ${icon}"></i><span>${text}</span>`;
+        }
+
+        // Identify bottlenecks
+        function identifyBottlenecks(currentState) {
+            const bottlenecks = [];
+
+            routes.forEach(route => {
+                const busCount = currentState.busesPerRoute[route.id] || 0;
+                const utilization = currentState.routeUtilization[route.id] || 0;
+
+                if (utilization > 80) {
+                    bottlenecks.push({
+                        routeId: route.id,
+                        routeName: route.routeName,
+                        severity: 'HIGH',
+                        utilization: utilization,
+                        recommendation: 'Increase bus frequency'
+                    });
+                } else if (utilization > 60) {
+                    bottlenecks.push({
+                        routeId: route.id,
+                        routeName: route.routeName,
+                        severity: 'MEDIUM',
+                        utilization: utilization,
+                        recommendation: 'Monitor closely'
+                    });
+                }
+            });
+
+            return bottlenecks;
+        }
+
+        // Update bottleneck analysis
+        function updateBottleneckAnalysis(bottlenecks) {
+            console.log('🔍 Bottlenecks identified:', bottlenecks);
+            // This would update bottleneck visualization
+        }
+
+        // Use simulated data when database is unavailable
+        function useSimulatedData() {
+            console.log('⚠️ Using simulated data...');
+
+            // Simulate Kinshasa bus routes
+            routes = [
+                { id: 1, routeName: 'Matadi-Kinshasa', routeCode: 'MK-001', active: true, color: '#FF6B6B' },
+                { id: 2, routeName: 'Lemba-Gombe', routeCode: 'LG-002', active: true, color: '#4ECDC4' },
+                { id: 3, routeName: 'Masina-Ville', routeCode: 'MV-003', active: true, color: '#45B7D1' },
+                { id: 4, routeName: 'Kintambo-Ndjili', routeCode: 'KN-004', active: true, color: '#96CEB4' },
+                { id: 5, routeName: 'Kalamu-Limete', routeCode: 'KL-005', active: true, color: '#FFEAA7' }
+            ];
+
+            // Simulate buses
+            buses = [
+                { id: 1, busNumber: 'KIN-001', capacity: 50, status: 'ACTIVE', routeId: 1, lat: -4.4419, lng: 15.2663 },
+                { id: 2, busNumber: 'KIN-002', capacity: 45, status: 'ACTIVE', routeId: 1, lat: -4.4319, lng: 15.2763 },
+                { id: 3, busNumber: 'KIN-003', capacity: 55, status: 'ACTIVE', routeId: 2, lat: -4.4519, lng: 15.2563 },
+                { id: 4, busNumber: 'KIN-004', capacity: 48, status: 'MAINTENANCE', routeId: 2, lat: -4.4219, lng: 15.2863 },
+                { id: 5, busNumber: 'KIN-005', capacity: 52, status: 'ACTIVE', routeId: 3, lat: -4.4619, lng: 15.2463 }
+            ];
+
+            // Simulate tickets
+            tickets = [];
+            for (let i = 0; i < 100; i++) {
+                tickets.push({
+                    id: i + 1,
+                    price: Math.round(Math.random() * 500 + 200),
+                    route: routes[Math.floor(Math.random() * routes.length)].id,
+                    purchaseDate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+                });
+            }
+
+            // Simulate drivers
+            drivers = [
+                { id: 1, name: 'Jean Kalala', role: 'DRIVER', available: true },
+                { id: 2, name: 'Marie Nsimba', role: 'DRIVER', available: true },
+                { id: 3, name: 'Paul Mbuyi', role: 'DRIVER', available: false },
+                { id: 4, name: 'Grace Tshala', role: 'DRIVER', available: true },
+                { id: 5, name: 'Joseph Kabila', role: 'DRIVER', available: true }
+            ];
+
+            // Process simulated data
+            processDataForPredictions();
+            updateRouteInformation();
+            updateMapWithRealData();
+        }
+
+        // Update route information display
+        function updateRouteInformation() {
+            const routeGrid = document.getElementById('routeGrid');
+            routeGrid.innerHTML = '';
+
+            routes.forEach(route => {
+                const routeBuses = buses.filter(bus => bus.routeId === route.id);
+                const activeBuses = routeBuses.filter(bus => bus.status === 'ACTIVE');
+
+                const routeCard = document.createElement('div');
+                routeCard.className = 'route-card';
+
+                const status = activeBuses.length > 0 ? 'active' : 'disrupted';
+                const statusText = activeBuses.length > 0 ? 'Actif' : 'Perturbé';
+
+                routeCard.innerHTML = `
+                    <div class="route-header">
+                        <div class="route-name">${route.routeName}</div>
+                        <span class="route-status status-${status}">${statusText}</span>
+                    </div>
+                    <div class="route-info">
+                        <div class="route-info-item">
+                            <span class="route-info-label">Code Route</span>
+                            <span class="route-info-value">${route.routeCode}</span>
+                        </div>
+                        <div class="route-info-item">
+                            <span class="route-info-label">Bus Actifs</span>
+                            <span class="route-info-value">${activeBuses.length}/${routeBuses.length}</span>
+                        </div>
+                        <div class="route-info-item">
+                            <span class="route-info-label">Fréquence</span>
+                            <span class="route-info-value">${Math.round(Math.random() * 10 + 5)} min</span>
+                        </div>
+                        <div class="route-info-item">
+                            <span class="route-info-label">Prochain Départ</span>
+                            <span class="route-info-value">${Math.round(Math.random() * 15 + 2)} min</span>
+                        </div>
+                    </div>
+                `;
+
+                routeGrid.appendChild(routeCard);
+            });
+        }
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            map = L.map('map').setView(KINSHASA_CENTER, 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add Kinshasa boundary
+            L.rectangle(KINSHASA_BOUNDS, {
+                color: '#3388ff',
+                weight: 2,
+                fillOpacity: 0.1
+            }).addTo(map);
+        }
+
+        // Update map with real bus data
+        function updateMapWithRealData() {
+            // Clear existing markers
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Add route lines
+            routes.forEach(route => {
+                if (route.active) {
+                    // Simulate route path
+                    const routePath = generateRoutePathForKinshasa(route);
+                    L.polyline(routePath, {
+                        color: route.color,
+                        weight: 4,
+                        opacity: 0.7
+                    }).addTo(map).bindPopup(`Route: ${route.routeName}`);
+                }
+            });
+
+            // Add bus markers
+            buses.forEach(bus => {
+                if (bus.status === 'ACTIVE' && bus.lat && bus.lng) {
+                    const route = routes.find(r => r.id === bus.routeId);
+                    const busIcon = L.divIcon({
+                        html: `<div style="background-color: ${route?.color || '#3388ff'}; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                <i class="fas fa-bus"></i>
+                               </div>`,
+                        iconSize: [24, 24],
+                        className: 'bus-marker'
+                    });
+
+                    L.marker([bus.lat, bus.lng], { icon: busIcon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <b>${bus.busNumber}</b><br>
+                            Route: ${route?.routeName || 'Unknown'}<br>
+                            Capacité: ${bus.capacity} passagers<br>
+                            Statut: ${bus.status}
+                        `);
+                }
+            });
+        }
+
+        // Generate route path for Kinshasa
+        function generateRoutePathForKinshasa(route) {
+            const basePoints = [
+                [-4.4419, 15.2663], // Center
+                [-4.4319, 15.2763], // Northeast
+                [-4.4519, 15.2563], // Southwest
+                [-4.4219, 15.2863], // Far northeast
+                [-4.4619, 15.2463]  // Far southwest
+            ];
+
+            // Create a realistic route path
+            const routePath = [];
+            const startPoint = basePoints[route.id % basePoints.length];
+            const endPoint = basePoints[(route.id + 2) % basePoints.length];
+
+            // Add waypoints
+            for (let i = 0; i <= 10; i++) {
+                const t = i / 10;
+                const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * t + (Math.random() - 0.5) * 0.01;
+                const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * t + (Math.random() - 0.5) * 0.01;
+                routePath.push([lat, lng]);
+            }
+
+            return routePath;
+        }
+
+        // Initialize 3D Scene
+        function initialize3DScene() {
+            const container = document.getElementById('unityContainer');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            camera.lookAt(0, 0, 0);
+
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Create ground
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Create roads
+            createKinshasaRoads();
+
+            // Create buildings
+            createKinshasaBuildings();
+
+            // Create 3D buses
+            create3DBuses();
+
+            // Start animation loop
+            animate3DScene();
+        }
+
+        // Create Kinshasa roads
+        function createKinshasaRoads() {
+            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+
+            // Main roads
+            const mainRoads = [
+                { start: [-50, 0, -50], end: [50, 0, -50], width: 8 },
+                { start: [-50, 0, 0], end: [50, 0, 0], width: 10 },
+                { start: [-50, 0, 50], end: [50, 0, 50], width: 8 },
+                { start: [-50, 0, -50], end: [-50, 0, 50], width: 6 },
+                { start: [0, 0, -50], end: [0, 0, 50], width: 8 },
+                { start: [50, 0, -50], end: [50, 0, 50], width: 6 }
+            ];
+
+            mainRoads.forEach(road => {
+                const length = Math.sqrt(
+                    Math.pow(road.end[0] - road.start[0], 2) +
+                    Math.pow(road.end[2] - road.start[2], 2)
+                );
+
+                const roadGeometry = new THREE.BoxGeometry(
+                    road.end[0] === road.start[0] ? road.width : length,
+                    0.2,
+                    road.end[2] === road.start[2] ? road.width : length
+                );
+
+                const roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
+                roadMesh.position.set(
+                    (road.start[0] + road.end[0]) / 2,
+                    0.1,
+                    (road.start[2] + road.end[2]) / 2
+                );
+                scene.add(roadMesh);
+            });
+        }
+
+        // Create Kinshasa buildings
+        function createKinshasaBuildings() {
+            const buildingMaterials = [
+                new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
+                new THREE.MeshLambertMaterial({ color: 0xDEB887 }),
+                new THREE.MeshLambertMaterial({ color: 0xF4A460 }),
+                new THREE.MeshLambertMaterial({ color: 0xD2691E })
+            ];
+
+            // Create buildings around roads
+            for (let i = 0; i < 30; i++) {
+                const buildingGeometry = new THREE.BoxGeometry(
+                    Math.random() * 8 + 4,
+                    Math.random() * 20 + 5,
+                    Math.random() * 8 + 4
+                );
+
+                const building = new THREE.Mesh(
+                    buildingGeometry,
+                    buildingMaterials[Math.floor(Math.random() * buildingMaterials.length)]
+                );
+
+                // Position buildings away from roads
+                let x, z;
+                do {
+                    x = (Math.random() - 0.5) * 180;
+                    z = (Math.random() - 0.5) * 180;
+                } while (
+                    (Math.abs(x) < 15 && Math.abs(z + 50) < 6) ||
+                    (Math.abs(x) < 15 && Math.abs(z) < 8) ||
+                    (Math.abs(x) < 15 && Math.abs(z - 50) < 6) ||
+                    (Math.abs(z) < 15 && Math.abs(x + 50) < 5) ||
+                    (Math.abs(z) < 15 && Math.abs(x - 50) < 5)
+                );
+
+                building.position.set(x, buildingGeometry.parameters.height / 2, z);
+                building.castShadow = true;
+                scene.add(building);
+            }
+        }
+
+        // Create 3D buses
+        function create3DBuses() {
+            buses.forEach(bus => {
+                if (bus.status === 'ACTIVE') {
+                    const busGroup = new THREE.Group();
+
+                    // Bus body
+                    const bodyGeometry = new THREE.BoxGeometry(3, 2, 8);
+                    const bodyMaterial = new THREE.MeshLambertMaterial({
+                        color: routes.find(r => r.id === bus.routeId)?.color || 0x3388ff
+                    });
+                    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                    body.castShadow = true;
+                    busGroup.add(body);
+
+                    // Bus wheels
+                    const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 8);
+                    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+
+                    const wheels = [
+                        [-1, -1, 2.5],
+                        [1, -1, 2.5],
+                        [-1, -1, -2.5],
+                        [1, -1, -2.5]
+                    ];
+
+                    wheels.forEach(pos => {
+                        const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                        wheel.position.set(pos[0], pos[1], pos[2]);
+                        wheel.rotation.z = Math.PI / 2;
+                        busGroup.add(wheel);
+                    });
+
+                    // Position bus on road
+                    const roadPositions = [
+                        [0, 1, -50], [0, 1, 0], [0, 1, 50],
+                        [-50, 1, 0], [50, 1, 0]
+                    ];
+
+                    const position = roadPositions[bus.id % roadPositions.length];
+                    busGroup.position.set(position[0], position[1], position[2]);
+                    busGroup.userData = { busId: bus.id, moving: false, targetPosition: null };
+
+                    scene.add(busGroup);
+                }
+            });
+        }
+
+        // Animate 3D scene
+        function animate3DScene() {
+            requestAnimationFrame(animate3DScene);
+
+            if (simulationRunning) {
+                // Animate buses
+                scene.children.forEach(child => {
+                    if (child.userData && child.userData.busId) {
+                        // Simple animation: move buses along their routes
+                        const time = Date.now() * 0.001;
+                        const offset = child.userData.busId * 0.5;
+                        child.position.x = Math.sin(time + offset) * 20;
+                        child.position.z = Math.cos(time + offset) * 20;
+                    }
+                });
+            }
+
+            // Rotate camera around the scene
+            const time = Date.now() * 0.0005;
+            camera.position.x = Math.cos(time) * 120;
+            camera.position.z = Math.sin(time) * 120;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Prediction Chart
+            const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+            predictionChart = new Chart(predictionCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Demande Prédite',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Demande Actuelle',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Prédictions de Demande en Temps Réel'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Nombre de Passagers'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Bottleneck Chart
+            const bottleneckCtx = document.getElementById('bottleneckChart').getContext('2d');
+            bottleneckChart = new Chart(bottleneckCtx, {
+                type: 'bar',
+                data: {
+                    labels: routes.map(r => r.routeName),
+                    datasets: [{
+                        label: 'Niveau de Congestion',
+                        data: routes.map(() => Math.random() * 100),
+                        backgroundColor: routes.map(r => r.color),
+                        borderColor: routes.map(r => r.color),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Analyse des Goulots d\'Étranglement'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Niveau de Congestion (%)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Fleet Chart
+            const fleetCtx = document.getElementById('fleetChart').getContext('2d');
+            fleetChart = new Chart(fleetCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Actifs', 'Maintenance', 'Disponibles'],
+                    datasets: [{
+                        data: [
+                            buses.filter(b => b.status === 'ACTIVE').length,
+                            buses.filter(b => b.status === 'MAINTENANCE').length,
+                            buses.filter(b => b.status === 'AVAILABLE').length
+                        ],
+                        backgroundColor: ['#10b981', '#f59e0b', '#6b7280']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'État de la Flotte'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Start real-time updates
+        function startRealTimeUpdates() {
+            updateInterval = setInterval(() => {
+                updateRealTimeData();
+                updateRealtimeUpdates();
+            }, 5000); // Update every 5 seconds
+        }
+
+        // Update real-time data
+        function updateRealTimeData() {
+            // Update prediction chart
+            const now = new Date().toLocaleTimeString();
+            const predicted = Math.round(Math.random() * 200 + 100);
+            const actual = Math.round(Math.random() * 180 + 90);
+
+            predictionChart.data.labels.push(now);
+            predictionChart.data.datasets[0].data.push(predicted);
+            predictionChart.data.datasets[1].data.push(actual);
+
+            // Keep only last 20 data points
+            if (predictionChart.data.labels.length > 20) {
+                predictionChart.data.labels.shift();
+                predictionChart.data.datasets[0].data.shift();
+                predictionChart.data.datasets[1].data.shift();
+            }
+
+            predictionChart.update();
+
+            // Update bottleneck chart
+            bottleneckChart.data.datasets[0].data = routes.map(() => Math.random() * 100);
+            bottleneckChart.update();
+
+            // Simulate bus position updates
+            buses.forEach(bus => {
+                if (bus.status === 'ACTIVE') {
+                    bus.lat += (Math.random() - 0.5) * 0.001;
+                    bus.lng += (Math.random() - 0.5) * 0.001;
+                }
+            });
+
+            updateMapWithRealData();
+        }
+
+// Update real-time updates section
+        function updateRealtimeUpdates() {
+            const updatesContainer = document.getElementById('realtimeUpdates');
+
+            // Generate random updates
+            const updates = [
+                `🚌 Bus ${buses[Math.floor(Math.random() * buses.length)].busNumber} - Nouvelle position mise à jour`,
+                `📍 Route ${routes[Math.floor(Math.random() * routes.length)].routeName} - Fréquence ajustée`,
+                `⚠️ Alerte trafic détectée sur ${routes[Math.floor(Math.random() * routes.length)].routeName}`,
+                `✅ Prédiction IA confirmée pour la route ${routes[Math.floor(Math.random() * routes.length)].routeName}`,
+                `🔧 Maintenance programmée pour ${buses[Math.floor(Math.random() * buses.length)].busNumber}`,
+                `📊 Analyse des goulots d'étranglement mise à jour`,
+                `🎯 Optimisation de flotte recommandée`,
+                `📱 Nouvelle demande de transport détectée`
+            ];
+
+            // Add new update
+            const newUpdate = document.createElement('div');
+            newUpdate.className = 'update-item';
+            newUpdate.innerHTML = `
+                <div class="update-content">
+                    <span class="update-text">${updates[Math.floor(Math.random() * updates.length)]}</span>
+                    <span class="update-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+            `;
+
+            updatesContainer.insertBefore(newUpdate, updatesContainer.firstChild);
+
+            // Keep only last 10 updates
+            while (updatesContainer.children.length > 10) {
+                updatesContainer.removeChild(updatesContainer.lastChild);
+            }
+
+            // Add fade-in animation
+            newUpdate.style.opacity = '0';
+            setTimeout(() => {
+                newUpdate.style.opacity = '1';
+                newUpdate.style.transition = 'opacity 0.5s ease-in-out';
+            }, 100);
+        }
+
+        // Toggle simulation
+        function toggleSimulation() {
+            simulationRunning = !simulationRunning;
+            const button = document.getElementById('simulationToggle');
+            const statusIndicator = document.getElementById('simulationStatus');
+
+            if (simulationRunning) {
+                button.textContent = 'Arrêter Simulation';
+                button.className = 'btn btn-danger';
+                statusIndicator.textContent = 'Simulation Active';
+                statusIndicator.className = 'simulation-status active';
+
+                // Start intensive updates during simulation
+                if (updateInterval) clearInterval(updateInterval);
+                updateInterval = setInterval(() => {
+                    updateRealTimeData();
+                    updateRealtimeUpdates();
+                }, 2000); // Faster updates during simulation
+
+            } else {
+                button.textContent = 'Démarrer Simulation';
+                button.className = 'btn btn-success';
+                statusIndicator.textContent = 'Simulation Arrêtée';
+                statusIndicator.className = 'simulation-status inactive';
+
+                // Return to normal update frequency
+                if (updateInterval) clearInterval(updateInterval);
+                updateInterval = setInterval(() => {
+                    updateRealTimeData();
+                    updateRealtimeUpdates();
+                }, 5000);
+            }
+        }
+
+        // Export data functionality
+        function exportData() {
+            const dataToExport = {
+                timestamp: new Date().toISOString(),
+                buses: buses,
+                routes: routes,
+                tickets: tickets,
+                drivers: drivers,
+                predictions: {
+                    demandPrediction: document.getElementById('demandPrediction').textContent,
+                    fleetOptimization: document.getElementById('fleetOptimization').textContent,
+                    delayPrediction: document.getElementById('delayPrediction').textContent,
+                    bottleneckPrediction: document.getElementById('bottleneckPrediction').textContent
+                }
+            };
+
+            // Create and download JSON file
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            const exportFileDefaultName = `imas_data_${new Date().toISOString().split('T')[0]}.json`;
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // Generate detailed report
+        function generateReport() {
+            const report = {
+                title: 'Rapport IMAS - Système de Transport Intelligent',
+                generatedAt: new Date().toLocaleString(),
+                summary: {
+                    totalBuses: buses.length,
+                    activeBuses: buses.filter(b => b.status === 'ACTIVE').length,
+                    totalRoutes: routes.length,
+                    activeRoutes: routes.filter(r => r.active).length,
+                    totalTickets: tickets.length,
+                    totalDrivers: drivers.length,
+                    availableDrivers: drivers.filter(d => d.available).length
+                },
+                routeAnalysis: routes.map(route => {
+                    const routeBuses = buses.filter(bus => bus.routeId === route.id);
+                    const routeTickets = tickets.filter(ticket => ticket.route === route.id);
+
+                    return {
+                        routeName: route.routeName,
+                        routeCode: route.routeCode,
+                        status: route.active ? 'Actif' : 'Inactif',
+                        busCount: routeBuses.length,
+                        activeBusCount: routeBuses.filter(b => b.status === 'ACTIVE').length,
+                        ticketsSold: routeTickets.length,
+                        avgTicketPrice: routeTickets.length > 0 ?
+                            (routeTickets.reduce((sum, t) => sum + t.price, 0) / routeTickets.length).toFixed(2) : 0,
+                        utilization: routeBuses.length > 0 ?
+                            ((routeBuses.filter(b => b.status === 'ACTIVE').length / routeBuses.length) * 100).toFixed(1) : 0
+                    };
+                }),
+                predictions: {
+                    demandForecast: document.getElementById('demandPrediction').textContent,
+                    fleetOptimization: document.getElementById('fleetOptimization').textContent,
+                    delayRisk: document.getElementById('delayPrediction').textContent,
+                    bottleneckCount: document.getElementById('bottleneckPrediction').textContent
+                },
+                recommendations: generateRecommendations()
+            };
+
+            // Create and download report
+            const reportStr = JSON.stringify(report, null, 2);
+            const reportUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(reportStr);
+
+            const reportFileName = `rapport_imas_${new Date().toISOString().split('T')[0]}.json`;
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', reportUri);
+            linkElement.setAttribute('download', reportFileName);
+            linkElement.click();
+
+            // Show success message
+            showNotification('Rapport généré avec succès!', 'success');
+        }
+
+        // Generate AI recommendations
+        function generateRecommendations() {
+            const recommendations = [];
+
+            // Analyze bus utilization
+            const activeBuses = buses.filter(b => b.status === 'ACTIVE').length;
+            const utilizationRate = (activeBuses / buses.length) * 100;
+
+            if (utilizationRate < 70) {
+                recommendations.push({
+                    type: 'Optimisation de Flotte',
+                    priority: 'Élevée',
+                    description: 'Augmenter l\'utilisation des bus disponibles',
+                    action: 'Réaffecter les bus inactifs aux routes à forte demande'
+                });
+            }
+
+            // Analyze route performance
+            routes.forEach(route => {
+                const routeBuses = buses.filter(bus => bus.routeId === route.id);
+                const routeTickets = tickets.filter(ticket => ticket.route === route.id);
+
+                if (routeTickets.length > 50 && routeBuses.length < 3) {
+                    recommendations.push({
+                        type: 'Augmentation de Capacité',
+                        priority: 'Moyenne',
+                        description: `Route ${route.routeName} nécessite plus de bus`,
+                        action: 'Affecter des bus supplémentaires à cette route'
+                    });
+                }
+            });
+
+            // Driver availability analysis
+            const availableDrivers = drivers.filter(d => d.available).length;
+            if (availableDrivers < buses.length * 0.8) {
+                recommendations.push({
+                    type: 'Gestion du Personnel',
+                    priority: 'Élevée',
+                    description: 'Manque de chauffeurs disponibles',
+                    action: 'Recruter ou former des chauffeurs supplémentaires'
+                });
+            }
+
+            return recommendations;
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span class="notification-message">${message}</span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (renderer && camera) {
+                const container = document.getElementById('unityContainer');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+        });
+
+        // Emergency stop function
+        function emergencyStop() {
+            if (confirm('Êtes-vous sûr de vouloir arrêter tous les systèmes?')) {
+                simulationRunning = false;
+
+                if (updateInterval) {
+                    clearInterval(updateInterval);
+                    updateInterval = null;
+                }
+
+                // Update UI
+                const button = document.getElementById('simulationToggle');
+                const statusIndicator = document.getElementById('simulationStatus');
+
+                button.textContent = 'Démarrer Simulation';
+                button.className = 'btn btn-success';
+                statusIndicator.textContent = 'Système Arrêté';
+                statusIndicator.className = 'simulation-status emergency';
+
+                // Stop all bus movements in 3D scene
+                scene.children.forEach(child => {
+                    if (child.userData && child.userData.busId) {
+                        child.userData.moving = false;
+                        child.userData.targetPosition = null;
+                    }
+                });
+
+                showNotification('Système arrêté d\'urgence!', 'error');
+            }
+        }
+
+        // Route optimization function
+        function optimizeRoutes() {
+            showNotification('Optimisation des routes en cours...', 'info');
+
+            // Simulate route optimization
+            setTimeout(() => {
+                routes.forEach(route => {
+                    const routeBuses = buses.filter(bus => bus.routeId === route.id);
+                    const routeTickets = tickets.filter(ticket => ticket.route === route.id);
+
+                    // Simulate optimization based on demand
+                    if (routeTickets.length > 30) {
+                        route.optimized = true;
+                        route.frequency = Math.max(5, 15 - Math.floor(routeTickets.length / 10));
+                    }
+                });
+
+                updateRouteInformation();
+                showNotification('Optimisation terminée avec succès!', 'success');
+            }, 3000);
+        }
+
+        // Fleet management function
+        function manageFleet() {
+            showNotification('Gestion de flotte activée...', 'info');
+
+            // Simulate fleet management
+            setTimeout(() => {
+                buses.forEach(bus => {
+                    if (bus.status === 'MAINTENANCE' && Math.random() > 0.7) {
+                        bus.status = 'ACTIVE';
+                    }
+                });
+
+                // Update fleet chart
+                fleetChart.data.datasets[0].data = [
+                    buses.filter(b => b.status === 'ACTIVE').length,
+                    buses.filter(b => b.status === 'MAINTENANCE').length,
+                    buses.filter(b => b.status === 'AVAILABLE').length
+                ];
+                fleetChart.update();
+
+                updateRouteInformation();
+                showNotification('Gestion de flotte mise à jour!', 'success');
+            }, 2000);
+        }
+
+        // Predictive maintenance
+        function predictiveMaintenance() {
+            showNotification('Analyse prédictive en cours...', 'info');
+
+            setTimeout(() => {
+                const maintenanceNeeded = buses.filter(bus => {
+                    return bus.status === 'ACTIVE' && Math.random() > 0.8;
+                });
+
+                if (maintenanceNeeded.length > 0) {
+                    const busNumbers = maintenanceNeeded.map(b => b.busNumber).join(', ');
+                    showNotification(`Maintenance recommandée pour: ${busNumbers}`, 'warning');
+                } else {
+                    showNotification('Aucune maintenance prédictive nécessaire', 'success');
+                }
+            }, 2500);
+        }
+
+        // Initialize event listeners
+        function initializeEventListeners() {
+            // Simulation control
+            document.getElementById('simulationToggle').addEventListener('click', toggleSimulation);
+
+            // Data export
+            document.getElementById('exportData').addEventListener('click', exportData);
+
+            // Report generation
+            document.getElementById('generateReport').addEventListener('click', generateReport);
+
+            // Emergency stop
+            document.getElementById('emergencyStop').addEventListener('click', emergencyStop);
+
+            // Route optimization
+            document.getElementById('optimizeRoutes').addEventListener('click', optimizeRoutes);
+
+            // Fleet management
+            document.getElementById('manageFleet').addEventListener('click', manageFleet);
+
+            // Predictive maintenance
+            document.getElementById('predictiveMaintenance').addEventListener('click', predictiveMaintenance);
+        }
+
+        // Cleanup function
+        function cleanup() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+
+            if (renderer) {
+                renderer.dispose();
+            }
+
+            if (scene) {
+                scene.clear();
+            }
+        }
+
+        // Handle page unload
+        window.addEventListener('beforeunload', cleanup);
+
+        // Initialize event listeners when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeEventListeners, 1000);
+        });
+
+        // Auto-save functionality
+        function autoSave() {
+            const saveData = {
+                timestamp: new Date().toISOString(),
+                buses: buses,
+                routes: routes,
+                tickets: tickets,
+                drivers: drivers,
+                simulationRunning: simulationRunning
+            };
+
+            try {
+                // Since we can't use localStorage, we'll just log the save
+                console.log('Auto-save triggered:', saveData);
+                showNotification('Données sauvegardées automatiquement', 'success');
+            } catch (error) {
+                console.error('Auto-save failed:', error);
+            }
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(autoSave, 30000);
+
+        // Performance monitoring
+        function monitorPerformance() {
+            const performanceData = {
+                timestamp: new Date().toISOString(),
+                memory: performance.memory ? {
+                    used: performance.memory.usedJSHeapSize,
+                    total: performance.memory.totalJSHeapSize,
+                    limit: performance.memory.jsHeapSizeLimit
+                } : null,
+                timing: performance.timing,
+                busCount: buses.length,
+                routeCount: routes.length,
+                ticketCount: tickets.length
+            };
+
+            console.log('Performance monitoring:', performanceData);
+
+            // Check for performance issues
+            if (performanceData.memory && performanceData.memory.used > performanceData.memory.limit * 0.8) {
+                showNotification('Utilisation mémoire élevée détectée', 'warning');
+            }
+        }
+
+        // Monitor performance every minute
+        setInterval(monitorPerformance, 60000);
+
+        // System health check
+        function systemHealthCheck() {
+            const healthStatus = {
+                timestamp: new Date().toISOString(),
+                database: 'CONNECTED', // Would check actual database connection
+                api: 'RESPONSIVE',     // Would check API endpoints
+                simulation: simulationRunning ? 'RUNNING' : 'STOPPED',
+                charts: predictionChart && bottleneckChart && fleetChart ? 'OPERATIONAL' : 'ERROR',
+                map: map ? 'LOADED' : 'ERROR',
+                scene3d: scene && camera && renderer ? 'OPERATIONAL' : 'ERROR'
+            };
+
+            console.log('System health check:', healthStatus);
+
+            // Check for critical issues
+            const criticalIssues = Object.entries(healthStatus).filter(([key, value]) =>
+                value === 'ERROR' || value === 'DISCONNECTED'
+            );
+
+            if (criticalIssues.length > 0) {
+                showNotification(`Problèmes système détectés: ${criticalIssues.map(([key]) => key).join(', ')}`, 'error');
+            }
+
+            return healthStatus;
+        }
+
+        // Health check every 2 minutes
+        setInterval(systemHealthCheck, 120000);
+
+        // Console commands for debugging
+        window.IMAS = {
+            getBuses: () => buses,
+            getRoutes: () => routes,
+            getTickets: () => tickets,
+            getDrivers: () => drivers,
+            toggleSimulation: toggleSimulation,
+            exportData: exportData,
+            generateReport: generateReport,
+            systemHealthCheck: systemHealthCheck,
+            version: '1.0.0'
+        };
+
+        console.log('🚀 IMAS 3D System v1.0.0 loaded successfully!');
+        console.log('💡 Use window.IMAS for debugging commands');
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

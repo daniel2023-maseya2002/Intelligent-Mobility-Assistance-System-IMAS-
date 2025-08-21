@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* Main content styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333; /* Added for light mode */
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        /* Chart container */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-feed {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .activity-feed {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dark-mode .activity-item {
+            border-bottom: 1px solid #555;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .activity-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .activity-time {
+            color: #666;
+        }
+
+        .dark-mode .activity-time {
+            color: #ccc;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container, .activity-feed {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Staff Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="Staffanalyse.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudMaintenancePlan.html">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="InventoryReport.html">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="menu-text">Inventory Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="Planning.html" class="active">
+                <i class="bi bi-calendar-event"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudEquipment.html">
+                <i class="bi bi-cpu"></i>
+                <span class="menu-text">Equipment</span>
+            </a>
+        </li>
+        <li>
+            <a href="TaskManager.html">
+                <i class="bi bi-list-task"></i>
+                <span class="menu-text">Task</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudStaff.html">
+                <i class="bi bi-people"></i>
+                <span class="menu-text">Staff</span>
+            </a>
+        </li>
+        <li>
+            <a href="Technician.html">
+                <i class="bi bi-person-gear"></i>
+                <span class="menu-text">Technician</span>
+            </a>
+        </li>
+        <li>
+            <a href="EquipmentStatistics.html">
+                <i class="bi bi-pie-chart"></i>
+                <span class="menu-text">Equipment Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="DowntimeEvent.html">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="WhatsApp.html">
+                <i class="bi bi-whatsapp"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="TechnicianStatistics.html">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="menu-text">Technician Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudInventory.html">
+                <i class="bi bi-boxes"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudSparePart.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Spare Part Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="MaintenancePDFReport.html">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Reporting</span>
+            </a>
+        </li>
+        <li>
+            <a href="login.html">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="menu-text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+<main class="main-content">
+    <div class="container-fluid">
+        <div class="row stats-cards g-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card high-priority">
+                    <div class="stats-icon"><i class="bi bi-box-seam"></i></div>
+                    <div class="stats-label">Total Parts</div>
+                    <div class="stats-number" id="totalParts">0</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="stats-label">Low Stock Parts</div>
+                    <div class="stats-number" id="lowStockParts">0</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card low-priority">
+                    <div class="stats-icon"><i class="bi bi-x-circle"></i></div>
+                    <div class="stats-label">Out of Stock Parts</div>
+                    <div class="stats-number" id="outOfStockParts">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Inventory Analysis</h5>
+                <button class="btn btn-outline-primary btn-sm" id="toggleChartBtn">Switch to Pie Chart</button>
+            </div>
+            <canvas id="stockChart"></canvas>
+        </div>
+        <div class="table-container">
+            <div class="table-actions">
+                <div>
+                    <button class="btn btn-outline-primary" id="exportPDFReportBtn"><i class="bi bi-file-earmark-pdf me-2"></i> Export PDF</button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group">
+                        <input type="text" id="searchPartInput" class="form-control" placeholder="Search by name or part number...">
+                        <button class="btn btn-outline-secondary" type="button" id="searchPartButton"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table table">
+                    <thead>
+                    <tr>
+                        <th>Part Number</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Min Stock</th>
+                        <th>Location</th>
+                        <th>Supplier</th>
+                        <th>Unit Price</th>
+                    </tr>
+                    </thead>
+                    <tbody id="partsTableBody"></tbody>
+                </table>
+            </div>
+            <div id="partsPagination" class="d-flex justify-content-between align-items-center mt-3">
+                <div>Showing <span id="showingEntries">0-0</span> of <span id="totalEntries">0</span> entries</div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0" id="paginationLinks"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</main>
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000" id="notificationToastContainer"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+
+
+<script>
+    const BASE_URL = 'http://localhost:8080/api/spare-parts';
+    let currentPage = 1;
+    const rowsPerPage = 5;
+    let partsData = [];
+    let stockChart = null;
+    let isPieChart = false;
+    const partsTableBody = document.getElementById('partsTableBody');
+    const paginationLinksElement = document.getElementById('paginationLinks');
+    const showingEntriesElement = document.getElementById('showingEntries');
+    const totalEntriesElement = document.getElementById('totalEntries');
+    const searchPartInput = document.getElementById('searchPartInput');
+    const searchPartButton = document.getElementById('searchPartButton');
+    const totalPartsElement = document.getElementById('totalParts');
+    const lowStockPartsElement = document.getElementById('lowStockParts');
+    const outOfStockPartsElement = document.getElementById('outOfStockParts');
+    const toggleChartBtn = document.getElementById('toggleChartBtn');
+    const mockPartsData = [
+        { partId: 1, partNumber: "PN001", name: "Oil Filter", category: "Filters", quantity: 50, minimumStockLevel: 10, location: "Warehouse A", supplier: "Supplier X", unitPrice: 25.99 },
+        { partId: 2, partNumber: "PN002", name: "Hydraulic Pump", category: "Pumps", quantity: 5, minimumStockLevel: 8, location: "Warehouse B", supplier: "Supplier Y", unitPrice: 150.00 },
+        { partId: 3, partNumber: "PN003", name: "Gasket Set", category: "Gaskets", quantity: 0, minimumStockLevel: 5, location: "Warehouse C", supplier: "Supplier Z", unitPrice: 10.50 }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchPartData();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        searchPartButton.addEventListener('click', () => fetchPartData(searchPartInput.value.trim()));
+        searchPartInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') fetchPartData(searchPartInput.value.trim());
+        });
+        document.getElementById('exportPDFReportBtn').addEventListener('click', exportPDFReport);
+        toggleChartBtn.addEventListener('click', toggleChartType);
+    }
+
+    async function fetchPartData(searchTerm = '') {
+        try {
+            const url = searchTerm ? `${BASE_URL}/search?name=${encodeURIComponent(searchTerm)}` : BASE_URL;
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            partsData = await response.json();
+        } catch (error) {
+            console.warn('Backend unavailable, using mock data:', error.message);
+            partsData = searchTerm
+                ? mockPartsData.filter(part =>
+                    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    part.partNumber.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                : mockPartsData;
+        }
+        updateStatistics();
+        renderPartsTable();
+        updateChart();
+    }
+
+    function updateStatistics() {
+        totalPartsElement.textContent = partsData.length;
+        lowStockPartsElement.textContent = partsData.filter(part => part.quantity <= part.minimumStockLevel).length;
+        outOfStockPartsElement.textContent = partsData.filter(part => part.quantity === 0).length;
+    }
+
+    function renderPartsTable() {
+        const totalItems = partsData.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage);
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+        const currentPartsData = partsData.slice(startIndex, endIndex);
+        showingEntriesElement.textContent = totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0-0';
+        totalEntriesElement.textContent = totalItems;
+        partsTableBody.innerHTML = '';
+        if (currentPartsData.length === 0) {
+            partsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No parts found</td></tr>';
+        } else {
+            currentPartsData.forEach(part => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${part.partNumber}</td>
+                    <td>${part.name || 'N/A'}</td>
+                    <td>${part.category || 'N/A'}</td>
+                    <td>${part.quantity}</td>
+                    <td>${part.minimumStockLevel}</td>
+                    <td>${part.location || 'N/A'}</td>
+                    <td>${part.supplier || 'N/A'}</td>
+                    <td>$${part.unitPrice ? part.unitPrice.toFixed(2) : 'N/A'}</td>
+                `;
+                partsTableBody.appendChild(row);
+            });
+        }
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        paginationLinksElement.innerHTML = '';
+        if (totalPages <= 1) return;
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous">«</a>`;
+        if (currentPage > 1) prevLi.addEventListener('click', () => goToPage(currentPage - 1));
+        paginationLinksElement.appendChild(prevLi);
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow) startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            li.addEventListener('click', () => goToPage(i));
+            paginationLinksElement.appendChild(li);
+        }
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next">»</a>`;
+        if (currentPage < totalPages) nextLi.addEventListener('click', () => goToPage(currentPage + 1));
+        paginationLinksElement.appendChild(nextLi);
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderPartsTable();
+    }
+
+    function showNotification(title, message, type) {
+        const toastContainer = document.getElementById('notificationToastContainer');
+        const toastId = 'notification-' + Date.now();
+        const toastHTML = `
+            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">${title}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const toastElement = document.getElementById(toastId);
+        switch (type) {
+            case 'success': toastElement.classList.add('bg-success', 'text-white'); break;
+            case 'error': toastElement.classList.add('bg-danger', 'text-white'); break;
+            case 'warning': toastElement.classList.add('bg-warning', 'text-dark'); break;
+            default: toastElement.classList.add('bg-info', 'text-white');
+        }
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        setTimeout(() => {
+            toast.hide();
+            setTimeout(() => toastElement.remove(), 500);
+        }, 5000);
+    }
+
+    function toggleChartType() {
+        isPieChart = !isPieChart;
+        toggleChartBtn.textContent = `Switch to ${isPieChart ? 'Bar Chart' : 'Pie Chart'}`;
+        updateChart();
+    }
+
+    function updateChart() {
+        const categories = [...new Set(partsData.map(part => part.category || 'Uncategorized'))];
+        const quantities = categories.map(cat =>
+            partsData.filter(part => (part.category || 'Uncategorized') === cat)
+                .reduce((sum, part) => sum + part.quantity, 0)
+        );
+        const partCounts = categories.map(cat =>
+            partsData.filter(part => (part.category || 'Uncategorized') === cat).length
+        );
+        if (stockChart) stockChart.destroy();
+        const chartConfig = isPieChart
+            ? {
+                type: 'pie',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Parts Count',
+                        data: partCounts,
+                        backgroundColor: [
+                            '#FF6F61', '#6B7280', '#2A9D8F', '#F4A261', '#D4A5E0',
+                            '#5C6BC0', '#E57373', '#26A69A', '#FFCA28', '#7E57C2',
+                            '#EF5350', '#66BB6A', '#29B6F6', '#FFA726', '#AB47BC',
+                            '#EC407A', '#26C6DA', '#9CCC65', '#FF7043', '#8D6E63'
+                        ]
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        title: { display: true, text: 'Parts Distribution by Category' }
+                    }
+                }
+            }
+            : {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Total Quantity',
+                        data: quantities,
+                        backgroundColor: '#0d6efd',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantity' } },
+                        x: { title: { display: true, text: 'Category' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Quantity by Category' }
+                    }
+                }
+            };
+        stockChart = new Chart(document.getElementById('stockChart'), chartConfig);
+    }
+
+    function exportPDFReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Add title and metadata
+        doc.setFontSize(18);
+        doc.text('Spare Parts Inventory Report', 14, 20);
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+        // Add statistics
+        doc.setFontSize(14);
+        doc.text('Inventory Summary', 14, 45);
+        doc.setFontSize(10);
+        doc.text(`Total Parts: ${totalPartsElement.textContent}`, 14, 55);
+        doc.text(`Low Stock Parts: ${lowStockPartsElement.textContent}`, 14, 65);
+        doc.text(`Out of Stock Parts: ${outOfStockPartsElement.textContent}`, 14, 75);
+
+        // Add table
+        doc.autoTable({
+            startY: 85,
+            head: [['Part Number', 'Name', 'Category', 'Quantity', 'Min Stock', 'Location', 'Supplier', 'Unit Price']],
+            body: partsData.map(part => [
+                part.partNumber || 'N/A',
+                part.name || 'N/A',
+                part.category || 'N/A',
+                part.quantity || 0,
+                part.minimumStockLevel || 0,
+                part.location || 'N/A',
+                part.supplier || 'N/A',
+                part.unitPrice ? `$${part.unitPrice.toFixed(2)}` : 'N/A'
+            ]),
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [13, 110, 253] },
+            margin: { top: 40 }
+        });
+
+        // Add charts
+        const canvas = document.getElementById('stockChart');
+        const chartImage = canvas.toDataURL('image/png');
+        const chartY = doc.lastAutoTable.finalY + 20;
+        doc.setFontSize(14);
+        doc.text(isPieChart ? 'Parts Distribution by Category (Pie Chart)' : 'Quantity by Category (Bar Chart)', 14, chartY);
+        doc.addImage(chartImage, 'PNG', 14, chartY + 10, 180, 100);
+
+        doc.save('inventory_report.pdf');
+        showNotification('Success', 'PDF report generated successfully', 'success');
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

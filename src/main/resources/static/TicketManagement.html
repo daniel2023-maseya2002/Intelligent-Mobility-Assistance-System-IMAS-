@@ -1,0 +1,3030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS Vehicle & Ticket Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/davidshimjs-qrcodejs/0.0.2/qrcode.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --header-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --hover-bg: #f1f5f9;
+            --sky-blue: #0bdef9;
+            --sky-blue-dark: #0ea5e9;
+            --sky-blue-light: #e0f7fa;
+            --accent-blue: #3b82f6;
+            --success-green: #22c55e;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --border-radius: 12px;
+        }
+
+        body.dark-mode {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --header-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --hover-bg: #334155;
+            --sky-blue-light: #1e40af;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            line-height: 1.6;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .company-name,
+        .sidebar.collapsed .logo-section img,
+        .sidebar.collapsed .logout-btn span,
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item,
+        .sidebar.collapsed .sidebar-menu a {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .nav-item i,
+        .sidebar.collapsed .sidebar-menu i {
+            margin-right: 0;
+            font-size: 20px;
+        }
+
+        .logo-section {
+            padding: 25px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, var(--sky-blue), var(--sky-blue-dark));
+        }
+
+        .logo-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .company-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+            margin: 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-size: 15px;
+            margin: 0 10px;
+            border-radius: var(--border-radius);
+        }
+
+        .sidebar-menu a:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+            border-left-color: var(--sky-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            background-color: var(--sky-blue-light);
+            color: var(--sky-blue-dark);
+            border-left-color: var(--sky-blue);
+            font-weight: 600;
+        }
+
+        .sidebar-menu i {
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .logout-section {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border-radius: var(--border-radius);
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            z-index: 999;
+            transition: left 0.3s ease;
+            height: var(--header-height);
+        }
+
+        .sidebar.collapsed ~ .main-content .header {
+            left: 80px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .header-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--sky-blue);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .user-email {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            background-color: var(--bg-color);
+        }
+
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 80px;
+        }
+
+        .container-fluid {
+            padding: 30px;
+            margin-top: var(--header-height);
+            flex: 1;
+        }
+
+        /* Stats Cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stats-card {
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stats-card.high-priority {
+            border-left: 4px solid var(--danger-red);
+        }
+
+        .stats-card.medium-priority {
+            border-left: 4px solid var(--warning-yellow);
+        }
+
+        .stats-card.low-priority {
+            border-left: 4px solid var(--success-green);
+        }
+
+        .stats-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .stats-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-color);
+            margin: 10px 0;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #ffffff;
+            background: var(--sky-blue);
+            opacity: 0.8;
+        }
+
+        /* Table Styles */
+        .table-container {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .table-actions {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: var(--sky-blue-light);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background-color: var(--sky-blue-light);
+            color: var(--text-color);
+            font-weight: 600;
+            border-bottom-width: 1px;
+        }
+
+        .table td, .table th {
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+
+        .table tr:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .badge {
+            padding: 6px 10px;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        .badge-issued {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .badge-boarded {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        .badge-cancelled {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .badge-active {
+            background-color: #22c55e;
+            color: white;
+        }
+
+        .badge-stopped {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .badge-incident {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Map Container */
+        .map-container {
+            height: 500px;
+            width: 100%;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        /* QR Scanner Container */
+        .qr-scanner-container {
+            height: 300px;
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--sidebar-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #qrScanner {
+            width: 100%;
+            height: 100%;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 1.2rem;
+            z-index: 10;
+        }
+
+        /* QR Code Display */
+        .qr-code-display {
+            text-align: center;
+            padding: 20px;
+            background-color: var(--sidebar-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin: 20px auto;
+            max-width: 300px;
+        }
+
+        .qr-code-display img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Report Styles */
+        .report-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .report-card-header {
+            padding: 15px 20px;
+            background-color: var(--sky-blue-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .report-card-title {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .report-card-body {
+            padding: 20px;
+        }
+
+        /* Custom Cards */
+        .custom-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .custom-card-header {
+            padding: 15px 20px;
+            background-color: var(--sky-blue-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .custom-card-title {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .custom-card-body {
+            padding: 20px;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: var(--border-radius);
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--sky-blue);
+            border-color: var(--sky-blue);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--sky-blue-dark);
+            border-color: var(--sky-blue-dark);
+        }
+
+        .btn-outline-primary {
+            color: var(--sky-blue);
+            border-color: var(--sky-blue);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--sky-blue);
+            border-color: var(--sky-blue);
+            color: white;
+        }
+
+        /* Toast Styles */
+        .toast-container {
+            z-index: 1100;
+        }
+
+        .toast {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar:not(.collapsed) {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .header-title {
+                font-size: 1.2rem;
+            }
+
+            .user-info {
+                display: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container-fluid {
+                padding: 15px;
+            }
+
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .table-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<header class="header">
+    <div class="header-left">
+        <button class="header-btn" id="sidebarToggle">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">IMAS Vehicle & Ticket Management System</h1>
+    </div>
+    <div class="header-right">
+        <button class="header-btn" id="themeToggle">
+            <i class="bi bi-sun"></i>
+            <span class="btn-text">Light</span>
+        </button>
+        <div class="profile-container">
+            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0ea5e9&color=fff" alt="Profile" class="avatar">
+            <div class="user-info">
+                <h3 class="user-name">Admin User</h3>
+                <p class="user-email">admin@imas.com</p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="logo-section">
+        <div class="logo">
+            <img src="https://via.placeholder.com/80" alt="IMAS Logo" class="logo-image">
+            <h2 class="company-name">IMAS</h2>
+        </div>
+    </div>
+    <ul class="sidebar-menu">
+        <li>
+            <a href="#" class="active" id="dashboardTab">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="vehiclesTab">
+                <i class="bi bi-truck"></i>
+                <span class="menu-text">Vehicles</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="ticketsTab">
+                <i class="bi bi-ticket"></i>
+                <span class="menu-text">Tickets</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="routesTab">
+                <i class="bi bi-signpost-split"></i>
+                <span class="menu-text">Routes</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="maintenanceTab">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="reportsTab">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span class="menu-text">Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="statisticsTab">
+                <i class="bi bi-graph-up"></i>
+                <span class="menu-text">Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="notificationsTab">
+                <i class="bi bi-bell"></i>
+                <span class="menu-text">Notifications</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="incidentsTab">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Incidents</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="exportTab">
+                <i class="bi bi-download"></i>
+                <span class="menu-text">Export Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="liveMapTab">
+                <i class="bi bi-geo-alt"></i>
+                <span class="menu-text">Live Map</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="settingsTab">
+                <i class="bi bi-gear"></i>
+                <span class="menu-text">Settings</span>
+            </a>
+        </li>
+    </ul>
+    <div class="logout-section">
+        <a href="#" class="logout-btn" id="logoutBtn">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="menu-text">Logout</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container-fluid">
+        <div id="content">
+            <!-- Dashboard Content -->
+            <div id="dashboardContent" class="content-section">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-cards">
+                    <div class="stats-card high-priority">
+                        <div class="stats-label">Total Buses</div>
+                        <div class="stats-number" id="totalBuses">0</div>
+                        <div class="stats-icon"><i class="bi bi-truck"></i></div>
+                    </div>
+                    <div class="stats-card medium-priority">
+                        <div class="stats-label">Active Tickets</div>
+                        <div class="stats-number" id="activeTickets">0</div>
+                        <div class="stats-icon"><i class="bi bi-ticket"></i></div>
+                    </div>
+                    <div class="stats-card low-priority">
+                        <div class="stats-label">Notifications</div>
+                        <div class="stats-number" id="notificationsCount">0</div>
+                        <div class="stats-icon"><i class="bi bi-bell"></i></div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-label">Active Routes</div>
+                        <div class="stats-number" id="activeRoutes">0</div>
+                        <div class="stats-icon"><i class="bi bi-signpost-split"></i></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>Bus Status Distribution</h4>
+                            <canvas id="busStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>Ticket Status Distribution</h4>
+                            <canvas id="ticketStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-card mt-4">
+                    <div class="custom-card-header">
+                        <h3 class="custom-card-title">Recent Activity</h3>
+                    </div>
+                    <div class="custom-card-body">
+                        <div class="table-container">
+                            <table class="table table-responsive">
+                                <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Activity</th>
+                                    <th>Details</th>
+                                </tr>
+                                </thead>
+                                <tbody id="recentActivityBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicles Content -->
+            <div id="vehiclesContent" class="content-section" style="display: none;">
+                <h2>Vehicle Management</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBusModal">
+                        <i class="bi bi-plus-circle"></i> Add New Bus
+                    </button>
+                    <div class="input-group" style="max-width: 300px;">
+                        <input type="text" class="form-control" id="busSearch" placeholder="Search buses...">
+                        <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Bus Line</th>
+                            <th>Passengers</th>
+                            <th>Capacity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="busTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tickets Content -->
+            <div id="ticketsContent" class="content-section" style="display: none;">
+                <h2>Ticket Management</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#purchaseTicketModal">
+                        <i class="bi bi-ticket"></i> Purchase Ticket
+                    </button>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#scanTicketModal">
+                        <i class="bi bi-qr-code-scan"></i> Scan Ticket
+                    </button>
+                    <div class="input-group" style="max-width: 300px;">
+                        <input type="text" class="form-control" id="ticketSearch" placeholder="Search tickets...">
+                        <button class="btn btn-outline-secondary" type="button"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Passenger</th>
+                            <th>Ticket Number</th>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="ticketTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Routes Content -->
+            <div id="routesContent" class="content-section" style="display: none;">
+                <h2>Route Management</h2>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>Bus ID</th>
+                            <th>Bus Name</th>
+                            <th>Route</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="routesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Maintenance Content -->
+            <div id="maintenanceContent" class="content-section" style="display: none;">
+                <h2>Maintenance Management</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignTechnicianModal">
+                        <i class="bi bi-tools"></i> Assign Technician
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>Bus ID</th>
+                            <th>Bus Name</th>
+                            <th>Assigned Technician</th>
+                            <th>Status</th>
+                            <th>Last Check</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="maintenanceTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Content -->
+            <div id="reportsContent" class="content-section" style="display: none;">
+                <h2>Reports</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" onclick="generateReport('daily')">
+                        <i class="bi bi-calendar-day"></i> Daily Report
+                    </button>
+                    <button class="btn btn-primary" onclick="generateReport('weekly')">
+                        <i class="bi bi-calendar-week"></i> Weekly Report
+                    </button>
+                    <button class="btn btn-primary" onclick="generateReport('monthly')">
+                        <i class="bi bi-calendar-month"></i> Monthly Report
+                    </button>
+                    <button class="btn btn-primary" onclick="generateReport('annual')">
+                        <i class="bi bi-calendar"></i> Annual Report
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customReportModal">
+                        <i class="bi bi-sliders"></i> Custom Report
+                    </button>
+                </div>
+                <div id="reportContent" class="report-card mt-3">
+                    <div class="report-card-header">
+                        <h3 class="report-card-title">Report Preview</h3>
+                    </div>
+                    <div class="report-card-body">
+                        <p>Select a report type to generate or create a custom report.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Content -->
+            <div id="statisticsContent" class="content-section" style="display: none;">
+                <h2>System Statistics</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>Bus Utilization</h4>
+                            <canvas id="busUtilizationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4>Ticket Sales</h4>
+                            <canvas id="ticketSalesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container mt-4">
+                    <h4>Maintenance History</h4>
+                    <canvas id="maintenanceHistoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Notifications Content -->
+            <div id="notificationsContent" class="content-section" style="display: none;">
+                <h2>Notifications</h2>
+                <div class="table-actions">
+                    <button class="btn btn-danger" onclick="clearNotifications()">
+                        <i class="bi bi-trash"></i> Clear All Notifications
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>Message</th>
+                            <th>Type</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="notificationsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Incidents Content -->
+            <div id="incidentsContent" class="content-section" style="display: none;">
+                <h2>Incident Management</h2>
+                <div class="table-actions">
+                    <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reportIncidentModal">
+                        <i class="bi bi-exclamation-triangle"></i> Report Incident
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="table table-responsive">
+                        <thead>
+                        <tr>
+                            <th>Bus ID</th>
+                            <th>Bus Name</th>
+                            <th>Incident Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="incidentsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Export Reports Content -->
+            <div id="exportContent" class="content-section" style="display: none;">
+                <h2>Export Reports</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" onclick="exportReport('excel')">
+                        <i class="bi bi-file-earmark-excel"></i> Export to Excel
+                    </button>
+                    <button class="btn btn-primary" onclick="exportReport('pdf')">
+                        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+                    </button>
+                    <button class="btn btn-primary" onclick="exportReport('csv')">
+                        <i class="bi bi-file-earmark-text"></i> Export to CSV
+                    </button>
+                </div>
+                <div class="custom-card mt-3">
+                    <div class="custom-card-header">
+                        <h3 class="custom-card-title">Export Options</h3>
+                    </div>
+                    <div class="custom-card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Date Range</label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" id="exportStartDate">
+                                        <span class="input-group-text">to</span>
+                                        <input type="date" class="form-control" id="exportEndDate">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Report Type</label>
+                                    <select class="form-select" id="exportReportType">
+                                        <option value="all">All Data</option>
+                                        <option value="tickets">Tickets</option>
+                                        <option value="vehicles">Vehicles</option>
+                                        <option value="incidents">Incidents</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Map Content -->
+            <div id="liveMapContent" class="content-section" style="display: none;">
+                <h2>Live Vehicle Tracking</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" onclick="refreshMap()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Map
+                    </button>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoRefreshMap" checked>
+                        <label class="form-check-label" for="autoRefreshMap">Auto Refresh (30s)</label>
+                    </div>
+                </div>
+                <div class="map-container" id="map"></div>
+                <div class="custom-card mt-3">
+                    <div class="custom-card-header">
+                        <h3 class="custom-card-title">Vehicle Status</h3>
+                    </div>
+                    <div class="custom-card-body">
+                        <div class="row" id="vehicleStatusCards"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div id="settingsContent" class="content-section" style="display: none;">
+                <h2>System Settings</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="custom-card">
+                            <div class="custom-card-header">
+                                <h3 class="custom-card-title">General Settings</h3>
+                            </div>
+                            <div class="custom-card-body">
+                                <form id="generalSettingsForm">
+                                    <div class="mb-3">
+                                        <label for="systemName" class="form-label">System Name</label>
+                                        <input type="text" class="form-control" id="systemName" value="IMAS Management System">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="timezone" class="form-label">Timezone</label>
+                                        <select class="form-select" id="timezone">
+                                            <option value="UTC">UTC</option>
+                                            <option value="GMT">GMT</option>
+                                            <option value="EST">EST</option>
+                                            <option value="PST">PST</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="enableNotifications" checked>
+                                        <label class="form-check-label" for="enableNotifications">Enable Notifications</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="custom-card">
+                            <div class="custom-card-header">
+                                <h3 class="custom-card-title">User Preferences</h3>
+                            </div>
+                            <div class="custom-card-body">
+                                <form id="userPreferencesForm">
+                                    <div class="mb-3">
+                                        <label for="itemsPerPage" class="form-label">Items Per Page</label>
+                                        <select class="form-select" id="itemsPerPage">
+                                            <option value="10">10</option>
+                                            <option value="25" selected>25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="darkModeToggle" checked>
+                                        <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="compactMode">
+                                        <label class="form-check-label" for="compactMode">Compact Mode</label>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Modals -->
+<!-- Add Bus Modal -->
+<div class="modal fade" id="addBusModal" tabindex="-1" aria-labelledby="addBusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addBusModalLabel">Add New Bus</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBusForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="busName" class="form-label">Bus Name</label>
+                                <input type="text" class="form-control" id="busName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="busLine" class="form-label">Bus Line</label>
+                                <input type="text" class="form-control" id="busLine" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="capacity" class="form-label">Capacity</label>
+                                <input type="number" class="form-control" id="capacity" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="startLat" class="form-label">Start Latitude</label>
+                                <input type="number" step="any" class="form-control" id="startLat" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="startLng" class="form-label">Start Longitude</label>
+                                <input type="number" step="any" class="form-control" id="startLng" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="endLat" class="form-label">End Latitude</label>
+                                <input type="number" step="any" class="form-control" id="endLat" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="endLng" class="form-label">End Longitude</label>
+                                <input type="number" step="any" class="form-control" id="endLng" required>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addBus()">Save Bus</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Ticket Modal -->
+<div class="modal fade" id="purchaseTicketModal" tabindex="-1" aria-labelledby="purchaseTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="purchaseTicketModalLabel">Purchase Ticket</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="purchaseTicketForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ticketFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="ticketFirstName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ticketLastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="ticketLastName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ticketOrigin" class="form-label">Origin</label>
+                                <input type="text" class="form-control" id="ticketOrigin" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ticketDestination" class="form-label">Destination</label>
+                                <input type="text" class="form-control" id="ticketDestination" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ticketDepartureTime" class="form-label">Departure Time</label>
+                                <input type="datetime-local" class="form-control" id="ticketDepartureTime" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ticketBusId" class="form-label">Bus</label>
+                                <select class="form-select" id="ticketBusId" required>
+                                    <option value="">Select Bus</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="hasLuggage">
+                                <label class="form-check-label" for="hasLuggage">Has Luggage</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="luggageWeightGroup" style="display: none;">
+                                <label for="luggageWeight" class="form-label">Luggage Weight (kg)</label>
+                                <input type="number" step="0.1" class="form-control" id="luggageWeight" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="purchaseTicket()">Purchase Ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Ticket Modal -->
+<div class="modal fade" id="scanTicketModal" tabindex="-1" aria-labelledby="scanTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="scanTicketModalLabel">Scan Ticket</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-scanner-container" id="qrScanner">
+                    <div class="scanner-overlay" id="scannerOverlay">
+                        <div class="text-center">
+                            <i class="bi bi-camera" style="font-size: 2rem;"></i>
+                            <p>Select camera source to start scanning</p>
+                            <select class="form-select" id="cameraSelect" style="max-width: 300px; margin: 0 auto;">
+                                <option value="">Select Camera</option>
+                            </select>
+                            <button class="btn btn-primary mt-2" onclick="initQRScanner()" id="startScannerBtn">
+                                <i class="bi bi-play"></i> Start Scanner
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3 mt-3">
+                    <label for="reservationCode" class="form-label">Or Enter Reservation Code</label>
+                    <input type="text" class="form-control" id="reservationCode" placeholder="Enter ticket reservation code">
+                </div>
+                <div id="scanResult" class="alert alert-info" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="scanTicketManually()">Scan Manually</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Ticket QR Modal -->
+<div class="modal fade" id="viewTicketQRModal" tabindex="-1" aria-labelledby="viewTicketQRModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewTicketQRModalLabel">Ticket QR Code</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrCodeDisplay" class="mb-3"></div>
+                <div id="ticketInfo">
+                    <h5 id="ticketPassengerName"></h5>
+                    <p class="mb-1"><strong>Ticket Number:</strong> <span id="ticketNumber"></span></p>
+                    <p class="mb-1"><strong>Reservation Code:</strong> <span id="reservationCodeDisplay"></span></p>
+                    <p class="mb-1"><strong>Status:</strong> <span id="ticketStatus" class="badge"></span></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadQRCode()">
+                    <i class="bi bi-download"></i> Download QR
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Ticket Modal -->
+<div class="modal fade" id="editTicketModal" tabindex="-1" aria-labelledby="editTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editTicketModalLabel">Edit Ticket</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editTicketForm">
+                    <input type="hidden" id="editTicketId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editTicketFirstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="editTicketFirstName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTicketLastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="editTicketLastName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTicketOrigin" class="form-label">Origin</label>
+                                <input type="text" class="form-control" id="editTicketOrigin" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editTicketDestination" class="form-label">Destination</label>
+                                <input type="text" class="form-control" id="editTicketDestination" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTicketDepartureTime" class="form-label">Departure Time</label>
+                                <input type="datetime-local" class="form-control" id="editTicketDepartureTime" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTicketBusId" class="form-label">Bus</label>
+                                <select class="form-select" id="editTicketBusId" required>
+                                    <option value="">Select Bus</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="editHasLuggage">
+                                <label class="form-check-label" for="editHasLuggage">Has Luggage</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3" id="editLuggageWeightGroup" style="display: none;">
+                                <label for="editLuggageWeight" class="form-label">Luggage Weight (kg)</label>
+                                <input type="number" step="0.1" class="form-control" id="editLuggageWeight" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTicketStatus" class="form-label">Status</label>
+                        <select class="form-select" id="editTicketStatus">
+                            <option value="ISSUED">Issued</option>
+                            <option value="BOARDED">Boarded</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="updateTicket()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Technician Modal -->
+<div class="modal fade" id="assignTechnicianModal" tabindex="-1" aria-labelledby="assignTechnicianModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignTechnicianModalLabel">Assign Technician</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignTechnicianForm">
+                    <div class="mb-3">
+                        <label for="technicianBusId" class="form-label">Bus</label>
+                        <select class="form-select" id="technicianBusId" required>
+                            <option value="">Select Bus</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="technicianName" class="form-label">Technician Name</label>
+                        <input type="text" class="form-control" id="technicianName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="maintenanceNotes" class="form-label">Maintenance Notes</label>
+                        <textarea class="form-control" id="maintenanceNotes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="assignTechnician()">Assign Technician</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Incident Modal -->
+<div class="modal fade" id="reportIncidentModal" tabindex="-1" aria-labelledby="reportIncidentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="reportIncidentModalLabel">Report Incident</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportIncidentForm">
+                    <div class="mb-3">
+                        <label for="incidentBusId" class="form-label">Bus</label>
+                        <select class="form-select" id="incidentBusId" required>
+                            <option value="">Select Bus</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="incidentType" class="form-label">Incident Type</label>
+                        <select class="form-select" id="incidentType" required>
+                            <option value="">Select Type</option>
+                            <option value="ACCIDENT">Accident</option>
+                            <option value="BREAKDOWN">Breakdown</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="incidentDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="incidentDescription" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" onclick="reportIncident()">Report Incident</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Report Modal -->
+<div class="modal fade" id="customReportModal" tabindex="-1" aria-labelledby="customReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="customReportModalLabel">Custom Report</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customReportForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="datetime-local" class="form-control" id="startDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="datetime-local" class="form-control" id="endDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Report Type</label>
+                        <select class="form-select" id="reportType">
+                            <option value="summary">Summary Report</option>
+                            <option value="detailed">Detailed Report</option>
+                            <option value="analytics">Analytics Report</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Include Data</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeTickets" checked>
+                            <label class="form-check-label" for="includeTickets">Tickets</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeVehicles" checked>
+                            <label class="form-check-label" for="includeVehicles">Vehicles</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="includeIncidents">
+                            <label class="form-check-label" for="includeIncidents">Incidents</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="generateCustomReport()">Generate Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastNotification" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-primary text-white">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:8080/api';
+    let map, busMarkers = {};
+    let busStatusChart, ticketStatusChart, busUtilizationChart, ticketSalesChart, maintenanceHistoryChart;
+    let qrScanner;
+    let mapRefreshInterval;
+    let currentTicketQRCode = null;
+
+    $(document).ready(function() {
+        // Initialize sidebar toggle
+        $('#sidebarToggle').click(function() {
+            $('#sidebar').toggleClass('collapsed');
+            $('.main-content').toggleClass('expanded');
+        });
+
+        // Theme toggle
+        $('#themeToggle').click(function() {
+            $('body').toggleClass('dark-mode');
+            const isDarkMode = $('body').hasClass('dark-mode');
+            $('#themeToggle .btn-text').text(isDarkMode ? 'Dark' : 'Light');
+            $('#themeToggle i').removeClass().addClass(isDarkMode ? 'bi bi-moon' : 'bi bi-sun');
+
+            // Save preference to localStorage
+            localStorage.setItem('darkMode', isDarkMode);
+        });
+
+        // Check for saved theme preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            $('body').addClass('dark-mode');
+            $('#themeToggle .btn-text').text('Dark');
+            $('#themeToggle i').removeClass().addClass('bi bi-moon');
+        }
+
+        // Sidebar navigation
+        $('.sidebar-menu a').click(function(e) {
+            e.preventDefault();
+            $('.sidebar-menu a').removeClass('active');
+            $(this).addClass('active');
+            $('.content-section').hide();
+            const tabId = $(this).attr('id').replace('Tab', 'Content');
+            $(`#${tabId}`).show();
+
+            // Load content based on tab
+            if (tabId === 'dashboardContent') loadDashboard();
+            else if (tabId === 'vehiclesContent') loadBuses();
+            else if (tabId === 'ticketsContent') loadTickets();
+            else if (tabId === 'routesContent') loadRoutes();
+            else if (tabId === 'maintenanceContent') loadMaintenance();
+            else if (tabId === 'notificationsContent') loadNotifications();
+            else if (tabId === 'incidentsContent') loadIncidents();
+            else if (tabId === 'liveMapContent') initMap();
+            else if (tabId === 'statisticsContent') loadStatistics();
+        });
+
+        // Initialize WebSocket for notifications
+        initWebSocket();
+
+        // Load initial content
+        loadDashboard();
+
+        // Handle luggage checkbox
+        $('#hasLuggage').change(function() {
+            $('#luggageWeightGroup').toggle(this.checked);
+            if (this.checked) {
+                $('#luggageWeight').val('0');
+            }
+        });
+
+        $('#editHasLuggage').change(function() {
+            $('#editLuggageWeightGroup').toggle(this.checked);
+        });
+
+        // Populate bus selects
+        populateBusSelects();
+
+        // Handle logout
+        $('#logoutBtn').click(function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                // In a real app, you would call your logout API here
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Initialize camera selection when scan modal is shown
+        $('#scanTicketModal').on('shown.bs.modal', function() {
+            listCameras();
+        });
+
+        $('#scanTicketModal').on('hidden.bs.modal', function() {
+            if (qrScanner) {
+                qrScanner.stop().then(() => {
+                    qrScanner = null;
+                }).catch(err => {
+                    console.error('Failed to stop QR scanner:', err);
+                });
+            }
+        });
+
+        // Auto refresh map toggle
+        $('#autoRefreshMap').change(function() {
+            if (this.checked) {
+                startMapAutoRefresh();
+            } else {
+                stopMapAutoRefresh();
+            }
+        });
+    });
+
+    function initWebSocket() {
+        const socket = new WebSocket('ws://localhost:8080/websocket');
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            showToast(`New Notification: ${data.message}`);
+            loadNotifications();
+
+            // Refresh relevant sections based on notification type
+            if (data.type === 'INCIDENT') {
+                loadIncidents();
+                loadDashboard();
+            } else if (data.type === 'TICKET') {
+                loadTickets();
+            } else if (data.type === 'BUS') {
+                loadBuses();
+                loadDashboard();
+            }
+        };
+        socket.onclose = function() {
+            setTimeout(initWebSocket, 5000);
+        };
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = $('#toastNotification');
+        toast.find('.toast-body').text(message);
+
+        // Change toast color based on type
+        const toastHeader = toast.find('.toast-header');
+        toastHeader.removeClass('bg-primary bg-success bg-warning bg-danger');
+
+        switch(type) {
+            case 'success':
+                toastHeader.addClass('bg-success');
+                break;
+            case 'warning':
+                toastHeader.addClass('bg-warning');
+                break;
+            case 'error':
+                toastHeader.addClass('bg-danger');
+                break;
+            default:
+                toastHeader.addClass('bg-primary');
+        }
+
+        const bsToast = new bootstrap.Toast(toast[0]);
+        bsToast.show();
+    }
+
+    function loadDashboard() {
+        // Load bus statistics
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            $('#totalBuses').text(buses.length);
+            const active = buses.filter(b => !b.hasAccident && !b.stopped).length;
+            const stopped = buses.filter(b => b.stopped && !b.hasAccident).length;
+            const incident = buses.filter(b => b.hasAccident).length;
+
+            // Destroy existing chart if it exists
+            if (busStatusChart) busStatusChart.destroy();
+
+            const ctx = $('#busStatusChart')[0].getContext('2d');
+            busStatusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Stopped', 'Incident'],
+                    datasets: [{
+                        data: [active, stopped, incident],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        });
+
+        // Load ticket statistics
+        $.get(`${API_BASE_URL}/v1/tickets/list`, function(tickets) {
+            const activeTickets = tickets.filter(t => t.status === 'ISSUED' || t.status === 'BOARDED').length;
+            $('#activeTickets').text(activeTickets);
+
+            const issued = tickets.filter(t => t.status === 'ISSUED').length;
+            const boarded = tickets.filter(t => t.status === 'BOARDED').length;
+            const cancelled = tickets.filter(t => t.status === 'CANCELLED').length;
+
+            if (ticketStatusChart) ticketStatusChart.destroy();
+
+            const ctx = $('#ticketStatusChart')[0].getContext('2d');
+            ticketStatusChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Issued', 'Boarded', 'Cancelled'],
+                    datasets: [{
+                        data: [issued, boarded, cancelled],
+                        backgroundColor: ['#3b82f6', '#22c55e', '#ef4444'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        // Load notifications count
+        $.get(`${API_BASE_URL}/notifications`, function(notifications) {
+            $('#notificationsCount').text(notifications.length);
+        });
+
+        // Load active routes
+        $.get(`${API_BASE_URL}/buses/routes`, function(routes) {
+            $('#activeRoutes').text(routes.length);
+        });
+
+        // Load recent activity
+        $.get(`${API_BASE_URL}/activity`, function(activities) {
+            const tbody = $('#recentActivityBody');
+            tbody.empty();
+
+            // Show only last 5 activities
+            activities.slice(0, 5).forEach(activity => {
+                const row = `
+                    <tr>
+                        <td>${new Date(activity.timestamp).toLocaleString()}</td>
+                        <td>${activity.type}</td>
+                        <td>${activity.message}</td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+    }
+
+    function loadBuses() {
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            const tbody = $('#busTableBody');
+            tbody.empty();
+            buses.forEach(bus => {
+                const status = bus.hasAccident ? 'Incident' : bus.stopped ? 'Stopped' : 'Active';
+                const statusClass = bus.hasAccident ? 'incident' : bus.stopped ? 'stopped' : 'active';
+
+                const row = `
+                    <tr>
+                        <td>${bus.id}</td>
+                        <td>${bus.name}</td>
+                        <td>${bus.busLine}</td>
+                        <td>${bus.passengers}</td>
+                        <td>${bus.capacity}</td>
+                        <td><span class="badge badge-${statusClass}">${status}</span></td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="showBusDetails(${bus.id})">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editBus(${bus.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteBus(${bus.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                ${bus.stopped || bus.hasAccident ?
+                                    `<button class="btn btn-sm btn-outline-success" onclick="restartBus(${bus.id})">
+                                        <i class="bi bi-play"></i>
+                                    </button>` :
+                                    `<button class="btn btn-sm btn-outline-warning" onclick="stopBus(${bus.id})">
+                                        <i class="bi bi-pause"></i>
+                                    </button>`}
+                            </div>
+                        </td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+
+        $('#busSearch').off('input').on('input', function() {
+            const search = $(this).val().toLowerCase();
+            $('#busTableBody tr').each(function() {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(text.includes(search));
+            });
+        });
+    }
+
+    function showBusDetails(busId) {
+        $.get(`${API_BASE_URL}/buses/${busId}`, function(bus) {
+            const modal = new bootstrap.Modal(document.createElement('div'));
+            modal._element.innerHTML = `
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">Bus Details: ${bus.name}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Bus ID:</strong> ${bus.id}</p>
+                                    <p><strong>Bus Line:</strong> ${bus.busLine}</p>
+                                    <p><strong>Capacity:</strong> ${bus.capacity}</p>
+                                    <p><strong>Current Passengers:</strong> ${bus.passengers}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Status:</strong> <span class="badge badge-${bus.hasAccident ? 'incident' : bus.stopped ? 'stopped' : 'active'}">
+                                        ${bus.hasAccident ? 'Incident' : bus.stopped ? 'Stopped' : 'Active'}
+                                    </span></p>
+                                    ${bus.assignedTechnician ? `<p><strong>Technician:</strong> ${bus.assignedTechnician}</p>` : ''}
+                                    ${bus.hasAccident ? `<p><strong>Incident Reported:</strong> ${new Date(bus.accidentTimestamp).toLocaleString()}</p>` : ''}
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h5>Route Information</h5>
+                                <p><strong>Start:</strong> (${bus.startLat}, ${bus.startLng})</p>
+                                <p><strong>End:</strong> (${bus.endLat}, ${bus.endLng})</p>
+                                ${bus.currentLat && bus.currentLng ?
+                                    `<p><strong>Current Location:</strong> (${bus.currentLat}, ${bus.currentLng})</p>` :
+                                    '<p><strong>Current Location:</strong> Not available</p>'}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal._element);
+            modal.show();
+        }).fail(function() {
+            showToast('Failed to load bus details', 'error');
+        });
+    }
+
+    function addBus() {
+        const bus = {
+            name: $('#busName').val(),
+            busLine: $('#busLine').val(),
+            capacity: parseInt($('#capacity').val()),
+            startLat: parseFloat($('#startLat').val()),
+            startLng: parseFloat($('#startLng').val()),
+            endLat: parseFloat($('#endLat').val()),
+            endLng: parseFloat($('#endLng').val()),
+            passengers: 0,
+            stopped: false,
+            hasAccident: false
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/buses`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(bus),
+            success: function() {
+                $('#addBusModal').modal('hide');
+                loadBuses();
+                loadDashboard();
+                showToast('Bus added successfully', 'success');
+                $('#addBusForm')[0].reset();
+            },
+            error: function(xhr) {
+                showToast('Error adding bus: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function editBus(id) {
+        $.get(`${API_BASE_URL}/buses/${id}`, function(bus) {
+            $('#addBusModal').modal('show');
+            $('#addBusModalLabel').text('Edit Bus');
+            $('#busName').val(bus.name);
+            $('#busLine').val(bus.busLine);
+            $('#capacity').val(bus.capacity);
+            $('#startLat').val(bus.startLat);
+            $('#startLng').val(bus.startLng);
+            $('#endLat').val(bus.endLat);
+            $('#endLng').val(bus.endLng);
+
+            // Change the save button to update
+            $('#addBusModal .btn-primary').off('click').text('Update Bus').click(function() {
+                updateBus(id);
+            });
+        }).fail(function() {
+            showToast('Failed to load bus details', 'error');
+        });
+    }
+
+    function updateBus(id) {
+        const bus = {
+            name: $('#busName').val(),
+            busLine: $('#busLine').val(),
+            capacity: parseInt($('#capacity').val()),
+            startLat: parseFloat($('#startLat').val()),
+            startLng: parseFloat($('#startLng').val()),
+            endLat: parseFloat($('#endLat').val()),
+            endLng: parseFloat($('#endLng').val())
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/buses/${id}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(bus),
+            success: function() {
+                $('#addBusModal').modal('hide');
+                loadBuses();
+                loadDashboard();
+                showToast('Bus updated successfully', 'success');
+
+                // Reset the modal for future use
+                $('#addBusModalLabel').text('Add New Bus');
+                $('#addBusModal .btn-primary').off('click').text('Save Bus').click(function() {
+                    addBus();
+                });
+                $('#addBusForm')[0].reset();
+            },
+            error: function(xhr) {
+                showToast('Error updating bus: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function deleteBus(id) {
+        if (confirm('Are you sure you want to delete this bus? This action cannot be undone.')) {
+            $.ajax({
+                url: `${API_BASE_URL}/buses/${id}`,
+                method: 'DELETE',
+                success: function() {
+                    loadBuses();
+                    loadDashboard();
+                    showToast('Bus deleted successfully', 'success');
+                },
+                error: function(xhr) {
+                    showToast('Error deleting bus: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+                }
+            });
+        }
+    }
+
+    function stopBus(id) {
+        $.ajax({
+            url: `${API_BASE_URL}/buses/${id}/stop`,
+            method: 'PUT',
+            success: function() {
+                loadBuses();
+                loadDashboard();
+                showToast('Bus stopped successfully', 'success');
+            },
+            error: function(xhr) {
+                showToast('Error stopping bus: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function restartBus(id) {
+        $.ajax({
+            url: `${API_BASE_URL}/buses/${id}/restart`,
+            method: 'POST',
+            success: function() {
+                loadBuses();
+                loadDashboard();
+                loadIncidents();
+                showToast('Bus restarted successfully', 'success');
+            },
+            error: function(xhr) {
+                showToast('Error restarting bus: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function loadTickets() {
+        $.get(`${API_BASE_URL}/v1/tickets/list`, function(tickets) {
+            const tbody = $('#ticketTableBody');
+            tbody.empty();
+            tickets.forEach(ticket => {
+                const row = `
+                    <tr>
+                        <td>${ticket.id}</td>
+                        <td>${ticket.firstName} ${ticket.lastName}</td>
+                        <td>${ticket.ticketNumber}</td>
+                        <td>${ticket.origin}</td>
+                        <td>${ticket.destination}</td>
+                        <td><span class="badge badge-${ticket.status.toLowerCase()}">${ticket.status}</span></td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="showTicketQR(${ticket.id})">
+                                    <i class="bi bi-qr-code"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editTicket(${ticket.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteTicket(${ticket.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+
+        $('#ticketSearch').off('input').on('input', function() {
+            const search = $(this).val().toLowerCase();
+            $('#ticketTableBody tr').each(function() {
+                const text = $(this).text().toLowerCase();
+                $(this).toggle(text.includes(search));
+            });
+        });
+    }
+
+    function populateBusSelects() {
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            const selects = ['#ticketBusId', '#editTicketBusId', '#technicianBusId', '#incidentBusId'];
+            selects.forEach(selector => {
+                const select = $(selector);
+                select.find('option:not(:first)').remove();
+                buses.forEach(bus => {
+                    select.append(`<option value="${bus.id}">${bus.name} (${bus.busLine})</option>`);
+                });
+            });
+        });
+    }
+
+    function purchaseTicket() {
+        const ticket = {
+            firstName: $('#ticketFirstName').val(),
+            lastName: $('#ticketLastName').val(),
+            origin: $('#ticketOrigin').val(),
+            destination: $('#ticketDestination').val(),
+            departureTime: $('#ticketDepartureTime').val(),
+            bus: { id: parseInt($('#ticketBusId').val()) },
+            hasLuggage: $('#hasLuggage').is(':checked'),
+            luggageWeight: $('#hasLuggage').is(':checked') ? parseFloat($('#luggageWeight').val()) : null
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/v1/tickets/purchase`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(ticket),
+            success: function(response) {
+                $('#purchaseTicketModal').modal('hide');
+                $('#purchaseTicketForm')[0].reset();
+                loadTickets();
+                loadDashboard();
+                showToast('Ticket purchased successfully', 'success');
+                showTicketQR(response.id);
+            },
+            error: function(xhr) {
+                showToast('Error purchasing ticket: ' + (xhr.responseJSON?.error || JSON.stringify(xhr.responseJSON)), 'error');
+            }
+        });
+    }
+
+    function showTicketQR(id) {
+        $.get(`${API_BASE_URL}/v1/tickets/${id}`, function(ticket) {
+            // Store the current ticket for download
+            currentTicketQRCode = ticket;
+
+            // Set modal content
+            $('#ticketPassengerName').text(`${ticket.firstName} ${ticket.lastName}`);
+            $('#ticketNumber').text(ticket.ticketNumber);
+            $('#reservationCodeDisplay').text(ticket.reservationCode);
+            $('#ticketStatus').text(ticket.status).addClass(`badge-${ticket.status.toLowerCase()}`);
+
+            // Clear previous QR code if any
+            $('#qrCodeDisplay').empty();
+
+            // Generate new QR code
+            const qrCodeData = `Ticket ID: ${ticket.id}\nPassenger: ${ticket.firstName} ${ticket.lastName}\nReservation Code: ${ticket.reservationCode}`;
+            new QRCode(document.getElementById('qrCodeDisplay'), {
+                text: qrCodeData,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Show the modal
+            $('#viewTicketQRModal').modal('show');
+        }).fail(function() {
+            showToast('Failed to load ticket details', 'error');
+        });
+    }
+
+    function downloadQRCode() {
+        if (!currentTicketQRCode) return;
+
+        // Create a canvas from the QR code
+        const canvas = document.querySelector('#qrCodeDisplay canvas');
+        if (!canvas) return;
+
+        // Create a temporary link to download the image
+        const link = document.createElement('a');
+        link.download = `ticket-${currentTicketQRCode.ticketNumber}-qr.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast('QR code downloaded successfully', 'success');
+    }
+
+    function editTicket(id) {
+        $.get(`${API_BASE_URL}/v1/tickets/${id}`, function(ticket) {
+            $('#editTicketId').val(ticket.id);
+            $('#editTicketFirstName').val(ticket.firstName);
+            $('#editTicketLastName').val(ticket.lastName);
+            $('#editTicketOrigin').val(ticket.origin);
+            $('#editTicketDestination').val(ticket.destination);
+            $('#editTicketDepartureTime').val(ticket.departureTime.replace('Z', ''));
+            $('#editTicketBusId').val(ticket.bus.id);
+            $('#editHasLuggage').prop('checked', ticket.hasLuggage);
+            $('#editLuggageWeight').val(ticket.luggageWeight || '0');
+            $('#editTicketStatus').val(ticket.status);
+            $('#editLuggageWeightGroup').toggle(ticket.hasLuggage);
+
+            $('#editTicketModal').modal('show');
+        }).fail(function() {
+            showToast('Failed to load ticket details', 'error');
+        });
+    }
+
+    function updateTicket() {
+        const ticket = {
+            id: parseInt($('#editTicketId').val()),
+            firstName: $('#editTicketFirstName').val(),
+            lastName: $('#editTicketLastName').val(),
+            origin: $('#editTicketOrigin').val(),
+            destination: $('#editTicketDestination').val(),
+            departureTime: $('#editTicketDepartureTime').val(),
+            bus: { id: parseInt($('#editTicketBusId').val()) },
+            hasLuggage: $('#editHasLuggage').is(':checked'),
+            luggageWeight: $('#editHasLuggage').is(':checked') ? parseFloat($('#editLuggageWeight').val()) : null,
+            status: $('#editTicketStatus').val()
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/v1/tickets/${ticket.id}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(ticket),
+            success: function() {
+                $('#editTicketModal').modal('hide');
+                loadTickets();
+                loadDashboard();
+                showToast('Ticket updated successfully', 'success');
+            },
+            error: function(xhr) {
+                showToast('Error updating ticket: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function deleteTicket(id) {
+        if (confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+            $.ajax({
+                url: `${API_BASE_URL}/v1/tickets/${id}`,
+                method: 'DELETE',
+                success: function() {
+                    loadTickets();
+                    loadDashboard();
+                    showToast('Ticket deleted successfully', 'success');
+                },
+                error: function(xhr) {
+                    showToast('Error deleting ticket: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+                }
+            });
+        }
+    }
+
+    function listCameras() {
+        Html5Qrcode.getCameras().then(devices => {
+            const cameraSelect = $('#cameraSelect');
+            cameraSelect.empty();
+            cameraSelect.append('<option value="">Select Camera</option>');
+
+            if (devices && devices.length > 0) {
+                devices.forEach(device => {
+                    cameraSelect.append(`<option value="${device.id}">${device.label || device.id}</option>`);
+                });
+                $('#startScannerBtn').show();
+            } else {
+                cameraSelect.append('<option value="" disabled>No cameras found</option>');
+                $('#startScannerBtn').hide();
+                $('#scannerOverlay p').text('No cameras available for scanning');
+            }
+        }).catch(err => {
+            console.error('Error listing cameras:', err);
+            $('#scannerOverlay p').text('Error accessing cameras. Please ensure camera permissions are granted.');
+        });
+    }
+
+    function initQRScanner() {
+        const cameraId = $('#cameraSelect').val();
+        if (!cameraId) {
+            showToast('Please select a camera first', 'warning');
+            return;
+        }
+
+        if (qrScanner) {
+            qrScanner.stop().then(() => {
+                startScanner(cameraId);
+            }).catch(err => {
+                console.error('Failed to stop previous scanner:', err);
+                startScanner(cameraId);
+            });
+        } else {
+            startScanner(cameraId);
+        }
+    }
+
+    function startScanner(cameraId) {
+        $('#scannerOverlay').hide();
+        qrScanner = new Html5Qrcode('qrScanner');
+
+        qrScanner.start(
+            cameraId,
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            },
+            (decodedText) => {
+                // Check if the decoded text contains reservation code
+                const reservationCodeMatch = decodedText.match(/Reservation Code: (\w+)/);
+                const reservationCode = reservationCodeMatch ? reservationCodeMatch[1] : decodedText;
+
+                if (reservationCode) {
+                    scanTicket(reservationCode);
+                }
+            },
+            (error) => {
+                // Don't display all errors to the user
+                if (error !== 'QR code parse error, error = NotFoundException: No MultiFormat Readers were able to detect the code.') {
+                    console.warn('QR scan error:', error);
+                }
+            }
+        ).catch(err => {
+            console.error('Failed to start QR scanner:', err);
+            $('#scannerOverlay').show();
+            $('#scannerOverlay p').text('Failed to start camera: ' + err.message);
+            showToast('Failed to start QR scanner: ' + err.message, 'error');
+        });
+    }
+
+    function scanTicketManually() {
+        const reservationCode = $('#reservationCode').val();
+        if (reservationCode) {
+            scanTicket(reservationCode);
+        } else {
+            showToast('Please enter a reservation code', 'warning');
+        }
+    }
+
+    function scanTicket(reservationCode) {
+        $.ajax({
+            url: `${API_BASE_URL}/v1/tickets/scan`,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ reservationCode }),
+            success: function(response) {
+                $('#scanResult').text(response).removeClass('alert-danger').addClass('alert-success').show();
+                loadTickets();
+                loadDashboard();
+
+                // Close the modal after 2 seconds if scan was successful
+                setTimeout(() => {
+                    $('#scanTicketModal').modal('hide');
+                    $('#scanResult').hide();
+                }, 2000);
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON?.error || 'Unknown error';
+                $('#scanResult').text('Error: ' + errorMsg).removeClass('alert-success').addClass('alert-danger').show();
+            }
+        });
+    }
+
+    function loadRoutes() {
+        $.get(`${API_BASE_URL}/buses/routes`, function(routes) {
+            const tbody = $('#routesTableBody');
+            tbody.empty();
+            routes.forEach(route => {
+                const status = route.hasAccident ? 'Incident' : route.stopped ? 'Stopped' : 'Active';
+                const statusClass = route.hasAccident ? 'incident' : route.stopped ? 'stopped' : 'active';
+
+                const row = `
+                    <tr>
+                        <td>${route.busId}</td>
+                        <td>${route.busName}</td>
+                        <td>${route.route}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: ${route.progress}%"
+                                    aria-valuenow="${route.progress}" aria-valuemin="0" aria-valuemax="100">
+                                    ${route.progress}%
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-${statusClass}">${status}</span></td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+    }
+
+    function loadMaintenance() {
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            const tbody = $('#maintenanceTableBody');
+            tbody.empty();
+            buses.forEach(bus => {
+                const status = bus.hasAccident ? 'Incident' : bus.stopped ? 'Stopped' : 'Active';
+                const statusClass = bus.hasAccident ? 'incident' : bus.stopped ? 'stopped' : 'active';
+
+                const row = `
+                    <tr>
+                        <td>${bus.id}</td>
+                        <td>${bus.name}</td>
+                        <td>${bus.assignedTechnician || 'None'}</td>
+                        <td><span class="badge badge-${statusClass}">${status}</span></td>
+                        <td>${bus.lastMaintenanceCheck ? new Date(bus.lastMaintenanceCheck).toLocaleDateString() : 'Never'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="assignTechnicianModal(${bus.id})">
+                                <i class="bi bi-tools"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+    }
+
+    function assignTechnicianModal(busId) {
+        $('#technicianBusId').val(busId);
+        $('#assignTechnicianModal').modal('show');
+    }
+
+    function assignTechnician() {
+        const updates = {
+            assignedTechnician: $('#technicianName').val(),
+            maintenanceNotes: $('#maintenanceNotes').val(),
+            lastMaintenanceCheck: new Date().toISOString()
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/buses/${$('#technicianBusId').val()}`,
+            method: 'PATCH',
+            contentType: 'application/json',
+            data: JSON.stringify(updates),
+            success: function() {
+                $('#assignTechnicianModal').modal('hide');
+                loadMaintenance();
+                showToast('Technician assigned successfully', 'success');
+            },
+            error: function(xhr) {
+                showToast('Error assigning technician: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function loadNotifications() {
+        $.get(`${API_BASE_URL}/notifications`, function(notifications) {
+            const tbody = $('#notificationsTableBody');
+            tbody.empty();
+            notifications.forEach(notification => {
+                const row = `
+                    <tr>
+                        <td>${notification.message}</td>
+                        <td><span class="badge badge-${notification.type.toLowerCase()}">${notification.type}</span></td>
+                        <td>${new Date(notification.timestamp).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification(${notification.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                tbody.append(row);
+            });
+            $('#notificationsCount').text(notifications.length);
+        });
+    }
+
+    function deleteNotification(id) {
+        if (confirm('Are you sure you want to delete this notification?')) {
+            $.ajax({
+                url: `${API_BASE_URL}/notifications/${id}`,
+                method: 'DELETE',
+                success: function() {
+                    loadNotifications();
+                    loadDashboard();
+                    showToast('Notification deleted successfully', 'success');
+                },
+                error: function(xhr) {
+                    showToast('Error deleting notification: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+                }
+            });
+        }
+    }
+
+    function clearNotifications() {
+        if (confirm('Are you sure you want to clear all notifications? This action cannot be undone.')) {
+            $.ajax({
+                url: `${API_BASE_URL}/notifications`,
+                method: 'DELETE',
+                success: function() {
+                    loadNotifications();
+                    loadDashboard();
+                    showToast('All notifications cleared successfully', 'success');
+                },
+                error: function(xhr) {
+                    showToast('Error clearing notifications: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+                }
+            });
+        }
+    }
+
+    function loadIncidents() {
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            const tbody = $('#incidentsTableBody');
+            tbody.empty();
+            buses.filter(bus => bus.hasAccident).forEach(bus => {
+                const row = `
+                    <tr>
+                        <td>${bus.id}</td>
+                        <td>${bus.name}</td>
+                        <td>${bus.accidentTimestamp ? new Date(bus.accidentTimestamp).toLocaleString() : 'N/A'}</td>
+                        <td><span class="badge badge-incident">Incident</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="restartBus(${bus.id})">
+                                <i class="bi bi-play"></i> Resolve
+                            </button>
+                        </td>
+                    </tr>`;
+                tbody.append(row);
+            });
+        });
+    }
+
+    function reportIncident() {
+        const incident = {
+            busId: parseInt($('#incidentBusId').val()),
+            type: $('#incidentType').val(),
+            description: $('#incidentDescription').val()
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/buses/${incident.busId}/accident`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(incident),
+            success: function(response) {
+                $('#reportIncidentModal').modal('hide');
+                $('#reportIncidentForm')[0].reset();
+                loadIncidents();
+                loadDashboard();
+                showToast(response.message, 'success');
+            },
+            error: function(xhr) {
+                showToast('Error reporting incident: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function generateReport(type) {
+        $.get(`${API_BASE_URL}/reports/${type}`, function(report) {
+            const content = $('#reportContent .report-card-body');
+            content.empty();
+
+            // Create a more visually appealing report display
+            content.append(`
+                <h4>${type.charAt(0).toUpperCase() + type.slice(1)} Report</h4>
+                <p class="text-muted">Generated on ${new Date().toLocaleString()}</p>
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Summary</h5>
+                        <ul class="list-group mb-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Buses
+                                <span class="badge bg-primary rounded-pill">${report.totalBuses}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Active Buses
+                                <span class="badge bg-success rounded-pill">${report.activeBuses}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Tickets Sold
+                                <span class="badge bg-primary rounded-pill">${report.ticketsSold}</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Incidents</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Total Incidents
+                                <span class="badge bg-danger rounded-pill">${report.totalIncidents}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Resolved Incidents
+                                <span class="badge bg-success rounded-pill">${report.resolvedIncidents}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Maintenance Checks
+                                <span class="badge bg-warning rounded-pill">${report.maintenanceChecks}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Details</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(report).map(([key, value]) => `
+                                    <tr>
+                                        <td>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</td>
+                                        <td>${typeof value === 'object' ? JSON.stringify(value) : value}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `);
+        }).fail(function() {
+            showToast('Error generating report', 'error');
+        });
+    }
+
+    function generateCustomReport() {
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+        const reportType = $('#reportType').val();
+        const includeTickets = $('#includeTickets').is(':checked');
+        const includeVehicles = $('#includeVehicles').is(':checked');
+        const includeIncidents = $('#includeIncidents').is(':checked');
+
+        if (!startDate || !endDate) {
+            showToast('Please select both start and end dates', 'warning');
+            return;
+        }
+
+        const params = {
+            startDate,
+            endDate,
+            reportType,
+            includeTickets,
+            includeVehicles,
+            includeIncidents
+        };
+
+        $.ajax({
+            url: `${API_BASE_URL}/reports/custom`,
+            method: 'GET',
+            data: params,
+            success: function(report) {
+                $('#customReportModal').modal('hide');
+                const content = $('#reportContent .report-card-body');
+                content.empty();
+
+                content.append(`
+                    <h4>Custom Report</h4>
+                    <p class="text-muted">From ${new Date(startDate).toLocaleString()} to ${new Date(endDate).toLocaleString()}</p>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Summary</h5>
+                            <ul class="list-group mb-3">
+                                ${includeVehicles ? `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Total Buses
+                                    <span class="badge bg-primary rounded-pill">${report.totalBuses || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Active Buses
+                                    <span class="badge bg-success rounded-pill">${report.activeBuses || 0}</span>
+                                </li>
+                                ` : ''}
+                                ${includeTickets ? `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Tickets Sold
+                                    <span class="badge bg-primary rounded-pill">${report.ticketsSold || 0}</span>
+                                </li>
+                                ` : ''}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Details</h5>
+                            <ul class="list-group">
+                                ${includeIncidents ? `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Total Incidents
+                                    <span class="badge bg-danger rounded-pill">${report.totalIncidents || 0}</span>
+                                </li>
+                                ` : ''}
+                                ${includeVehicles ? `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Maintenance Checks
+                                    <span class="badge bg-warning rounded-pill">${report.maintenanceChecks || 0}</span>
+                                </li>
+                                ` : ''}
+                            </ul>
+                        </div>
+                    </div>
+
+                    ${report.details ? `
+                    <div class="mt-4">
+                        <h5>Detailed Data</h5>
+                        <pre class="bg-light p-3 rounded">${JSON.stringify(report.details, null, 2)}</pre>
+                    </div>
+                    ` : ''}
+                `);
+            },
+            error: function(xhr) {
+                showToast('Error generating custom report: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function exportReport(format) {
+        const startDate = $('#exportStartDate').val();
+        const endDate = $('#exportEndDate').val();
+        const reportType = $('#exportReportType').val();
+
+        let url = `${API_BASE_URL}/export/${format}`;
+        const params = {};
+
+        if (startDate && endDate) {
+            params.startDate = startDate;
+            params.endDate = endDate;
+        }
+
+        if (reportType && reportType !== 'all') {
+            params.type = reportType;
+        }
+
+        // Add params to URL if they exist
+        if (Object.keys(params).length > 0) {
+            url += '?' + new URLSearchParams(params).toString();
+        }
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            xhrFields: { responseType: 'blob' },
+            success: function(data, status, xhr) {
+                const blob = new Blob([data], {
+                    type: format === 'excel' ?
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+                        format === 'pdf' ?
+                            'application/pdf' :
+                            'text/csv'
+                });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                let filename = `bus_report_${new Date().toISOString().slice(0, 10)}`;
+                if (startDate && endDate) {
+                    filename += `_${startDate}_to_${endDate}`;
+                }
+                filename += `.${format}`;
+
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showToast(`Report exported as ${format.toUpperCase()}`, 'success');
+            },
+            error: function(xhr) {
+                showToast('Error exporting report: ' + (xhr.responseJSON?.error || 'Unknown error'), 'error');
+            }
+        });
+    }
+
+    function initMap() {
+        if (map) map.remove();
+
+        // Create map centered on the first bus or default location
+        map = L.map('map').setView([0, 0], 2);
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Load bus data and add markers
+        loadBusMarkers();
+
+        // Start auto-refresh if enabled
+        if ($('#autoRefreshMap').is(':checked')) {
+            startMapAutoRefresh();
+        }
+    }
+
+    function loadBusMarkers() {
+        $.get(`${API_BASE_URL}/buses`, function(buses) {
+            // Clear existing markers
+            Object.values(busMarkers).forEach(marker => map.removeLayer(marker));
+            busMarkers = {};
+
+            // Clear vehicle status cards
+            $('#vehicleStatusCards').empty();
+
+            // Add markers for each bus
+            buses.forEach(bus => {
+                if (bus.currentLat && bus.currentLng) {
+                    // Choose marker color based on status
+                    const markerColor = bus.hasAccident ? 'red' : bus.stopped ? 'orange' : 'green';
+
+                    // Create custom icon
+                    const busIcon = L.divIcon({
+                        className: 'bus-marker',
+                        html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+
+                    // Create marker
+                    const marker = L.marker([bus.currentLat, bus.currentLng], { icon: busIcon }).addTo(map);
+
+                    // Add popup with bus info
+                    marker.bindPopup(`
+                        <b>${bus.name}</b><br>
+                        Line: ${bus.busLine}<br>
+                        Passengers: ${bus.passengers}/${bus.capacity}<br>
+                        Status: <span class="badge badge-${bus.hasAccident ? 'incident' : bus.stopped ? 'stopped' : 'active'}">
+                            ${bus.hasAccident ? 'Incident' : bus.stopped ? 'Stopped' : 'Active'}
+                        </span>
+                    `);
+
+                    // Store marker reference
+                    busMarkers[bus.id] = marker;
+
+                    // Add vehicle status card
+                    $('#vehicleStatusCards').append(`
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">${bus.name}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">${bus.busLine}</h6>
+                                    <p class="card-text">
+                                        <span class="badge bg-${bus.hasAccident ? 'danger' : bus.stopped ? 'warning' : 'success'}">
+                                            ${bus.hasAccident ? 'Incident' : bus.stopped ? 'Stopped' : 'Active'}
+                                        </span>
+                                        <br>
+                                        Passengers: ${bus.passengers}/${bus.capacity}
+                                    </p>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <small class="text-muted">
+                                        Last updated: ${new Date().toLocaleTimeString()}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+
+            // Fit map to show all markers if there are any
+            if (buses.length > 0 && buses.some(b => b.currentLat && b.currentLng)) {
+                const group = new L.featureGroup(Object.values(busMarkers));
+                map.fitBounds(group.getBounds());
+            }
+        });
+    }
+
+    function refreshMap() {
+        loadBusMarkers();
+        showToast('Map refreshed', 'success');
+    }
+
+    function startMapAutoRefresh() {
+        stopMapAutoRefresh(); // Clear any existing interval
+        mapRefreshInterval = setInterval(refreshMap, 30000); // Refresh every 30 seconds
+    }
+
+    function stopMapAutoRefresh() {
+        if (mapRefreshInterval) {
+            clearInterval(mapRefreshInterval);
+            mapRefreshInterval = null;
+        }
+    }
+
+    function loadStatistics() {
+        // Bus Utilization Chart
+        $.get(`${API_BASE_URL}/statistics/utilization`, function(data) {
+            if (busUtilizationChart) busUtilizationChart.destroy();
+
+            const ctx = $('#busUtilizationChart')[0].getContext('2d');
+            busUtilizationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Bus Utilization (%)',
+                        data: data.values,
+                        backgroundColor: 'rgba(14, 165, 233, 0.7)',
+                        borderColor: 'rgba(14, 165, 233, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Utilization (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        // Ticket Sales Chart
+        $.get(`${API_BASE_URL}/statistics/tickets`, function(data) {
+            if (ticketSalesChart) ticketSalesChart.destroy();
+
+            const ctx = $('#ticketSalesChart')[0].getContext('2d');
+            ticketSalesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Tickets Sold',
+                        data: data.values,
+                        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+                        borderColor: 'rgba(22, 163, 74, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Tickets Sold'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        // Maintenance History Chart
+        $.get(`${API_BASE_URL}/statistics/maintenance`, function(data) {
+            if (maintenanceHistoryChart) maintenanceHistoryChart.destroy();
+
+            const ctx = $('#maintenanceHistoryChart')[0].getContext('2d');
+            maintenanceHistoryChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Maintenance Checks',
+                        data: data.values,
+                        backgroundColor: 'rgba(234, 88, 12, 0.2)',
+                        borderColor: 'rgba(234, 88, 12, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(234, 88, 12, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0
+                        }
+                    }
+                }
+            });
+        });
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

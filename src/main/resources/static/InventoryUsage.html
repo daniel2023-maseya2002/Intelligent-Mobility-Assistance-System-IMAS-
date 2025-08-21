@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMMS - Inventory Usage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            gap: 10px;
+        }
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+        .logo-text {
+            color: white;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .header-title {
+            margin-left: 20px;
+            font-size: 18px;
+            flex-grow: 1;
+        }
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+        }
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .table-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .form-select {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            transform: translateY(-1px);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-instock {
+            background-color: #28c76f;
+        }
+        .status-lowstock {
+            background-color: #ff9f43;
+        }
+        .status-outofstock {
+            background-color: #ea5455;
+        }
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+            .sidebar .menu-text {
+                display: none;
+            }
+            .main-content {
+                margin-left: 70px;
+            }
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+            .user-info {
+                display: none;
+            }
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+        @media (max-width: 768px) {
+            .stats-cards {
+                flex-direction: column;
+            }
+            .table-actions {
+                flex-direction: column;
+            }
+        }
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+            .header {
+                padding: 0 15px;
+            }
+            .logo-text {
+                font-size: 18px;
+            }
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<header class="header">
+    <div class="logo">
+        <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+        <span class="logo-text">PMMS</span>
+    </div>
+    <div class="header-title">Inventory Usage</div>
+    <div class="profile-container">
+        <div class="profile-image">
+            <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+        </div>
+        <div class="user-info">
+            <h3 class="user-name">Loading...</h3>
+            <p class="user-email">Loading...</p>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar">
+    <ul class="sidebar-menu">
+        <li><a href="#"><i class="bi bi-grid-1x2"></i><span class="menu-text">Dashboard</span></a></li>
+        <li><a href="#"><i class="bi bi-tools"></i><span class="menu-text">Maintenance</span></a></li>
+        <li><a href="#"><i class="bi bi-calendar-check"></i><span class="menu-text">Planning</span></a></li>
+        <li><a href="#"><i class="bi bi-calendar-week"></i><span class="menu-text">Scheduling</span></a></li>
+        <li><a href="#"><i class="bi bi-check2-square"></i><span class="menu-text">Task Tracking</span></a></li>
+        <li><a href="#"><i class="bi bi-clipboard-check"></i><span class="menu-text">Work Order</span></a></li>
+        <li><a href="#"><i class="bi bi-gear"></i><span class="menu-text">Equipment & Assets</span></a></li>
+        <li><a href="#"><i class="bi bi-clock-history"></i><span class="menu-text">Downtime</span></a></li>
+        <li><a href="#"><i class="bi bi-chat-dots"></i><span class="menu-text">Communication</span></a></li>
+        <li><a href="#" class="active"><i class="bi bi-box-seam"></i><span class="menu-text">Inventory</span></a></li>
+        <li><a href="#"><i class="bi bi-shield-check"></i><span class="menu-text">Compliance & Safety</span></a></li>
+        <li><a href="#"><i class="bi bi-graph-up"></i><span class="menu-text">Data Analytics & Reporting</span></a></li>
+    </ul>
+</nav>
+
+<main class="main-content">
+    <div class="container-fluid">
+        <div class="form-container mb-4">
+            <div class="form-group">
+                <label for="categorySelect" class="form-label">Filter by Category</label>
+                <select class="form-select" id="categorySelect">
+                    <option value="">All Categories</option>
+                    <option value="Lubricants">Lubricants</option>
+                    <option value="Valves">Valves</option>
+                    <option value="Pumps">Pumps</option>
+                    <option value="Filters">Filters</option>
+                    <option value="Pipes & Fittings">Pipes & Fittings</option>
+                    <option value="Compressors">Compressors</option>
+                    <option value="Gaskets">Gaskets</option>
+                    <option value="Motors">Motors</option>
+                    <option value="Bearings">Bearings</option>
+                    <option value="Industrial Sensors">Industrial Sensors</option>
+                    <option value="Hoses">Hoses</option>
+                    <option value="Seals">Seals</option>
+                    <option value="Flanges">Flanges</option>
+                    <option value="Actuators">Actuators</option>
+                    <option value="Gauges">Gauges</option>
+                    <option value="Control Valves">Control Valves</option>
+                    <option value="Heat Exchangers">Heat Exchangers</option>
+                    <option value="Drilling Tools">Drilling Tools</option>
+                    <option value="Tubing">Tubing</option>
+                    <option value="Safety Equipment">Safety Equipment</option>
+                </select>
+            </div>
+        </div>
+        <div class="row stats-cards g-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card high-priority">
+                    <div class="stats-icon"><i class="bi bi-box-seam"></i></div>
+                    <div class="stats-label">Total Items</div>
+                    <div class="stats-number" id="totalItems">0</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="stats-label">Low Stock Items</div>
+                    <div class="stats-number" id="lowStockItems">0</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card low-priority">
+                    <div class="stats-icon"><i class="bi bi-x-circle"></i></div>
+                    <div class="stats-label">Out of Stock Items</div>
+                    <div class="stats-number" id="outOfStockItems">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="table-container">
+            <div class="table-actions">
+                <div>
+                    <button class="btn btn-outline-primary" id="exportPDFReportBtn"><i class="bi bi-file-earmark-pdf me-2"></i> Export PDF</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table table">
+                    <thead>
+                    <tr>
+                        <th>Part ID</th>
+                        <th>Name</th>
+                        <th>Part Number</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Minimum Stock Level</th>
+                        <th>Stock Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                    <tfoot>
+                    <tr>
+                        <th colspan="4">Total</th>
+                        <th id="totalQuantity">0</th>
+                        <th id="totalMinStock">0</th>
+                        <th></th>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1000" id="notificationToastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+<script>
+    const BASE_URL = 'http://localhost:8080/api/spare-parts';
+    let inventoryData = [];
+
+    // DOM Elements
+    const categorySelect = document.getElementById('categorySelect');
+    const inventoryTableBody = document.getElementById('inventoryTableBody');
+    const totalItemsElement = document.getElementById('totalItems');
+    const lowStockItemsElement = document.getElementById('lowStockItems');
+    const outOfStockItemsElement = document.getElementById('outOfStockItems');
+    const totalQuantityElement = document.getElementById('totalQuantity');
+    const totalMinStockElement = document.getElementById('totalMinStock');
+    const exportPDFReportBtn = document.getElementById('exportPDFReportBtn');
+
+    // Mock data for fallback
+    const mockInventoryData = [
+        { partId: 1, name: 'Valve A', partNumber: 'V001', category: 'Valves', quantity: 10, minimumStockLevel: 5 },
+        { partId: 2, name: 'Pump X', partNumber: 'P001', category: 'Pumps', quantity: 3, minimumStockLevel: 5 },
+        { partId: 3, name: 'Filter Z', partNumber: 'F001', category: 'Filters', quantity: 0, minimumStockLevel: 10 },
+        { partId: 4, name: 'Bearing B', partNumber: 'B001', category: 'Bearings', quantity: 20, minimumStockLevel: 8 }
+    ];
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', () => {
+        setupEventListeners();
+        fetchInventoryData();
+    });
+
+    // Setup event listeners
+    function setupEventListeners() {
+        categorySelect.addEventListener('change', () => {
+            const selectedCategory = categorySelect.value;
+            filterAndRenderTable(selectedCategory);
+        });
+        exportPDFReportBtn.addEventListener('click', exportPDFReport);
+    }
+
+    // Fetch inventory data from backend
+    async function fetchInventoryData() {
+        try {
+            const response = await fetch(`${BASE_URL}/inventory-usage`, {
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            inventoryData = await response.json();
+            filterAndRenderTable(categorySelect.value);
+        } catch (error) {
+            console.warn('Backend unavailable, using mock data:', error.message);
+            inventoryData = mockInventoryData;
+            filterAndRenderTable(categorySelect.value);
+            showNotification('Warning', 'Using mock data due to backend unavailability', 'warning');
+        }
+    }
+
+    // Filter and render table based on category
+    function filterAndRenderTable(category) {
+        const filteredData = category ? inventoryData.filter(item => item.category === category) : inventoryData;
+        updateTableAndStats(filteredData);
+    }
+
+    // Update table and stats cards
+    function updateTableAndStats(data) {
+        // Clear table
+        inventoryTableBody.innerHTML = '';
+
+        if (data.length === 0) {
+            inventoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center">No inventory items found</td></tr>';
+        } else {
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                const status = getStockStatus(item.quantity, item.minimumStockLevel);
+                row.innerHTML = `
+                    <td>${item.partId}</td>
+                    <td>${item.name || 'N/A'}</td>
+                    <td>${item.partNumber || 'N/A'}</td>
+                    <td>${item.category || 'N/A'}</td>
+                    <td>${item.quantity || 0}</td>
+                    <td>${item.minimumStockLevel || 0}</td>
+                    <td><span class="status-badge status-${status.toLowerCase().replace(' ', '')}">${status}</span></td>
+                `;
+                inventoryTableBody.appendChild(row);
+            });
+        }
+
+        // Update stats
+        const totalItems = data.length;
+        const lowStockItems = data.filter(item => item.quantity > 0 && item.quantity <= item.minimumStockLevel).length;
+        const outOfStockItems = data.filter(item => item.quantity === 0).length;
+        const totalQuantity = data.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const totalMinStock = data.reduce((sum, item) => sum + (item.minimumStockLevel || 0), 0);
+
+        totalItemsElement.textContent = totalItems;
+        lowStockItemsElement.textContent = lowStockItems;
+        outOfStockItemsElement.textContent = outOfStockItems;
+        totalQuantityElement.textContent = totalQuantity;
+        totalMinStockElement.textContent = totalMinStock;
+    }
+
+    // Determine stock status
+    function getStockStatus(quantity, minStockLevel) {
+        if (quantity === 0) return 'Out of Stock';
+        if (quantity <= minStockLevel) return 'Low Stock';
+        return 'In Stock';
+    }
+
+    // Show notification
+    function showNotification(title, message, type) {
+        const toastContainer = document.getElementById('notificationToastContainer');
+        const toastId = 'notification-' + Date.now();
+        const toastHTML = `
+            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">${title}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const toastElement = document.getElementById(toastId);
+        switch (type) {
+            case 'success': toastElement.classList.add('bg-success', 'text-white'); break;
+            case 'error': toastElement.classList.add('bg-danger', 'text-white'); break;
+            case 'warning': toastElement.classList.add('bg-warning', 'text-dark'); break;
+            default: toastElement.classList.add('bg-info', 'text-white');
+        }
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        setTimeout(() => {
+            toast.hide();
+            setTimeout(() => toastElement.remove(), 500);
+        }, 5000);
+    }
+
+    // Export PDF report
+    function exportPDFReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text('Inventory Usage Report', 14, 20);
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        doc.text(`Category: ${categorySelect.value || 'All'}`, 14, 40);
+        doc.autoTable({
+            startY: 50,
+            head: [['Part ID', 'Name', 'Part Number', 'Category', 'Quantity', 'Min Stock', 'Status']],
+            body: inventoryData
+                .filter(item => !categorySelect.value || item.category === categorySelect.value)
+                .map(item => [
+                    item.partId || 'N/A',
+                    item.name || 'N/A',
+                    item.partNumber || 'N/A',
+                    item.category || 'N/A',
+                    item.quantity || 0,
+                    item.minimumStockLevel || 0,
+                    getStockStatus(item.quantity, item.minimumStockLevel)
+                ]),
+            foot: [['Total', '', '', categorySelect.value || 'All', totalQuantityElement.textContent, totalMinStockElement.textContent, '']],
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [13, 110, 253] },
+            footStyles: { fillColor: [200, 200, 200] },
+            margin: { top: 50 }
+        });
+        doc.text(`Total Items: ${totalItemsElement.textContent}`, 14, doc.lastAutoTable.finalY + 10);
+        doc.text(`Low Stock Items: ${lowStockItemsElement.textContent}`, 14, doc.lastAutoTable.finalY + 20);
+        doc.text(`Out of Stock Items: ${outOfStockItemsElement.textContent}`, 14, doc.lastAutoTable.finalY + 30);
+        doc.save('inventory_usage_report.pdf');
+        showNotification('Success', 'PDF report generated successfully', 'success');
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

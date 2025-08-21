@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* Main content styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333; /* Added for light mode */
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        /* Chart container */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-feed {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .activity-feed {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dark-mode .activity-item {
+            border-bottom: 1px solid #555;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .activity-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .activity-time {
+            color: #666;
+        }
+
+        .dark-mode .activity-time {
+            color: #ccc;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container, .activity-feed {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Staff Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="Staffanalyse.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudMaintenancePlan.html">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="InventoryReport.html">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="menu-text">Inventory Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="Planning.html" class="active">
+                <i class="bi bi-calendar-event"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudEquipment.html">
+                <i class="bi bi-cpu"></i>
+                <span class="menu-text">Equipment</span>
+            </a>
+        </li>
+        <li>
+            <a href="TaskManager.html">
+                <i class="bi bi-list-task"></i>
+                <span class="menu-text">Task</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudStaff.html">
+                <i class="bi bi-people"></i>
+                <span class="menu-text">Staff</span>
+            </a>
+        </li>
+        <li>
+            <a href="Technician.html">
+                <i class="bi bi-person-gear"></i>
+                <span class="menu-text">Technician</span>
+            </a>
+        </li>
+        <li>
+            <a href="EquipmentStatistics.html">
+                <i class="bi bi-pie-chart"></i>
+                <span class="menu-text">Equipment Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="DowntimeEvent.html">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="WhatsApp.html">
+                <i class="bi bi-whatsapp"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="TechnicianStatistics.html">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="menu-text">Technician Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudInventory.html">
+                <i class="bi bi-boxes"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudSparePart.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Spare Part Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="MaintenancePDFReport.html">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Reporting</span>
+            </a>
+        </li>
+        <li>
+            <a href="login.html">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="menu-text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<main class="main-content">
+    <div class="container-fluid">
+        <div id="loading" class="loading">
+            <i class="bi bi-arrow-clockwise"></i> Loading staff analytics...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="dashboard-content">
+            <div class="row stats-grid g-3">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-card high-priority">
+                        <div class="stats-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <div class="stats-label">Total Staff</div>
+                        <div class="stats-number" id="total-staff">0</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-card medium-priority">
+                        <div class="stats-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div class="stats-label">Active Staff</div>
+                        <div class="stats-number" id="active-staff">0</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-card low-priority">
+                        <div class="stats-icon">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                        <div class="stats-label">Inactive Staff</div>
+                        <div class="stats-number" id="inactive-staff">0</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stats-card high-priority">
+                        <div class="stats-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <div class="stats-label">Activity Rate</div>
+                        <div class="stats-number" id="activity-rate">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">👔 Staff Distribution by Role</div>
+                    <div class="chart-wrapper">
+                        <canvas id="roleChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">🎯 Active vs Inactive Staff</div>
+                    <div class="chart-wrapper">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📊 Role Activity Analysis</div>
+                    <div class="chart-wrapper">
+                        <canvas id="roleActivityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📅 Registration Timeline</div>
+                    <div class="chart-wrapper">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container full-width-chart">
+                    <div class="chart-title">📈 Comprehensive Staff Analytics</div>
+                    <div class="chart-wrapper">
+                        <canvas id="comprehensiveChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-feed">
+                <h3 style="margin-bottom: 20px; color: #333;" class="dark-mode-text">📋 Recent Staff Activity</h3>
+                <div id="activity-list">
+                    <!-- Activity items will be populated here -->
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh Data
+            </button>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+<script>
+    const API_BASE_URL = 'http://localhost:8080/api/staff';
+    let charts = {};
+
+    // Sidebar toggle
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+        sidebar.classList.toggle('hidden');
+        mainContent.classList.toggle('expanded');
+    });
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', function() {
+        document.body.classList.toggle('dark-mode');
+        const themeIcon = this.querySelector('i');
+        const themeText = this.querySelector('.btn-text');
+        if (document.body.classList.contains('dark-mode')) {
+            themeIcon.classList.replace('bi-sun', 'bi-moon');
+            themeText.textContent = 'Dark';
+        } else {
+            themeIcon.classList.replace('bi-moon', 'bi-sun');
+            themeText.textContent = 'Light';
+        }
+        updateChartColors(); // Update chart colors when theme changes
+    });
+
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDashboard();
+    });
+
+    async function loadDashboard() {
+        try {
+            showLoading();
+            const staffData = await fetchStaffData();
+            updateStatistics(staffData);
+            createCharts(staffData);
+            updateActivityFeed(staffData);
+            hideLoading();
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+            showError('Failed to load staff data. Please check your connection and try again.');
+        }
+    }
+
+    async function fetchStaffData() {
+        const response = await fetch(`${API_BASE_URL}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    }
+
+    function updateStatistics(staffData) {
+        const totalStaff = staffData.length;
+        const activeStaff = staffData.filter(staff => staff.active).length;
+        const inactiveStaff = totalStaff - activeStaff;
+        const activityRate = totalStaff > 0 ? Math.round((activeStaff / totalStaff) * 100) : 0;
+
+        document.getElementById('total-staff').textContent = totalStaff;
+        document.getElementById('active-staff').textContent = activeStaff;
+        document.getElementById('inactive-staff').textContent = inactiveStaff;
+        document.getElementById('activity-rate').textContent = `${activityRate}%`;
+    }
+
+    function updateChartColors() {
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const textColor = isDarkMode ? '#e0e0e0' : '#333';
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+        Object.values(charts).forEach(chart => {
+            if (chart) {
+                chart.options.plugins.legend.labels.color = textColor;
+                if (chart.options.scales) {
+                    if (chart.options.scales.y) {
+                        chart.options.scales.y.grid.color = gridColor;
+                        chart.options.scales.y.ticks.color = textColor;
+                    }
+                    if (chart.options.scales.x) {
+                        chart.options.scales.x.grid.color = gridColor;
+                        chart.options.scales.x.ticks.color = textColor;
+                    }
+                    if (chart.options.scales.r) {
+                        chart.options.scales.r.grid.color = gridColor;
+                        chart.options.scales.r.ticks.color = textColor;
+                        chart.options.scales.r.pointLabels.color = textColor;
+                    }
+                }
+                chart.update();
+            }
+        });
+    }
+
+    function createCharts(staffData) {
+        Object.values(charts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+
+        createRoleChart(staffData);
+        createStatusChart(staffData);
+        createRoleActivityChart(staffData);
+        createTimelineChart(staffData);
+        createComprehensiveChart(staffData);
+        updateChartColors(); // Ensure charts are updated for current theme
+    }
+
+    function createRoleChart(staffData) {
+        const roleData = {
+            MANAGER: staffData.filter(s => s.role === 'MANAGER').length,
+            INSPECTOR: staffData.filter(s => s.role === 'INSPECTOR').length,
+            TECHNICIAN: staffData.filter(s => s.role === 'TECHNICIAN').length
+        };
+
+        const ctx = document.getElementById('roleChart').getContext('2d');
+        charts.roleChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Managers', 'Inspectors', 'Technicians'],
+                datasets: [{
+                    data: [roleData.MANAGER, roleData.INSPECTOR, roleData.TECHNICIAN],
+                    backgroundColor: ['#28c76f', '#0d6efd', '#ff9f43'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createStatusChart(staffData) {
+        const activeCount = staffData.filter(s => s.active).length;
+        const inactiveCount = staffData.length - activeCount;
+
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        charts.statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Inactive'],
+                datasets: [{
+                    data: [activeCount, inactiveCount],
+                    backgroundColor: ['#28c76f', '#ea5455'],
+                    borderWidth: 3,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    function createRoleActivityChart(staffData) {
+        const roleActivity = {
+            MANAGER: {
+                active: staffData.filter(s => s.role === 'MANAGER' && s.active).length,
+                inactive: staffData.filter(s => s.role === 'MANAGER' && !s.active).length
+            },
+            INSPECTOR: {
+                active: staffData.filter(s => s.role === 'INSPECTOR' && s.active).length,
+                inactive: staffData.filter(s => s.role === 'INSPECTOR' && !s.active).length
+            },
+            TECHNICIAN: {
+                active: staffData.filter(s => s.role === 'TECHNICIAN' && s.active).length,
+                inactive: staffData.filter(s => s.role === 'TECHNICIAN' && !s.active).length
+            }
+        };
+
+        const ctx = document.getElementById('roleActivityChart').getContext('2d');
+        charts.roleActivityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Managers', 'Inspectors', 'Technicians'],
+                datasets: [{
+                    label: 'Active',
+                    data: [roleActivity.MANAGER.active, roleActivity.INSPECTOR.active, roleActivity.TECHNICIAN.active],
+                    backgroundColor: '#28c76f',
+                    borderRadius: 5
+                }, {
+                    label: 'Inactive',
+                    data: [roleActivity.MANAGER.inactive, roleActivity.INSPECTOR.inactive, roleActivity.TECHNICIAN.inactive],
+                    backgroundColor: '#ea5455',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        },
+                        grid: {
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        },
+                        grid: {
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createTimelineChart(staffData) {
+        const monthlyData = {};
+        staffData.forEach(staff => {
+            if (staff.createdAt) {
+                const date = new Date(staff.createdAt);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+            }
+        });
+
+        const sortedMonths = Object.keys(monthlyData).sort();
+        const values = sortedMonths.map(month => monthlyData[month]);
+
+        const ctx = document.getElementById('timelineChart').getContext('2d');
+        charts.timelineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: sortedMonths.map(month => {
+                    const [year, monthNum] = month.split('-');
+                    return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }),
+                datasets: [{
+                    label: 'New Staff Registrations',
+                    data: values,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        },
+                        grid: {
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        },
+                        grid: {
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createComprehensiveChart(staffData) {
+        const roleData = {
+            MANAGER: staffData.filter(s => s.role === 'MANAGER').length,
+            INSPECTOR: staffData.filter(s => s.role === 'INSPECTOR').length,
+            TECHNICIAN: staffData.filter(s => s.role === 'TECHNICIAN').length
+        };
+
+        const ctx = document.getElementById('comprehensiveChart').getContext('2d');
+        charts.comprehensiveChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: [
+                    'Total Staff Count',
+                    'Active Staff Rate',
+                    'Manager Distribution',
+                    'Inspector Distribution',
+                    'Technician Distribution',
+                    'Account Completion Rate'
+                ],
+                datasets: [{
+                    label: 'Staff Metrics',
+                    data: [
+                        Math.min(staffData.length * 10, 100),
+                        (staffData.filter(s => s.active).length / staffData.length) * 100,
+                        (roleData.MANAGER / staffData.length) * 100,
+                        (roleData.INSPECTOR / staffData.length) * 100,
+                        (roleData.TECHNICIAN / staffData.length) * 100,
+                        (staffData.filter(s => s.password).length / staffData.length) * 100
+                    ],
+                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                    borderColor: '#0d6efd',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        },
+                        grid: {
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        },
+                        pointLabels: {
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateActivityFeed(staffData) {
+        const activityList = document.getElementById('activity-list');
+        activityList.innerHTML = '';
+
+        const activities = [
+            {
+                icon: '👤',
+                title: `${staffData.length} total staff members in system`,
+                time: 'Current Status'
+            },
+            {
+                icon: '✅',
+                title: `${staffData.filter(s => s.active).length} active staff members`,
+                time: 'Active Now'
+            },
+            {
+                icon: '👔',
+                title: `${staffData.filter(s => s.role === 'MANAGER').length} managers managing operations`,
+                time: 'Management Team'
+            },
+            {
+                icon: '🔍',
+                title: `${staffData.filter(s => s.role === 'INSPECTOR').length} inspectors on duty`,
+                time: 'Inspection Team'
+            },
+            {
+                icon: '🔧',
+                title: `${staffData.filter(s => s.role === 'TECHNICIAN').length} technicians available`,
+                time: 'Technical Team'
+            }
+        ];
+
+        activities.forEach(activity => {
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item';
+            activityItem.innerHTML = `
+                <div class="activity-icon">${activity.icon}</div>
+                <div class="activity-content">
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-time">${activity.time}</div>
+                </div>
+            `;
+            activityList.appendChild(activityItem);
+        });
+
+        // Update activity feed header color
+        const activityHeader = document.querySelector('.activity-feed h3');
+        activityHeader.style.color = document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#333';
+    }
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('dashboard-content').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard-content').style.display = 'block';
+    }
+
+    function showError(message) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = message;
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

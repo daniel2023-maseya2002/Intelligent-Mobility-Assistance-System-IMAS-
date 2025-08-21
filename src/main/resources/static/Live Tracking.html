@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Intelligent Mobility Assistance System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 240px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-text {
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            color: var(--secondary-red);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            width: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220,38,38,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        /* Section visibility */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .table th {
+            background: var(--gray-light);
+            font-weight: 600;
+            color: var(--gray-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tr:hover {
+            background: rgba(30,64,175,0.05);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Map */
+        #map {
+            height: 500px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        /* Live Tracking */
+        .tracking-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            height: 600px;
+        }
+
+        .tracking-panel {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+        }
+
+        .tracking-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .bus-tracking-item {
+            background: var(--gray-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .bus-tracking-item:hover {
+            background: rgba(30,64,175,0.05);
+            transform: translateX(5px);
+        }
+
+        .bus-tracking-item.active {
+            background: rgba(30,64,175,0.1);
+            border-left-color: var(--green);
+        }
+
+        .bus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .bus-name {
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .bus-line {
+            background: var(--primary-blue);
+            color: var(--white);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .bus-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+        }
+
+        .progress-container {
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--gray-light);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--green));
+            transition: width 0.6s ease;
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-stopped {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .status-accident {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn.start {
+            background: var(--green);
+            color: var(--white);
+        }
+
+        .action-btn.stop {
+            background: var(--secondary-red);
+            color: var(--white);
+        }
+
+        .action-btn.view {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .action-btn.edit {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .action-btn.delete {
+            background: var(--secondary-red);
+            color: var(--white);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-medium);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+
+        /* Explosion animation */
+        .explosion {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ff6b35 0%, #f7931e 25%, #ffcc02 50%, transparent 70%);
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        /* Bus markers */
+        .bus-marker {
+            background: var(--primary-blue);
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .bus-marker.moving {
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        .bus-marker.stopped {
+            background: var(--gold);
+        }
+
+        .bus-marker.accident {
+            background: var(--secondary-red);
+            animation: urgentPulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar .menu-text,
+            .sidebar .logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+
+            .tracking-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Alert styles */
+        .alert {
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+            border-color: var(--green);
+        }
+
+        .alert-danger {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+            border-color: var(--secondary-red);
+        }
+
+        .alert-warning {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+
+        .alert-info {
+            background: rgba(59,130,246,0.1);
+            color: var(--light-blue);
+            border-color: var(--light-blue);
+        }
+    </style>
+</head>
+<body data-theme="light">
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title" id="headerTitle">IMAS - Bus Management System</h1>
+    </div>
+    <div class="header-right">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-sun"></i>
+        </button>
+        <div class="user-profile">
+            <div class="user-avatar">AD</div>
+            <span>Admin</span>
+        </div>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-bus"></i>
+        </div>
+        <span class="logo-text">IMAS</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="#" class="active" onclick="showSection('dashboard', event)">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('buses', event)">
+                    <i class="fas fa-bus"></i>
+                    <span class="menu-text">Bus Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('tracking', event)">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="menu-text">Live Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('drivers', event)">
+                    <i class="fas fa-users"></i>
+                    <span class="menu-text">Drivers</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('reports', event)">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="menu-text">Reports</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="menu-text">Logout</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="section active">
+        <div class="card">
+            <h2>Dashboard</h2>
+            <p>Welcome to the IMAS Bus Management System</p>
+        </div>
+    </section>
+
+    <!-- Bus Management Section -->
+    <section id="buses" class="section">
+        <div class="table-container">
+            <div class="table-header">
+                <h2>Bus Management</h2>
+                <button class="btn" onclick="openAddBusModal()">
+                    <i class="fas fa-plus"></i>
+                    Add New Bus
+                </button>
+            </div>
+            <div id="busesAlert"></div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Bus Name</th>
+                    <th>Line</th>
+                    <th>Capacity</th>
+                    <th>Driver</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="busesTableBody">
+                <!-- Buses will be loaded here from database -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Live Tracking Section -->
+    <section id="tracking" class="section">
+        <div class="tracking-container">
+            <div class="card">
+                <h2>Live Bus Tracking</h2>
+                <div id="map"></div>
+            </div>
+            <div class="tracking-panel">
+                <h3>Tracked Buses</h3>
+                <div class="tracking-controls">
+                    <button class="btn btn-sm" onclick="refreshTracking()">
+                        <i class="fas fa-sync"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div id="trackedBusesList">
+                    <!-- Tracked buses will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Drivers Section -->
+    <section id="drivers" class="section">
+        <div class="table-container">
+            <div class="table-header">
+                <h2>Driver Management</h2>
+                <button class="btn" onclick="openAddDriverModal()">
+                    <i class="fas fa-plus"></i>
+                    Add New Driver
+                </button>
+            </div>
+            <div id="driversAlert"></div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>License Number</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="driversTableBody">
+                <!-- Drivers will be loaded here from database -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Reports Section -->
+    <section id="reports" class="section">
+        <div class="card">
+            <h2>Reports & Analytics</h2>
+            <p>Generate and view system reports</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
+                <button class="btn" onclick="generateReport('daily')">Daily Report</button>
+                <button class="btn" onclick="generateReport('weekly')">Weekly Report</button>
+                <button class="btn" onclick="generateReport('monthly')">Monthly Report</button>
+                <button class="btn" onclick="generateReport('annual')">Annual Report</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Add/Edit Bus Modal -->
+<div id="busModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="busModalTitle">Add New Bus</h3>
+            <button class="close-btn" onclick="closeBusModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="busForm">
+            <input type="hidden" id="busId">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="busName">Bus Name</label>
+                    <input type="text" id="busName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="busLine">Bus Line</label>
+                    <input type="text" id="busLine" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="capacity">Capacity</label>
+                    <input type="number" id="capacity" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="driverSelect">Driver</label>
+                    <select id="driverSelect" class="form-control">
+                        <option value="">Select Driver</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="startStation">Start Station</label>
+                    <select id="startStation" class="form-control" required>
+                        <option value="">Select Start Station</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="endStation">End Station</label>
+                    <select id="endStation" class="form-control" required>
+                        <option value="">Select End Station</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeBusModal()">Cancel</button>
+                <button type="submit" class="btn">Save Bus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add/Edit Driver Modal -->
+<div id="driverModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="driverModalTitle">Add New Driver</h3>
+            <button class="close-btn" onclick="closeDriverModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="driverForm">
+            <input type="hidden" id="driverId">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" class="form-control" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="licenseNumber">License Number</label>
+                    <input type="text" id="licenseNumber" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" class="form-control" required>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeDriverModal()">Cancel</button>
+                <button type="submit" class="btn">Save Driver</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let map;
+    let busMarkers = {};
+    let busPositions = {};
+    let trackedBuses = new Set();
+    let updateInterval;
+    const apiBaseUrl = 'http://localhost:8080/api';
+
+    // Kinshasa stations coordinates
+    const stations = {
+        gare_centrale: { name: "Gare Centrale", lat: -4.3276, lng: 15.3136 },
+        matete: { name: "Matete", lat: -4.3833, lng: 15.3667 },
+        limete: { name: "Limete", lat: -4.3333, lng: 15.3333 },
+        bandalungwa: { name: "Bandalungwa", lat: -4.3167, lng: 15.2833 },
+        barumbu: { name: "Barumbu", lat: -4.3167, lng: 15.3167 },
+        kinshasa: { name: "Kinshasa", lat: -4.3250, lng: 15.3222 },
+        ndjili: { name: "Ndjili", lat: -4.3833, lng: 15.3833 },
+        masina: { name: "Masina", lat: -4.3833, lng: 15.4000 },
+        kimbanseke: { name: "Kimbanseke", lat: -4.4500, lng: 15.4167 },
+        ngaliema: { name: "Ngaliema", lat: -4.3167, lng: 15.2333 },
+        mont_ngafula: { name: "Mont Ngafula", lat: -4.4000, lng: 15.2667 },
+        selembao: { name: "Selembao", lat: -4.3500, lng: 15.2833 },
+        bumbu: { name: "Bumbu", lat: -4.3667, lng: 15.3000 },
+        makala: { name: "Makala", lat: -4.3667, lng: 15.3167 },
+        ngaba: { name: "Ngaba", lat: -4.3667, lng: 15.3500 }
+    };
+
+    // Initialize application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+
+    function initializeApp() {
+        initializeMap();
+        loadStations();
+        loadBuses();
+        loadDrivers();
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
+
+    // Initialize map
+    function initializeMap() {
+        if (map) return;
+
+        map = L.map('map').setView([-4.3250, 15.3222], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Add station markers
+        Object.values(stations).forEach(station => {
+            L.marker([station.lat, station.lng], {
+                icon: L.divIcon({
+                    className: 'station-icon',
+                    html: '<i class="fas fa-map-marker-alt" style="color: #1E40AF; font-size: 20px;"></i>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                })
+            }).addTo(map).bindPopup(station.name);
+        });
+    }
+
+    // Load stations into select elements
+    function loadStations() {
+        const startStationSelect = document.getElementById('startStation');
+        const endStationSelect = document.getElementById('endStation');
+
+        Object.values(stations).forEach(station => {
+            const option1 = new Option(station.name, `${station.lat},${station.lng}`);
+            const option2 = new Option(station.name, `${station.lat},${station.lng}`);
+            startStationSelect.add(option1);
+            endStationSelect.add(option2);
+        });
+    }
+
+    // Load buses from database
+    async function loadBuses() {
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses`);
+            if (!response.ok) throw new Error('Failed to fetch buses');
+
+            const buses = await response.json();
+            displayBuses(buses);
+        } catch (error) {
+            console.error('Error loading buses:', error);
+            showAlert('busesAlert', 'Failed to load buses from database', 'danger');
+        }
+    }
+
+    // Display buses in table
+    function displayBuses(buses) {
+        const tbody = document.getElementById('busesTableBody');
+        tbody.innerHTML = '';
+
+        buses.forEach(bus => {
+            const row = document.createElement('tr');
+            const statusClass = bus.hasAccident ? 'status-accident' :
+                              bus.isStopped ? 'status-stopped' : 'status-active';
+            const statusText = bus.hasAccident ? 'Accident' :
+                             bus.isStopped ? 'Stopped' : 'Active';
+
+            row.innerHTML = `
+                <td>${bus.name}</td>
+                <td>${bus.busLine}</td>
+                <td>${bus.capacity}</td>
+                <td>${bus.driver ? `${bus.driver.firstName} ${bus.driver.lastName}` : 'No driver'}</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn view" onclick="viewBus(${bus.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit" onclick="editBus(${bus.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn ${bus.isStopped ? 'start' : 'stop'}"
+                                onclick="${bus.isStopped ? `startBus(${bus.id})` : `stopBus(${bus.id})`}"
+                                title="${bus.isStopped ? 'Start' : 'Stop'}">
+                            <i class="fas fa-${bus.isStopped ? 'play' : 'stop'}"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deleteBus(${bus.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Load drivers from database
+    async function loadDrivers() {
+        try {
+            const response = await fetch(`${apiBaseUrl}/staff?role=DRIVER`);
+            if (!response.ok) throw new Error('Failed to fetch drivers');
+
+            const drivers = await response.json();
+            displayDrivers(drivers);
+            populateDriverSelect(drivers);
+        } catch (error) {
+            console.error('Error loading drivers:', error);
+            showAlert('driversAlert', 'Failed to load drivers from database', 'danger');
+        }
+    }
+
+    // Display drivers in table
+    function displayDrivers(drivers) {
+        const tbody = document.getElementById('driversTableBody');
+        tbody.innerHTML = '';
+
+        drivers.forEach(driver => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${driver.firstName} ${driver.lastName}</td>
+                <td>${driver.licenseNumber || 'N/A'}</td>
+                <td>${driver.phone || 'N/A'}</td>
+                <td><span class="status-badge status-active">Active</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn view" onclick="viewDriver(${driver.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit" onclick="editDriver(${driver.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deleteDriver(${driver.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Populate driver select dropdown
+    function populateDriverSelect(drivers) {
+        const select = document.getElementById('driverSelect');
+        select.innerHTML = '<option value="">Select Driver</option>';
+
+        drivers.forEach(driver => {
+            const option = new Option(`${driver.firstName} ${driver.lastName}`, driver.id);
+            select.add(option);
+        });
+    }
+
+    // Bus CRUD operations
+    async function saveBus(event) {
+        event.preventDefault();
+
+        const busId = document.getElementById('busId').value;
+        const busData = {
+            name: document.getElementById('busName').value,
+            busLine: document.getElementById('busLine').value,
+            capacity: parseInt(document.getElementById('capacity').value),
+            driver: document.getElementById('driverSelect').value ?
+                   { id: parseInt(document.getElementById('driverSelect').value) } : null
+        };
+
+        // Get station coordinates
+        const startStation = document.getElementById('startStation').value.split(',');
+        const endStation = document.getElementById('endStation').value.split(',');
+
+        busData.startLat = parseFloat(startStation[0]);
+        busData.startLng = parseFloat(startStation[1]);
+        busData.endLat = parseFloat(endStation[0]);
+        busData.endLng = parseFloat(endStation[1]);
+        busData.currentLat = busData.startLat;
+        busData.currentLng = busData.startLng;
+
+        try {
+            const url = busId ? `${apiBaseUrl}/buses/${busId}` : `${apiBaseUrl}/buses`;
+            const method = busId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(busData)
+            });
+
+            if (!response.ok) throw new Error('Failed to save bus');
+
+            closeBusModal();
+            loadBuses();
+            showAlert('busesAlert', `Bus ${busId ? 'updated' : 'created'} successfully`, 'success');
+        } catch (error) {
+            console.error('Error saving bus:', error);
+            showAlert('busesAlert', 'Failed to save bus', 'danger');
+        }
+    }
+
+    async function deleteBus(busId) {
+        if (!confirm('Are you sure you want to delete this bus?')) return;
+
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses/${busId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Failed to delete bus');
+
+            loadBuses();
+            showAlert('busesAlert', 'Bus deleted successfully', 'success');
+        } catch (error) {
+            console.error('Error deleting bus:', error);
+            showAlert('busesAlert', 'Failed to delete bus', 'danger');
+        }
+    }
+
+    async function editBus(busId) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses/${busId}`);
+            if (!response.ok) throw new Error('Failed to fetch bus');
+
+            const bus = await response.json();
+
+            document.getElementById('busId').value = bus.id;
+            document.getElementById('busName').value = bus.name;
+            document.getElementById('busLine').value = bus.busLine;
+            document.getElementById('capacity').value = bus.capacity;
+            document.getElementById('driverSelect').value = bus.driver ? bus.driver.id : '';
+            document.getElementById('startStation').value = `${bus.startLat},${bus.startLng}`;
+            document.getElementById('endStation').value = `${bus.endLat},${bus.endLng}`;
+
+            document.getElementById('busModalTitle').textContent = 'Edit Bus';
+            document.getElementById('busModal').classList.add('active');
+        } catch (error) {
+            console.error('Error loading bus for edit:', error);
+            showAlert('busesAlert', 'Failed to load bus data', 'danger');
+        }
+    }
+
+    async function startBus(busId) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses/${busId}/restart`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to start bus');
+
+            loadBuses();
+            showAlert('busesAlert', 'Bus started successfully', 'success');
+        } catch (error) {
+            console.error('Error starting bus:', error);
+            showAlert('busesAlert', 'Failed to start bus', 'danger');
+        }
+    }
+
+    async function stopBus(busId) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses/${busId}/stop`, {
+                method: 'PUT'
+            });
+
+            if (!response.ok) throw new Error('Failed to stop bus');
+
+            loadBuses();
+            showAlert('busesAlert', 'Bus stopped successfully', 'warning');
+        } catch (error) {
+            console.error('Error stopping bus:', error);
+            showAlert('busesAlert', 'Failed to stop bus', 'danger');
+        }
+    }
+
+    // Driver CRUD operations
+    async function saveDriver(event) {
+        event.preventDefault();
+
+        const driverId = document.getElementById('driverId').value;
+        const driverData = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            licenseNumber: document.getElementById('licenseNumber').value,
+            phone: document.getElementById('phone').value,
+            role: 'DRIVER'
+        };
+
+        try {
+            const url = driverId ? `${apiBaseUrl}/staff/${driverId}` : `${apiBaseUrl}/staff`;
+            const method = driverId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(driverData)
+            });
+
+            if (!response.ok) throw new Error('Failed to save driver');
+
+            closeDriverModal();
+            loadDrivers();
+            showAlert('driversAlert', `Driver ${driverId ? 'updated' : 'created'} successfully`, 'success');
+        } catch (error) {
+            console.error('Error saving driver:', error);
+            showAlert('driversAlert', 'Failed to save driver', 'danger');
+        }
+    }
+
+    async function deleteDriver(driverId) {
+        if (!confirm('Are you sure you want to delete this driver?')) return;
+
+        try {
+            const response = await fetch(`${apiBaseUrl}/staff/${driverId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Failed to delete driver');
+
+            loadDrivers();
+            showAlert('driversAlert', 'Driver deleted successfully', 'success');
+        } catch (error) {
+            console.error('Error deleting driver:', error);
+            showAlert('driversAlert', 'Failed to delete driver', 'danger');
+        }
+    }
+
+    async function editDriver(driverId) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/staff/${driverId}`);
+            if (!response.ok) throw new Error('Failed to fetch driver');
+
+            const driver = await response.json();
+
+            document.getElementById('driverId').value = driver.id;
+            document.getElementById('firstName').value = driver.firstName;
+            document.getElementById('lastName').value = driver.lastName;
+            document.getElementById('licenseNumber').value = driver.licenseNumber || '';
+            document.getElementById('phone').value = driver.phone || '';
+
+            document.getElementById('driverModalTitle').textContent = 'Edit Driver';
+            document.getElementById('driverModal').classList.add('active');
+        } catch (error) {
+            console.error('Error loading driver for edit:', error);
+            showAlert('driversAlert', 'Failed to load driver data', 'danger');
+        }
+    }
+
+    // Live tracking functions
+    async function refreshTracking() {
+        try {
+            const response = await fetch(`${apiBaseUrl}/buses`);
+            if (!response.ok) throw new Error('Failed to fetch buses');
+
+            const buses = await response.json();
+            updateTrackedBuses(buses);
+            updateBusMarkers(buses);
+            checkCollisions(buses);
+        } catch (error) {
+            console.error('Error refreshing tracking:', error);
+        }
+    }
+
+    function updateTrackedBuses(buses) {
+        const container = document.getElementById('trackedBusesList');
+        container.innerHTML = '';
+
+        buses.forEach(bus => {
+            if (!bus.isStopped && !bus.hasAccident) {
+                const item = document.createElement('div');
+                item.className = 'bus-tracking-item';
+                item.innerHTML = `
+                    <div class="bus-header">
+                        <span class="bus-name">${bus.name}</span>
+                        <span class="bus-line">${bus.busLine}</span>
+                    </div>
+                    <div class="bus-stats">
+                        <span>Passengers: ${bus.passengers || 0}/${bus.capacity}</span>
+                        <span>Progress: ${bus.progress || 0}%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${bus.progress || 0}%"></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            }
+        });
+    }
+
+    function updateBusMarkers(buses) {
+        // Clear existing markers
+        Object.values(busMarkers).forEach(marker => {
+            map.removeLayer(marker);
+        });
+        busMarkers = {};
+
+        buses.forEach(bus => {
+            if (bus.currentLat && bus.currentLng) {
+                const markerClass = bus.hasAccident ? 'accident' :
+                                  bus.isStopped ? 'stopped' : 'moving';
+
+                const marker = L.marker([bus.currentLat, bus.currentLng], {
+                    icon: L.divIcon({
+                        className: `bus-marker ${markerClass}`,
+                        html: '<i class="fas fa-bus" style="color: white; font-size: 16px;"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div>
+                        <h4>${bus.name} (${bus.busLine})</h4>
+                        <p>Status: ${bus.hasAccident ? 'Accident' : bus.isStopped ? 'Stopped' : 'Active'}</p>
+                        <p>Passengers: ${bus.passengers || 0}/${bus.capacity}</p>
+                        <p>Progress: ${bus.progress || 0}%</p>
+                    </div>
+                `);
+
+                busMarkers[bus.id] = marker;
+            }
+        });
+    }
+
+    function checkCollisions(buses) {
+        const activeBuses = buses.filter(bus => !bus.isStopped && !bus.hasAccident);
+
+        for (let i = 0; i < activeBuses.length; i++) {
+            for (let j = i + 1; j < activeBuses.length; j++) {
+                const bus1 = activeBuses[i];
+                const bus2 = activeBuses[j];
+
+                if (bus1.currentLat && bus1.currentLng && bus2.currentLat && bus2.currentLng) {
+                    const distance = calculateDistance(
+                        [bus1.currentLat, bus1.currentLng],
+                        [bus2.currentLat, bus2.currentLng]
+                    );
+
+                    // If buses are within 100 meters, trigger collision
+                    if (distance < 0.1) {
+                        triggerCollision(bus1, bus2);
+                    }
+                }
+            }
+        }
+    }
+
+    function calculateDistance(point1, point2) {
+        const R = 6371; // Earth's radius in km
+        const lat1 = point1[0] * Math.PI / 180;
+        const lat2 = point2[0] * Math.PI / 180;
+        const deltaLat = (point2[0] - point1[0]) * Math.PI / 180;
+        const deltaLng = (point2[1] - point1[1]) * Math.PI / 180;
+
+        const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
+    async function triggerCollision(bus1, bus2) {
+        // Create explosion animation
+        const explosionLat = (bus1.currentLat + bus2.currentLat) / 2;
+        const explosionLng = (bus1.currentLng + bus2.currentLng) / 2;
+
+        const explosion = L.marker([explosionLat, explosionLng], {
+            icon: L.divIcon({
+                className: 'explosion',
+                html: '💥',
+                iconSize: [50, 50],
+                iconAnchor: [25, 25]
+            })
+        }).addTo(map);
+
+        // Remove explosion after animation
+        setTimeout(() => {
+            map.removeLayer(explosion);
+        }, 1000);
+
+        // Mark buses as having accidents
+        try {
+            await fetch(`${apiBaseUrl}/buses/${bus1.id}/accident`, { method: 'PUT' });
+            await fetch(`${apiBaseUrl}/buses/${bus2.id}/accident`, { method: 'PUT' });
+
+            showAlert('busesAlert', `Collision detected between ${bus1.name} and ${bus2.name}!`, 'danger');
+            loadBuses();
+            refreshTracking();
+        } catch (error) {
+            console.error('Error reporting collision:', error);
+        }
+    }
+
+    // Modal functions
+    function openAddBusModal() {
+        document.getElementById('busForm').reset();
+        document.getElementById('busId').value = '';
+        document.getElementById('busModalTitle').textContent = 'Add New Bus';
+        document.getElementById('busModal').classList.add('active');
+    }
+
+    function closeBusModal() {
+        document.getElementById('busModal').classList.remove('active');
+    }
+
+    function openAddDriverModal() {
+        document.getElementById('driverForm').reset();
+        document.getElementById('driverId').value = '';
+        document.getElementById('driverModalTitle').textContent = 'Add New Driver';
+        document.getElementById('driverModal').classList.add('active');
+    }
+
+    function closeDriverModal() {
+        document.getElementById('driverModal').classList.remove('active');
+    }
+
+    // UI functions
+    function showSection(sectionName, event) {
+        // Remove active class from all menu items
+        document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+
+        // Add active class to clicked menu item
+        if (event) {
+            event.target.classList.add('active');
+        }
+
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Show selected section
+        document.getElementById(sectionName).classList.add('active');
+
+        // Initialize map if tracking section is shown
+        if (sectionName === 'tracking') {
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                    refreshTracking();
+                }
+            }, 100);
+        }
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const header = document.getElementById('header');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        header.classList.toggle('expanded');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.querySelector('.theme-toggle i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            themeToggle.className = 'fas fa-sun';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            themeToggle.className = 'fas fa-moon';
+        }
+    }
+
+    function showAlert(containerId, message, type) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="alert alert-${type}">
+                ${message}
+            </div>
+        `;
+
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleString('fr-FR', {
+            timeZone: 'Africa/Kinshasa',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        document.getElementById('headerTitle').textContent = `IMAS - ${timeString}`;
+    }
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            window.location.href = '/login';
+        }
+    }
+
+    // Report functions
+    async function generateReport(type) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/reports/${type}`);
+            if (!response.ok) throw new Error('Failed to generate report');
+
+            const report = await response.json();
+            console.log(`${type} report:`, report);
+            alert(`${type} report generated successfully`);
+        } catch (error) {
+            console.error(`Error generating ${type} report:`, error);
+            alert(`Failed to generate ${type} report`);
+        }
+    }
+
+    // View functions (placeholder)
+    function viewBus(busId) {
+        alert(`View bus details for ID: ${busId}`);
+    }
+
+    function viewDriver(driverId) {
+        alert(`View driver details for ID: ${driverId}`);
+    }
+
+    // Form event listeners
+    document.getElementById('busForm').addEventListener('submit', saveBus);
+    document.getElementById('driverForm').addEventListener('submit', saveDriver);
+
+    // Start tracking updates
+    setInterval(refreshTracking, 5000); // Update every 5 seconds
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

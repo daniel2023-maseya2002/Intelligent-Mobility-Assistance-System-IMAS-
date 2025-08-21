@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANALYST Dashboard - IMAS System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #dc2626;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --info-color: #0891b2;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --border-color: #e5e7eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--light-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .nav-menu {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.1);
+            border-right: 3px solid var(--primary-color);
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            background: var(--light-color);
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: auto;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.revenue { background: linear-gradient(135deg, #10b981, #059669); }
+        .stat-icon.tickets { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .stat-icon.passengers { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .stat-icon.drivers { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .stat-icon.logins { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-change {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .stat-change.negative {
+            color: var(--secondary-color);
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        /* Charts */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table th {
+            background: var(--light-color);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .table tr:hover {
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background: #b45309;
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        /* Filters */
+        .filters {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-flex;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge.danger {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .badge.warning {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning-color);
+        }
+
+        .badge.info {
+            background: rgba(8, 145, 178, 0.1);
+            color: var(--info-color);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 10px 25px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .notification.success { background: var(--success-color); }
+        .notification.error { background: var(--secondary-color); }
+        .notification.warning { background: var(--warning-color); }
+        .notification.info { background: var(--info-color); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="logo-text">IMAS ANALYST</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item">
+                <a href="#" class="nav-link active" onclick="showSection('overview')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('login-analytics')">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Login Analytics</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('financial-analytics')">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>Financial Analytics</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('passenger-analytics')">
+                    <i class="fas fa-users"></i>
+                    <span>Passenger Analytics</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('bus-performance')">
+                    <i class="fas fa-bus"></i>
+                    <span>Bus Performance</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('reports')">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Reports & Downloads</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showSection('analyst-management')">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Analyst Management</span>
+                </a>
+            </div>
+
+            <!-- External Links -->
+            <div class="nav-item" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <a href="ScheduleManagement.html" class="nav-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Schedule Management</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="CrudStaff.html" class="nav-link" target="_blank">
+                    <i class="fas fa-users-cog"></i>
+                    <span>Staff Management</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="Dashboard.html" class="nav-link" target="_blank">
+                    <i class="fas fa-dashboard"></i>
+                    <span>Main Dashboard</span>
+                </a>
+            </div>
+
+
+
+            <div class="nav-item">
+                <a href="WhatsApp.html" class="nav-link" target="_blank">
+                    <i class="fas fa-comments"></i>
+                    <span>Whatssapp</span>
+                </a>
+            </div>
+            <div class="nav-item" style="margin-top: 2rem;">
+                <a href="#" class="nav-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-title">ANALYST Dashboard</div>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div id="userName">Analyst User</div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Overview Section -->
+            <section id="overview-section" class="section active">
+                <h1>System Overview</h1>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon revenue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-change positive" id="revenueChange">+0%</div>
+                        </div>
+                        <div class="stat-value" id="totalRevenue">Loading...</div>
+                        <div class="stat-label">Total Revenue (FC)</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon tickets">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <div class="stat-change positive" id="ticketsChange">+0%</div>
+                        </div>
+                        <div class="stat-value" id="totalTickets">Loading...</div>
+                        <div class="stat-label">Total Tickets Sold</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon passengers">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-change positive" id="passengersChange">+0%</div>
+                        </div>
+                        <div class="stat-value" id="uniquePassengers">Loading...</div>
+                        <div class="stat-label">Unique Passengers</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon logins">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <div class="stat-change positive" id="loginsChange">+0%</div>
+                        </div>
+                        <div class="stat-value" id="todayLogins">Loading...</div>
+                        <div class="stat-label">Today's Logins</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">Revenue Trends (Last 30 Days)</div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Login Analytics Section -->
+            <section id="login-analytics-section" class="section">
+                <h1>Login Analytics</h1>
+
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Period</label>
+                            <select class="filter-input" id="loginPeriodFilter" onchange="loadLoginAnalytics()">
+                                <option value="daily">Today</option>
+                                <option value="weekly" selected>Last 7 Days</option>
+                                <option value="monthly">Last 30 Days</option>
+                                <option value="yearly">Last Year</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn" onclick="downloadLoginReport()">
+                                <i class="fas fa-download"></i>
+                                Download Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="loginTotalAttempts">Loading...</div>
+                        <div class="stat-label">Total Login Attempts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="loginSuccessful">Loading...</div>
+                        <div class="stat-label">Successful Logins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="loginFailed">Loading...</div>
+                        <div class="stat-label">Failed Attempts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="loginSuccessRate">Loading...</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">Login Timeline</div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="loginTimelineChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Recent Login Attempts</div>
+                    </div>
+                    <div class="loading" id="loginTableLoading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div id="loginTableContainer" style="display: none;">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>IP Address</th>
+                                <th>Device</th>
+                                <th>Time</th>
+                            </tr>
+                            </thead>
+                            <tbody id="loginTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Financial Analytics Section -->
+            <section id="financial-analytics-section" class="section">
+                <h1>Financial Analytics</h1>
+
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Period</label>
+                            <select class="filter-input" id="financialPeriodFilter" onchange="loadFinancialAnalytics()">
+                                <option value="daily">Today</option>
+                                <option value="weekly">Last 7 Days</option>
+                                <option value="monthly" selected>Last 30 Days</option>
+                                <option value="yearly">Last Year</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn" onclick="downloadFinancialReport()">
+                                <i class="fas fa-download"></i>
+                                Download Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="financialTotalRevenue">Loading...</div>
+                        <div class="stat-label">Total Revenue (FC)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="financialTotalTickets">Loading...</div>
+                        <div class="stat-label">Total Tickets</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="financialAvgTicketPrice">Loading...</div>
+                        <div class="stat-label">Average Ticket Price</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="financialDailyAvg">Loading...</div>
+                        <div class="stat-label">Daily Average Revenue</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">Revenue by Bus</div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="revenueByBusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">Revenue by Driver</div>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="revenueByDriverChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Passenger Analytics Section -->
+            <section id="passenger-analytics-section" class="section">
+                <h1>Passenger Analytics</h1>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="passengerTotalUnique">Loading...</div>
+                        <div class="stat-label">Unique Passengers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="passengerTopCustomerTickets">Loading...</div>
+                        <div class="stat-label">Most Tickets by One Customer</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="passengerTopCustomerSpending">Loading...</div>
+                        <div class="stat-label">Highest Customer Spending (FC)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="passengerAvgTicketsPerCustomer">Loading...</div>
+                        <div class="stat-label">Avg Tickets per Customer</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Top Customers by Tickets</div>
+                        </div>
+                        <div class="loading" id="topCustomersTicketsLoading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                        <div id="topCustomersTicketsContainer" style="display: none;">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Tickets</th>
+                                    <th>Total Spent</th>
+                                </tr>
+                                </thead>
+                                <tbody id="topCustomersTicketsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-header">
+                            <div class="table-title">Top Customers by Spending</div>
+                        </div>
+                        <div class="loading" id="topCustomersSpendingLoading">
+                            <div class="spinner"></div>
+                            Loading...
+                        </div>
+                        <div id="topCustomersSpendingContainer" style="display: none;">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Total Spent</th>
+                                    <th>Tickets</th>
+                                </tr>
+                                </thead>
+                                <tbody id="topCustomersSpendingBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bus Performance Section -->
+            <section id="bus-performance-section" class="section">
+                <h1>Bus Performance Analytics</h1>
+
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Period</label>
+                            <select class="filter-input" id="busPerformancePeriodFilter" onchange="loadBusPerformance()">
+                                <option value="daily">Today</option>
+                                <option value="weekly">Last 7 Days</option>
+                                <option value="monthly" selected>Last 30 Days</option>
+                                <option value="yearly">Last Year</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn" onclick="downloadBusPerformanceReport()">
+                                <i class="fas fa-download"></i>
+                                Download Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">Bus Performance Data</div>
+                    </div>
+                    <div class="loading" id="busPerformanceLoading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div id="busPerformanceContainer" style="display: none;">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Bus</th>
+                                <th>Plate Number</th>
+                                <th>Driver</th>
+                                <th>Tickets Sold</th>
+                                <th>Revenue (FC)</th>
+                                <th>Occupancy Rate</th>
+                            </tr>
+                            </thead>
+                            <tbody id="busPerformanceBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports-section" class="section">
+                <h1>Reports & Downloads</h1>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <div class="chart-container">
+                        <div class="chart-title">Login Reports</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                            <button class="btn" onclick="downloadLoginReport('daily')">
+                                <i class="fas fa-calendar-day"></i>
+                                Daily Login Report
+                            </button>
+                            <button class="btn btn-success" onclick="downloadLoginReport('weekly')">
+                                <i class="fas fa-calendar-week"></i>
+                                Weekly Login Report
+                            </button>
+                            <button class="btn btn-warning" onclick="downloadLoginReport('monthly')">
+                                <i class="fas fa-calendar-alt"></i>
+                                Monthly Login Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Financial Reports</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                            <button class="btn" onclick="downloadFinancialReport('daily')">
+                                <i class="fas fa-money-bill"></i>
+                                Daily Revenue Report
+                            </button>
+                            <button class="btn btn-success" onclick="downloadFinancialReport('weekly')">
+                                <i class="fas fa-chart-line"></i>
+                                Weekly Revenue Report
+                            </button>
+                            <button class="btn btn-warning" onclick="downloadFinancialReport('monthly')">
+                                <i class="fas fa-chart-bar"></i>
+                                Monthly Revenue Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Passenger Reports</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                            <button class="btn" onclick="downloadPassengerReport()">
+                                <i class="fas fa-users"></i>
+                                Passenger Analytics
+                            </button>
+                            <button class="btn btn-success" onclick="downloadTopCustomersReport()">
+                                <i class="fas fa-star"></i>
+                                Top Customers Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Bus Performance Reports</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                            <button class="btn" onclick="downloadBusPerformanceReport('daily')">
+                                <i class="fas fa-bus"></i>
+                                Daily Bus Performance
+                            </button>
+                            <button class="btn btn-success" onclick="downloadBusPerformanceReport('weekly')">
+                                <i class="fas fa-route"></i>
+                                Weekly Bus Performance
+                            </button>
+                            <button class="btn btn-warning" onclick="downloadBusPerformanceReport('monthly')">
+                                <i class="fas fa-chart-area"></i>
+                                Monthly Bus Performance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analyst Management Section -->
+            <section id="analyst-management-section" class="section">
+                <h1>Analyst Management</h1>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">Add New Analyst</div>
+                    </div>
+                    <form id="createAnalystForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="filter-label">First Name</label>
+                            <input type="text" class="filter-input" id="analystFirstName" required>
+                        </div>
+                        <div>
+                            <label class="filter-label">Last Name</label>
+                            <input type="text" class="filter-input" id="analystLastName" required>
+                        </div>
+                        <div>
+                            <label class="filter-label">Email</label>
+                            <input type="email" class="filter-input" id="analystEmail" required>
+                        </div>
+                        <div>
+                            <label class="filter-label">Phone Number</label>
+                            <input type="tel" class="filter-input" id="analystPhone" required>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label class="filter-label">Password</label>
+                            <input type="password" class="filter-input" id="analystPassword" required>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <button type="submit" class="btn">
+                                <i class="fas fa-plus"></i>
+                                Create Analyst
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-title">All Analysts</div>
+                    </div>
+                    <div class="loading" id="analystsLoading">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                    <div id="analystsContainer" style="display: none;">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="analystsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Global variables
+    const API_BASE = 'http://localhost:8080/api';
+    let currentUser = null;
+    let charts = {};
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeUser();
+        initializeEventListeners();
+        loadAllData();
+    });
+
+    // Initialize user
+    function initializeUser() {
+        const userSession = localStorage.getItem('userSession');
+        if (userSession) {
+            currentUser = JSON.parse(userSession);
+            document.getElementById('userName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+            document.getElementById('userAvatar').textContent = currentUser.firstName.charAt(0);
+        } else {
+            // Redirect to login if no session
+            window.location.href = 'login.html';
+        }
+    }
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+        // Create Analyst Form
+        document.getElementById('createAnalystForm').addEventListener('submit', handleCreateAnalyst);
+    }
+
+    // Navigation
+    function showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Remove active class from all nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // Show target section
+        document.getElementById(sectionName + '-section').classList.add('active');
+
+        // Add active class to clicked nav link
+        event.target.closest('.nav-link').classList.add('active');
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'overview':
+                loadOverviewData();
+                break;
+            case 'login-analytics':
+                loadLoginAnalytics();
+                break;
+            case 'financial-analytics':
+                loadFinancialAnalytics();
+                break;
+            case 'passenger-analytics':
+                loadPassengerAnalytics();
+                break;
+            case 'bus-performance':
+                loadBusPerformance();
+                break;
+            case 'analyst-management':
+                loadAnalysts();
+                break;
+        }
+    }
+
+    // Load all initial data
+    async function loadAllData() {
+        await loadOverviewData();
+    }
+
+    // Load overview data
+    async function loadOverviewData() {
+        try {
+            // Load system overview
+            const overview = await fetchData('/analytics/system-overview');
+            updateOverviewStats(overview);
+
+            // Load financial data for chart
+            const financial = await fetchData('/analytics/financial-statistics/monthly');
+            createRevenueChart(financial);
+
+        } catch (error) {
+            console.error('Error loading overview data:', error);
+            showNotification('Error loading overview data', 'error');
+        }
+    }
+
+    // Update overview statistics
+    function updateOverviewStats(data) {
+        document.getElementById('totalRevenue').textContent = formatCurrency(data.todayRevenue || 0);
+        document.getElementById('totalTickets').textContent = data.todayTickets || 0;
+        document.getElementById('uniquePassengers').textContent = data.totalStaff || 0;
+        document.getElementById('todayLogins').textContent = data.todayLogins || 0;
+    }
+
+    // Load login analytics
+    async function loadLoginAnalytics() {
+        try {
+            const period = document.getElementById('loginPeriodFilter').value;
+            const data = await fetchData(`/analytics/login-statistics/${period}`);
+
+            // Update stats
+            document.getElementById('loginTotalAttempts').textContent = data.totalAttempts || 0;
+            document.getElementById('loginSuccessful').textContent = data.successfulLogins || 0;
+            document.getElementById('loginFailed').textContent = data.failedLogins || 0;
+            document.getElementById('loginSuccessRate').textContent = (data.successRate || 0).toFixed(1) + '%';
+
+            // Create timeline chart
+            createLoginTimelineChart(data.loginTimeline || {});
+
+            // Load recent logins table
+            await loadRecentLogins();
+
+        } catch (error) {
+            console.error('Error loading login analytics:', error);
+            showNotification('Error loading login analytics', 'error');
+        }
+    }
+
+    // Load recent logins
+    async function loadRecentLogins() {
+        try {
+            const recentLogins = await fetchData('/analytics/recent-logins/50');
+            displayRecentLogins(recentLogins);
+        } catch (error) {
+            console.error('Error loading recent logins:', error);
+        }
+    }
+
+    // Display recent logins
+    function displayRecentLogins(logins) {
+        const loading = document.getElementById('loginTableLoading');
+        const container = document.getElementById('loginTableContainer');
+        const tbody = document.getElementById('loginTableBody');
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+        tbody.innerHTML = logins.map(login => `
+            <tr>
+                <td>${login.userRole || 'Unknown'}</td>
+                <td>${login.email || 'N/A'}</td>
+                <td><span class="badge info">${login.userRole || 'Unknown'}</span></td>
+                <td><span class="badge ${login.successful ? 'success' : 'danger'}">${login.successful ? 'Success' : 'Failed'}</span></td>
+                <td>${login.ipAddress || 'N/A'}</td>
+                <td>${login.deviceType || 'N/A'}</td>
+                <td>${formatDateTime(login.attemptTime)}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Load financial analytics
+    async function loadFinancialAnalytics() {
+        try {
+            const period = document.getElementById('financialPeriodFilter').value;
+            const data = await fetchData(`/analytics/financial-statistics/${period}`);
+
+            // Update stats
+            document.getElementById('financialTotalRevenue').textContent = formatCurrency(data.totalRevenue || 0);
+            document.getElementById('financialTotalTickets').textContent = data.totalTickets || 0;
+            document.getElementById('financialAvgTicketPrice').textContent = formatCurrency(data.averageTicketPrice || 0);
+
+            const dailyAvg = data.totalRevenue && period === 'monthly' ? (data.totalRevenue / 30) : 0;
+            document.getElementById('financialDailyAvg').textContent = formatCurrency(dailyAvg);
+
+            // Create charts
+            createRevenueByBusChart(data.revenueByBus || {});
+            createRevenueByDriverChart(data.revenueByDriver || {});
+
+        } catch (error) {
+            console.error('Error loading financial analytics:', error);
+            showNotification('Error loading financial analytics', 'error');
+        }
+    }
+
+    // Load passenger analytics
+    async function loadPassengerAnalytics() {
+        try {
+            const data = await fetchData('/analytics/passenger-statistics');
+
+            // Update stats
+            document.getElementById('passengerTotalUnique').textContent = data.totalUniquePassengers || 0;
+
+            const topTickets = data.topCustomersByTickets && data.topCustomersByTickets.length > 0
+                ? data.topCustomersByTickets[0].ticketCount : 0;
+            document.getElementById('passengerTopCustomerTickets').textContent = topTickets;
+
+            const topSpending = data.topCustomersBySpending && data.topCustomersBySpending.length > 0
+                ? data.topCustomersBySpending[0].totalSpent : 0;
+            document.getElementById('passengerTopCustomerSpending').textContent = formatCurrency(topSpending);
+
+            const avgTickets = data.totalUniquePassengers > 0 ?
+                (data.topCustomersByTickets?.reduce((sum, customer) => sum + customer.ticketCount, 0) || 0) / data.totalUniquePassengers : 0;
+            document.getElementById('passengerAvgTicketsPerCustomer').textContent = avgTickets.toFixed(1);
+
+            // Display tables
+            displayTopCustomers(data.topCustomersByTickets || [], 'topCustomersTicketsBody', 'topCustomersTicketsLoading', 'topCustomersTicketsContainer');
+            displayTopCustomers(data.topCustomersBySpending || [], 'topCustomersSpendingBody', 'topCustomersSpendingLoading', 'topCustomersSpendingContainer');
+
+        } catch (error) {
+            console.error('Error loading passenger analytics:', error);
+            showNotification('Error loading passenger analytics', 'error');
+        }
+    }
+
+    // Display top customers
+    function displayTopCustomers(customers, bodyId, loadingId, containerId) {
+        const loading = document.getElementById(loadingId);
+        const container = document.getElementById(containerId);
+        const tbody = document.getElementById(bodyId);
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+        tbody.innerHTML = customers.slice(0, 10).map(customer => `
+            <tr>
+                <td>${customer.passengerName || 'Unknown'}</td>
+                <td>${customer.ticketCount || 0}</td>
+                <td>${formatCurrency(customer.totalSpent || 0)}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Load bus performance
+    async function loadBusPerformance() {
+        try {
+            const period = document.getElementById('busPerformancePeriodFilter').value;
+            const data = await fetchData(`/analytics/bus-performance/${period}`);
+
+            displayBusPerformance(data.busPerformance || []);
+
+        } catch (error) {
+            console.error('Error loading bus performance:', error);
+            showNotification('Error loading bus performance', 'error');
+        }
+    }
+
+    // Display bus performance
+    function displayBusPerformance(busData) {
+        const loading = document.getElementById('busPerformanceLoading');
+        const container = document.getElementById('busPerformanceContainer');
+        const tbody = document.getElementById('busPerformanceBody');
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+        tbody.innerHTML = busData.map(bus => `
+            <tr>
+                <td>${bus.busName || 'Unknown'}</td>
+                <td>${bus.plateNumber || 'N/A'}</td>
+                <td>${bus.driverName || 'No Driver'}</td>
+                <td>${bus.ticketsCount || 0}</td>
+                <td>${formatCurrency(bus.revenue || 0)}</td>
+                <td>${(bus.occupancyRate || 0).toFixed(1)}%</td>
+            </tr>
+        `).join('');
+    }
+
+    // Load analysts
+    async function loadAnalysts() {
+        try {
+            const analysts = await fetchData('/staff/analysts');
+            displayAnalysts(analysts);
+        } catch (error) {
+            console.error('Error loading analysts:', error);
+            showNotification('Error loading analysts', 'error');
+        }
+    }
+
+    // Display analysts
+    function displayAnalysts(analysts) {
+        const loading = document.getElementById('analystsLoading');
+        const container = document.getElementById('analystsContainer');
+        const tbody = document.getElementById('analystsBody');
+
+        loading.style.display = 'none';
+        container.style.display = 'block';
+
+        tbody.innerHTML = analysts.map(analyst => `
+            <tr>
+                <td>${analyst.id}</td>
+                <td>${analyst.firstName} ${analyst.lastName}</td>
+                <td>${analyst.email}</td>
+                <td>${analyst.phoneNumber || 'N/A'}</td>
+                <td><span class="badge ${analyst.active ? 'success' : 'danger'}">${analyst.active ? 'Active' : 'Inactive'}</span></td>
+                <td>${formatDate(analyst.createdAt)}</td>
+                <td>
+                    <button class="btn btn-secondary" onclick="toggleAnalystStatus(${analyst.id}, ${!analyst.active})" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                        ${analyst.active ? 'Deactivate' : 'Activate'}
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Handle create analyst
+    async function handleCreateAnalyst(e) {
+        e.preventDefault();
+
+        const analystData = {
+            firstName: document.getElementById('analystFirstName').value,
+            lastName: document.getElementById('analystLastName').value,
+            email: document.getElementById('analystEmail').value,
+            phoneNumber: document.getElementById('analystPhone').value,
+            password: document.getElementById('analystPassword').value
+        };
+
+        try {
+            await postData('/staff/create-analyst', analystData);
+            showNotification('Analyst created successfully!', 'success');
+            document.getElementById('createAnalystForm').reset();
+            loadAnalysts();
+        } catch (error) {
+            console.error('Error creating analyst:', error);
+            showNotification('Error creating analyst: ' + error.message, 'error');
+        }
+    }
+
+    // Toggle analyst status
+    async function toggleAnalystStatus(analystId, newStatus) {
+        try {
+            await putData(`/staff/${analystId}`, { active: newStatus });
+            showNotification(`Analyst ${newStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
+            loadAnalysts();
+        } catch (error) {
+            console.error('Error updating analyst status:', error);
+            showNotification('Error updating analyst status', 'error');
+        }
+    }
+
+    // Chart creation functions
+    function createRevenueChart(data) {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+
+        if (charts.revenue) {
+            charts.revenue.destroy();
+        }
+
+        const dailyRevenue = data.dailyRevenue || {};
+        const dates = Object.keys(dailyRevenue).sort();
+        const revenues = dates.map(date => dailyRevenue[date] || 0);
+
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Revenue (FC)',
+                    data: revenues,
+                    borderColor: 'rgb(37, 99, 235)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createLoginTimelineChart(timelineData) {
+        const ctx = document.getElementById('loginTimelineChart');
+        if (!ctx) return;
+
+        if (charts.loginTimeline) {
+            charts.loginTimeline.destroy();
+        }
+
+        const dates = Object.keys(timelineData).sort();
+        const logins = dates.map(date => timelineData[date] || 0);
+
+        charts.loginTimeline = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Successful Logins',
+                    data: logins,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgb(16, 185, 129)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createRevenueByBusChart(revenueData) {
+        const ctx = document.getElementById('revenueByBusChart');
+        if (!ctx) return;
+
+        if (charts.revenueByBus) {
+            charts.revenueByBus.destroy();
+        }
+
+        const buses = Object.keys(revenueData);
+        const revenues = Object.values(revenueData);
+
+        charts.revenueByBus = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: buses,
+                datasets: [{
+                    data: revenues,
+                    backgroundColor: [
+                        'rgba(37, 99, 235, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(6, 182, 212, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    function createRevenueByDriverChart(revenueData) {
+        const ctx = document.getElementById('revenueByDriverChart');
+        if (!ctx) return;
+
+        if (charts.revenueByDriver) {
+            charts.revenueByDriver.destroy();
+        }
+
+        const drivers = Object.keys(revenueData);
+        const revenues = Object.values(revenueData);
+
+        charts.revenueByDriver = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: drivers,
+                datasets: [{
+                    label: 'Revenue (FC)',
+                    data: revenues,
+                    backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                    borderColor: 'rgb(245, 158, 11)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatCurrency(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // PDF Report functions
+    async function downloadLoginReport(period = 'weekly') {
+        try {
+            showNotification('Generating login report...', 'info');
+
+            const data = await fetchData(`/analytics/login-statistics/${period}`);
+            const recentLogins = await fetchData('/analytics/recent-logins/100');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add IMAS logo
+            try {
+                const logo = await loadImage('images/logoImas.jpg');
+                doc.addImage(logo, 'JPEG', 20, 20, 30, 30);
+            } catch (e) {
+                console.warn('Could not load logo:', e);
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS - Login Analytics Report', 60, 30);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Period: ${period.toUpperCase()}`, 60, 40);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 60, 48);
+
+            // Statistics
+            let yPos = 70;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Login Statistics', 20, yPos);
+
+            yPos += 15;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Total Login Attempts: ${data.totalAttempts || 0}`, 30, yPos);
+            yPos += 8;
+            doc.text(`Successful Logins: ${data.successfulLogins || 0}`, 30, yPos);
+            yPos += 8;
+            doc.text(`Failed Attempts: ${data.failedLogins || 0}`, 30, yPos);
+            yPos += 8;
+            doc.text(`Success Rate: ${(data.successRate || 0).toFixed(1)}%`, 30, yPos);
+
+            // Recent logins table
+            yPos += 20;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Recent Login Attempts', 20, yPos);
+
+            yPos += 10;
+            const headers = ['Email', 'Role', 'Status', 'Time'];
+            const headerWidths = [60, 25, 25, 45];
+            let xPos = 20;
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            headers.forEach((header, index) => {
+                doc.text(header, xPos, yPos);
+                xPos += headerWidths[index];
+            });
+
+            yPos += 8;
+            doc.setFont('helvetica', 'normal');
+
+            recentLogins.slice(0, 20).forEach(login => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+
+                xPos = 20;
+                doc.text((login.email || 'N/A').substring(0, 25), xPos, yPos);
+                xPos += 60;
+                doc.text(login.userRole || 'Unknown', xPos, yPos);
+                xPos += 25;
+                doc.text(login.successful ? 'Success' : 'Failed', xPos, yPos);
+                xPos += 25;
+                doc.text(formatDateTime(login.attemptTime), xPos, yPos);
+                yPos += 8;
+            });
+
+            doc.save(`IMAS_Login_Report_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Login report downloaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating login report:', error);
+            showNotification('Error generating login report', 'error');
+        }
+    }
+
+    async function downloadFinancialReport(period = 'monthly') {
+        try {
+            showNotification('Generating financial report...', 'info');
+
+            const data = await fetchData(`/analytics/financial-statistics/${period}`);
+
+            const { jsPDF } = window.jsPDF;
+            const doc = new jsPDF();
+
+            // Add IMAS logo
+            try {
+                const logo = await loadImage('images/logoImas.jpg');
+                doc.addImage(logo, 'JPEG', 20, 20, 30, 30);
+            } catch (e) {
+                console.warn('Could not load logo:', e);
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS - Financial Report', 60, 30);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Period: ${period.toUpperCase()}`, 60, 40);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 60, 48);
+
+            // Statistics
+            let yPos = 70;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Financial Overview', 20, yPos);
+
+            yPos += 15;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Total Revenue: ${formatCurrency(data.totalRevenue || 0)}`, 30, yPos);
+            yPos += 8;
+            doc.text(`Total Tickets: ${data.totalTickets || 0}`, 30, yPos);
+            yPos += 8;
+            doc.text(`Average Ticket Price: ${formatCurrency(data.averageTicketPrice || 0)}`, 30, yPos);
+
+            // Revenue by bus
+            yPos += 20;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Revenue by Bus', 20, yPos);
+
+            yPos += 10;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+
+            Object.entries(data.revenueByBus || {}).forEach(([bus, revenue]) => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                doc.text(`${bus}: ${formatCurrency(revenue)}`, 30, yPos);
+                yPos += 8;
+            });
+
+            doc.save(`IMAS_Financial_Report_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Financial report downloaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating financial report:', error);
+            showNotification('Error generating financial report', 'error');
+        }
+    }
+
+    async function downloadPassengerReport() {
+        try {
+            showNotification('Generating passenger report...', 'info');
+
+            const data = await fetchData('/analytics/passenger-statistics');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add IMAS logo
+            try {
+                const logo = await loadImage('images/logoImas.jpg');
+                doc.addImage(logo, 'JPEG', 20, 20, 30, 30);
+            } catch (e) {
+                console.warn('Could not load logo:', e);
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS - Passenger Analytics', 60, 30);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 60, 40);
+
+            // Statistics
+            let yPos = 60;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Passenger Overview', 20, yPos);
+
+            yPos += 15;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Total Unique Passengers: ${data.totalUniquePassengers || 0}`, 30, yPos);
+
+            // Top customers by tickets
+            yPos += 20;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Top Customers by Tickets', 20, yPos);
+
+            yPos += 10;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+
+            (data.topCustomersByTickets || []).slice(0, 10).forEach(customer => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                doc.text(`${customer.passengerName || 'Unknown'}: ${customer.ticketCount} tickets (${formatCurrency(customer.totalSpent || 0)})`, 30, yPos);
+                yPos += 8;
+            });
+
+            doc.save(`IMAS_Passenger_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Passenger report downloaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating passenger report:', error);
+            showNotification('Error generating passenger report', 'error');
+        }
+    }
+
+    async function downloadTopCustomersReport() {
+        try {
+            showNotification('Generating top customers report...', 'info');
+
+            const data = await fetchData('/analytics/passenger-statistics');
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add IMAS logo
+            try {
+                const logo = await loadImage('images/logoImas.jpg');
+                doc.addImage(logo, 'JPEG', 20, 20, 30, 30);
+            } catch (e) {
+                console.warn('Could not load logo:', e);
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS - Top Customers Report', 60, 30);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 60, 40);
+
+            // Top customers by spending
+            let yPos = 60;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Top Customers by Spending', 20, yPos);
+
+            yPos += 10;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Customer Name', 30, yPos);
+            doc.text('Total Spent', 100, yPos);
+            doc.text('Tickets', 150, yPos);
+
+            yPos += 8;
+            doc.setFont('helvetica', 'normal');
+
+            (data.topCustomersBySpending || []).slice(0, 15).forEach(customer => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                doc.text(customer.passengerName || 'Unknown', 30, yPos);
+                doc.text(formatCurrency(customer.totalSpent || 0), 100, yPos);
+                doc.text(String(customer.ticketCount || 0), 150, yPos);
+                yPos += 8;
+            });
+
+            doc.save(`IMAS_Top_Customers_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Top customers report downloaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating top customers report:', error);
+            showNotification('Error generating top customers report', 'error');
+        }
+    }
+
+    async function downloadBusPerformanceReport(period = 'monthly') {
+        try {
+            showNotification('Generating bus performance report...', 'info');
+
+            const data = await fetchData(`/analytics/bus-performance/${period}`);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add IMAS logo
+            try {
+                const logo = await loadImage('images/logoImas.jpg');
+                doc.addImage(logo, 'JPEG', 20, 20, 30, 30);
+            } catch (e) {
+                console.warn('Could not load logo:', e);
+            }
+
+            // Header
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS - Bus Performance Report', 60, 30);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Period: ${period.toUpperCase()}`, 60, 40);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 60, 48);
+
+            // Bus performance table
+            let yPos = 70;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Bus Performance Data', 20, yPos);
+
+            yPos += 10;
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Bus Name', 20, yPos);
+            doc.text('Driver', 60, yPos);
+            doc.text('Tickets', 100, yPos);
+            doc.text('Revenue', 130, yPos);
+            doc.text('Occupancy', 170, yPos);
+
+            yPos += 8;
+            doc.setFont('helvetica', 'normal');
+
+            (data.busPerformance || []).forEach(bus => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                doc.text((bus.busName || 'Unknown').substring(0, 15), 20, yPos);
+                doc.text((bus.driverName || 'No Driver').substring(0, 15), 60, yPos);
+                doc.text(String(bus.ticketsCount || 0), 100, yPos);
+                doc.text(formatCurrency(bus.revenue || 0, true), 130, yPos);
+                doc.text(`${(bus.occupancyRate || 0).toFixed(1)}%`, 170, yPos);
+                yPos += 8;
+            });
+
+            doc.save(`IMAS_Bus_Performance_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification('Bus performance report downloaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error generating bus performance report:', error);
+            showNotification('Error generating bus performance report', 'error');
+        }
+    }
+
+    // Utility functions
+    async function fetchData(endpoint) {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    async function postData(endpoint, data) {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    async function putData(endpoint, data) {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    async function loadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg'));
+            };
+            img.onerror = reject;
+            img.src = src;
+        });
+    }
+
+    function formatCurrency(amount, short = false) {
+        if (short && amount >= 1000000) {
+            return (amount / 1000000).toFixed(1) + 'M FC';
+        } else if (short && amount >= 1000) {
+            return (amount / 1000).toFixed(1) + 'K FC';
+        }
+        return new Intl.NumberFormat('fr-CD', {
+            style: 'currency',
+            currency: 'CDF',
+            minimumFractionDigits: 0
+        }).format(amount).replace('CDF', 'FC');
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString();
+    }
+
+    function formatDateTime(dateString) {
+        return new Date(dateString).toLocaleString();
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('authToken');
+            window.location.href = 'login.html';
+        }
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

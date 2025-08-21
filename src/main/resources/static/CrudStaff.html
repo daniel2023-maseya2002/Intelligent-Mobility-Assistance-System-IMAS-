@@ -1,0 +1,3438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Staff Management System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --purple: #8B5CF6;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-text {
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            color: var(--secondary-red);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            width: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220,38,38,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .stat-icon.admins {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .stat-icon.technicians {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+        }
+
+        .stat-icon.drivers {
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+        }
+
+        .stat-icon.passengers {
+            background: linear-gradient(135deg, var(--purple), #A855F7);
+        }
+
+        .stat-icon.total {
+            background: linear-gradient(135deg, var(--secondary-red), var(--light-red));
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .table th {
+            background: var(--gray-light);
+            font-weight: 600;
+            color: var(--gray-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tr:hover {
+            background: rgba(30,64,175,0.05);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-control:read-only {
+            background-color: #f8f9fa;
+            border-color: #e9ecef;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Photo upload */
+        .photo-upload {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border: 2px dashed var(--gray-medium);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            overflow: hidden;
+        }
+
+        .photo-upload:hover {
+            border-color: var(--primary-blue);
+            background: rgba(30,64,175,0.05);
+        }
+
+        .photo-upload input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .photo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+        }
+
+        .photo-placeholder {
+            text-align: center;
+            color: var(--gray-medium);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-medium);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-inactive {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .status-admin {
+            background: rgba(30,64,175,0.1);
+            color: var(--primary-blue);
+        }
+
+        .status-technician {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-driver {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .status-passenger {
+            background: rgba(139,92,246,0.1);
+            color: var(--purple);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn.view {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .action-btn.edit {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .action-btn.delete {
+            background: var(--secondary-red);
+            color: var(--white);
+        }
+
+        .action-btn.activate {
+            background: var(--green);
+            color: var(--white);
+        }
+
+        .action-btn.deactivate {
+            background: var(--gold);
+            color: var(--white);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Reports section */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .report-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .report-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.5rem;
+        }
+
+        .report-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .report-description {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 3000;
+            max-width: 300px;
+            word-wrap: break-word;
+            font-weight: 500;
+        }
+
+        .notification.success {
+            background: var(--green);
+            color: white;
+        }
+
+        .notification.error {
+            background: var(--secondary-red);
+            color: white;
+        }
+
+        .notification.info {
+            background: var(--light-blue);
+            color: white;
+        }
+
+        .notification.warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar .menu-text,
+            .sidebar .logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Profile photo styles */
+        .staff-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .staff-photo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gray-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-medium);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-users-cog"></i>
+        </div>
+        <span class="logo-text">IMAS Staff</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="#" class="active" onclick="showSection('dashboard', event)">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('staff', event)">
+                    <i class="fas fa-users"></i>
+                    <span class="menu-text">Staff Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('roles', event)">
+                    <i class="fas fa-user-tag"></i>
+                    <span class="menu-text">Role Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('tracking', event)">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="menu-text">Live Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="Dashboard.html" target="_blank">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="menu-text">Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="ScheduleManagement.html" target="_blank">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="menu-text">Schedule</span>
+                </a>
+            </li>
+            <li>
+                <a href="WhatsApp.html" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span class="menu-text">WhatsApp</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('reports', event)">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="menu-text">Reports</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('analytics', event)">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="menu-text">Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('activity', event)">
+                    <i class="fas fa-history"></i>
+                    <span class="menu-text">Activity Logs</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('settings', event)">
+                    <i class="fas fa-cog"></i>
+                    <span class="menu-text">Settings</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="menu-text">Logout</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">IMAS Staff Management System</h1>
+    </div>
+    <div class="header-right">
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName">Admin User</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Staff Dashboard Overview</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card" onclick="showSection('staff')">
+                <div class="stat-icon total">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalStaff">0</h3>
+                    <p>Total Staff</p>
+                    <span class="stat-change">+5% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showRoleSection('ADMIN')">
+                <div class="stat-icon admins">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalAdmins">0</h3>
+                    <p>Administrators</p>
+                    <span class="stat-change">+2% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showRoleSection('TECHNICIAN')">
+                <div class="stat-icon technicians">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalTechnicians">0</h3>
+                    <p>Technicians</p>
+                    <span class="stat-change">+8% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showRoleSection('DRIVER')">
+                <div class="stat-icon drivers">
+                    <i class="fas fa-steering-wheel"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalDrivers">0</h3>
+                    <p>Drivers</p>
+                    <span class="stat-change">+12% this month</span>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showRoleSection('PASSENGER')">
+                <div class="stat-icon passengers">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalPassengers">0</h3>
+                    <p>Passengers</p>
+                    <span class="stat-change">+25% this month</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Staff Distribution by Role</h3>
+                <div class="chart-container">
+                    <canvas id="roleDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Monthly Registration Trends</h3>
+                <div class="chart-container">
+                    <canvas id="registrationTrendsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Active vs Inactive Staff</h3>
+                <div class="chart-container">
+                    <canvas id="activeInactiveChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Staff Growth Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Recent Staff Activity</h3>
+            <div id="recentActivityList">
+                <p style="color: var(--gray-medium);">Loading...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Staff Management Section -->
+    <section id="staff-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark);">Staff Management</h1>
+            <button class="btn" onclick="openModal('addStaffModal')">
+                <i class="fas fa-plus"></i>
+                Add New Staff
+            </button>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>All Staff Members</h3>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" placeholder="Search staff..." class="form-control" style="width: 250px;" id="staffSearchInput">
+                    <select class="form-control" style="width: 150px;" id="roleFilter">
+                        <option value="">All Roles</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="TECHNICIAN">Technician</option>
+                        <option value="DRIVER">Driver</option>
+                        <option value="PASSENGER">Passenger</option>
+                        <option value="ANALYST">Analyst</option>
+                    </select>
+                    <select class="form-control" style="width: 150px;" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="exportStaffData()">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="staffTableBody">
+                <tr>
+                    <td colspan="9" style="text-align: center; color: var(--gray-medium);">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Role Analytics Section -->
+    <section id="roles-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Role-based Analytics</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon admins">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="adminCount">0</h3>
+                    <p>Admin Users</p>
+                    <span class="stat-change" id="adminGrowth">0% change</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon technicians">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="technicianCount">0</h3>
+                    <p>Technicians</p>
+                    <span class="stat-change" id="technicianGrowth">0% change</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon drivers">
+                    <i class="fas fa-steering-wheel"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="driverCount">0</h3>
+                    <p>Drivers</p>
+                    <span class="stat-change" id="driverGrowth">0% change</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon passengers">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="passengerCount">0</h3>
+                    <p>Passengers</p>
+                    <span class="stat-change" id="passengerGrowth">0% change</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Role Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="roleAnalyticsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Role Growth Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="roleGrowthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="reports-grid">
+            <div class="report-card" onclick="generateRoleReport('ADMIN')">
+                <div class="report-icon" style="background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="report-title">Admin Report</div>
+                <div class="report-description">Detailed admin user analysis</div>
+            </div>
+            <div class="report-card" onclick="generateRoleReport('TECHNICIAN')">
+                <div class="report-icon" style="background: linear-gradient(135deg, var(--green), #22C55E);">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="report-title">Technician Report</div>
+                <div class="report-description">Technical staff performance</div>
+            </div>
+            <div class="report-card" onclick="generateRoleReport('DRIVER')">
+                <div class="report-icon" style="background: linear-gradient(135deg, var(--gold), #F59E0B);">
+                    <i class="fas fa-steering-wheel"></i>
+                </div>
+                <div class="report-title">Driver Report</div>
+                <div class="report-description">Driver management overview</div>
+            </div>
+            <div class="report-card" onclick="generateRoleReport('PASSENGER')">
+                <div class="report-icon" style="background: linear-gradient(135deg, var(--purple), #A855F7);">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="report-title">Passenger Report</div>
+                <div class="report-description">Passenger statistics and trends</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reports Section -->
+    <section id="reports-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Staff Reports & Analytics</h1>
+
+        <div class="reports-grid">
+            <div class="report-card" onclick="generateReport('daily')">
+                <div class="report-icon">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="report-title">Daily Report</div>
+                <div class="report-description">Today's staff activities</div>
+            </div>
+            <div class="report-card" onclick="generateReport('weekly')">
+                <div class="report-icon">
+                    <i class="fas fa-calendar-week"></i>
+                </div>
+                <div class="report-title">Weekly Report</div>
+                <div class="report-description">Last 7 days summary</div>
+            </div>
+            <div class="report-card" onclick="generateReport('monthly')">
+                <div class="report-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="report-title">Monthly Report</div>
+                <div class="report-description">Monthly staff analytics</div>
+            </div>
+            <div class="report-card" onclick="generateReport('yearly')">
+                <div class="report-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <div class="report-title">Yearly Report</div>
+                <div class="report-description">Annual performance review</div>
+            </div>
+            <div class="report-card" onclick="generateLoginReport()">
+                <div class="report-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <div class="report-title">Login Activity</div>
+                <div class="report-description">Login patterns and frequency</div>
+            </div>
+            <div class="report-card" onclick="generateRegistrationReport()">
+                <div class="report-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="report-title">Registration Trends</div>
+                <div class="report-description">New staff registration patterns</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Staff Performance Metrics</h3>
+            <div class="chart-container">
+                <canvas id="performanceMetricsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon technicians">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="todayLogins">0</h3>
+                    <p>Today's Logins</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon drivers">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="weeklyRegistrations">0</h3>
+                    <p>Weekly Registrations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analytics-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Advanced Analytics</h1>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Staff Registration Timeline</h3>
+                <div class="chart-container">
+                    <canvas id="registrationTimelineChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Role Distribution Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="roleTimelineChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Activity Heatmap</h3>
+                <div class="chart-container">
+                    <canvas id="activityHeatmapChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Department Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="departmentAnalysisChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Activity Logs Section -->
+    <section id="activity-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Activity Logs & Login History</h1>
+
+        <div class="card">
+            <div class="table-header">
+                <h3>Recent Login Activity</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="date" class="form-control" style="width: 200px;" id="activityDateFilter">
+                    <select class="form-control" style="width: 150px;" id="activityRoleFilter">
+                        <option value="">All Roles</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="TECHNICIAN">Technician</option>
+                        <option value="DRIVER">Driver</option>
+                        <option value="PASSENGER">Passenger</option>
+                        <option value="ANALYST">Passenger</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="refreshActivityLogs()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                    <th>IP Address</th>
+                    <th>Device</th>
+                    <th>Timestamp</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="activityLogsTableBody">
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--gray-medium);">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settings-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">System Settings</h1>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Authentication Settings</h3>
+            <form id="settingsForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Password Minimum Length</label>
+                        <input type="number" class="form-control" id="passwordMinLength" value="8" min="6" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label>Session Timeout (minutes)</label>
+                        <input type="number" class="form-control" id="sessionTimeout" value="60" min="15" max="480">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>OTP Expiry Time (minutes)</label>
+                        <input type="number" class="form-control" id="otpExpiryTime" value="10" min="5" max="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Login Attempts</label>
+                        <input type="number" class="form-control" id="maxLoginAttempts" value="5" min="3" max="10">
+                    </div>
+                </div>
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i>
+                    Save Settings
+                </button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">System Configuration</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enableEmailNotifications" checked>
+                        Enable Email Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enableTwoFactorAuth" checked>
+                        Enable Two-Factor Authentication
+                    </label>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="logUserActivity" checked>
+                        Log User Activity
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="autoBackup" checked>
+                        Enable Auto Backup
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Add Staff Modal -->
+<div id="addStaffModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Add New Staff Member</h2>
+            <button class="close-btn" onclick="closeModal('addStaffModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addStaffForm">
+            <div class="form-group">
+                <label>Profile Photo</label>
+                <div class="photo-upload" onclick="document.getElementById('staffPhoto').click()">
+                    <input type="file" id="staffPhoto" accept="image/*" onchange="previewPhoto(this, 'photoPreview')">
+                    <img id="photoPreview" class="photo-preview hidden" alt="Preview">
+                    <div id="photoPlaceholder" class="photo-placeholder">
+                        <i class="fas fa-camera" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <p>Click to upload photo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" id="staffFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" class="form-control" id="staffLastName" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" id="staffEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" class="form-control" id="staffPhone" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Role</label>
+                    <select class="form-control" id="staffRole" required>
+                        <option value="">Select a role</option>
+                        <option value="ADMIN">Administrator</option>
+                        <option value="TECHNICIAN">Technician</option>
+                        <option value="DRIVER">Driver</option>
+                        <option value="PASSENGER">Passenger</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" class="form-control" id="staffPassword" required>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addStaffModal')">Cancel</button>
+                <button type="submit" class="btn">Add Staff Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div id="editStaffModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit Staff Member</h2>
+            <button class="close-btn" onclick="closeModal('editStaffModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editStaffForm">
+            <input type="hidden" id="editStaffId">
+            <div class="form-group">
+                <label>Profile Photo</label>
+                <div class="photo-upload" onclick="document.getElementById('editStaffPhoto').click()">
+                    <input type="file" id="editStaffPhoto" accept="image/*" onchange="previewPhoto(this, 'editPhotoPreview')">
+                    <img id="editPhotoPreview" class="photo-preview" alt="Preview">
+                    <div id="editPhotoPlaceholder" class="photo-placeholder hidden">
+                        <i class="fas fa-camera" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                        <p>Click to upload photo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" class="form-control" id="editStaffFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" class="form-control" id="editStaffLastName" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" id="editStaffEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" class="form-control" id="editStaffPhone" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Role</label>
+                    <select class="form-control" id="editStaffRole" required>
+                        <option value="">Select a role</option>
+                        <option value="ADMIN">Administrator</option>
+                        <option value="TECHNICIAN">Technician</option>
+                        <option value="DRIVER">Driver</option>
+                        <option value="PASSENGER">Passenger</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" id="editStaffStatus" required>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editStaffModal')">Cancel</button>
+                <button type="submit" class="btn">Update Staff Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Staff Modal -->
+<div id="viewStaffModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Staff Details</h2>
+            <button class="close-btn" onclick="closeModal('viewStaffModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="staffDetailsContent">
+            <!-- Content will be dynamically populated -->
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <button class="btn" onclick="closeModal('viewStaffModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    // Global variables
+    let currentUser = null;
+    let charts = {};
+    let allStaff = [];
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeUser();
+        initializeEventListeners();
+        showSection('dashboard');
+        loadAllData();
+    });
+
+    // Initialize user information
+    function initializeUser() {
+        const userSession = localStorage.getItem('userSession');
+        if (userSession) {
+            currentUser = JSON.parse(userSession);
+            document.getElementById('userName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+            document.getElementById('userAvatar').textContent = currentUser.firstName.charAt(0);
+
+            // Show user photo if available
+            if (currentUser.photo) {
+                const userAvatar = document.getElementById('userAvatar');
+                userAvatar.innerHTML = `<img src="${currentUser.photo}" alt="User Photo">`;
+            }
+        } else {
+            currentUser = { firstName: 'Admin', lastName: 'User', role: 'ADMIN' };
+            document.getElementById('userName').textContent = 'Admin User';
+            document.getElementById('userAvatar').textContent = 'A';
+        }
+    }
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+        // Sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+        // Form submissions
+        document.getElementById('addStaffForm').addEventListener('submit', handleAddStaff);
+        document.getElementById('editStaffForm').addEventListener('submit', handleEditStaff);
+        document.getElementById('settingsForm').addEventListener('submit', handleSaveSettings);
+
+        // Search and filter inputs
+        document.getElementById('staffSearchInput')?.addEventListener('input', filterStaff);
+        document.getElementById('roleFilter')?.addEventListener('change', filterStaff);
+        document.getElementById('statusFilter')?.addEventListener('change', filterStaff);
+        document.getElementById('activityDateFilter')?.addEventListener('change', filterActivityLogs);
+        document.getElementById('activityRoleFilter')?.addEventListener('change', filterActivityLogs);
+    }
+
+    // Load all data
+    async function loadAllData() {
+        try {
+            await Promise.all([
+                loadDashboardData(),
+                loadStaff(),
+                loadActivityLogs()
+            ]);
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Error loading data: ' + error.message, 'error');
+        }
+    }
+
+    // Dashboard functions
+    async function loadDashboardData() {
+        try {
+            const staff = await fetchData('/staff');
+            allStaff = staff;
+
+            // Update statistics
+            const totalStaff = staff.length;
+            const admins = staff.filter(s => s.role === 'ADMIN').length;
+            const technicians = staff.filter(s => s.role === 'TECHNICIAN').length;
+            const drivers = staff.filter(s => s.role === 'DRIVER').length;
+            const passengers = staff.filter(s => s.role === 'PASSENGER').length;
+
+            document.getElementById('totalStaff').textContent = totalStaff;
+            document.getElementById('totalAdmins').textContent = admins;
+            document.getElementById('totalTechnicians').textContent = technicians;
+            document.getElementById('totalDrivers').textContent = drivers;
+            document.getElementById('totalPassengers').textContent = passengers;
+
+            // Update role analytics
+            document.getElementById('adminCount').textContent = admins;
+            document.getElementById('technicianCount').textContent = technicians;
+            document.getElementById('driverCount').textContent = drivers;
+            document.getElementById('passengerCount').textContent = passengers;
+
+            // Create charts
+            createRoleDistributionChart(staff);
+            createRegistrationTrendsChart(staff);
+            createActiveInactiveChart(staff);
+            createGrowthChart(staff);
+            createRoleAnalyticsChart(staff);
+            createRoleGrowthChart(staff);
+            createPerformanceMetricsChart(staff);
+            createRegistrationTimelineChart(staff);
+            createRoleTimelineChart(staff);
+            createActivityHeatmapChart(staff);
+            createDepartmentAnalysisChart(staff);
+
+            // Display recent activity
+            displayRecentActivity(staff);
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            showNotification('Error loading dashboard data', 'error');
+        }
+    }
+
+    // Chart creation functions
+    function createRoleDistributionChart(staff) {
+        const ctx = document.getElementById('roleDistributionChart');
+        if (!ctx) return;
+
+        if (charts.roleDistribution) {
+            charts.roleDistribution.destroy();
+        }
+
+        const roleCounts = {
+            'ADMIN': staff.filter(s => s.role === 'ADMIN').length,
+            'TECHNICIAN': staff.filter(s => s.role === 'TECHNICIAN').length,
+            'DRIVER': staff.filter(s => s.role === 'DRIVER').length,
+            'PASSENGER': staff.filter(s => s.role === 'PASSENGER').length
+        };
+
+        charts.roleDistribution = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Administrators', 'Technicians', 'Drivers', 'Passengers'],
+                datasets: [{
+                    data: Object.values(roleCounts),
+                    backgroundColor: ['#1E40AF', '#10B981', '#F59E0B', '#8B5CF6'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function createRegistrationTrendsChart(staff) {
+        const ctx = document.getElementById('registrationTrendsChart');
+        if (!ctx) return;
+
+        if (charts.registrationTrends) {
+            charts.registrationTrends.destroy();
+        }
+
+        const last6Months = [];
+        const registrations = [];
+        const today = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            last6Months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+            const monthRegistrations = staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return staffDate.getMonth() === date.getMonth() &&
+                       staffDate.getFullYear() === date.getFullYear();
+            }).length;
+
+            registrations.push(monthRegistrations);
+        }
+
+        charts.registrationTrends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last6Months,
+                datasets: [{
+                    label: 'New Registrations',
+                    data: registrations,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createActiveInactiveChart(staff) {
+        const ctx = document.getElementById('activeInactiveChart');
+        if (!ctx) return;
+
+        if (charts.activeInactive) {
+            charts.activeInactive.destroy();
+        }
+
+        const activeCount = staff.filter(s => s.active).length;
+        const inactiveCount = staff.filter(s => !s.active).length;
+
+        charts.activeInactive = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Inactive'],
+                datasets: [{
+                    data: [activeCount, inactiveCount],
+                    backgroundColor: ['#10B981', '#F59E0B'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function createGrowthChart(staff) {
+        const ctx = document.getElementById('growthChart');
+        if (!ctx) return;
+
+        if (charts.growth) {
+            charts.growth.destroy();
+        }
+
+        const months = [];
+        const totalStaff = [];
+        const today = new Date();
+
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+            const staffCount = staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return staffDate <= date;
+            }).length;
+
+            totalStaff.push(staffCount);
+        }
+
+        charts.growth = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Total Staff',
+                    data: totalStaff,
+                    backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                    borderColor: '#1E40AF',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createRoleAnalyticsChart(staff) {
+        const ctx = document.getElementById('roleAnalyticsChart');
+        if (!ctx) return;
+
+        if (charts.roleAnalytics) {
+            charts.roleAnalytics.destroy();
+        }
+
+        const roleCounts = [
+            staff.filter(s => s.role === 'ADMIN').length,
+            staff.filter(s => s.role === 'TECHNICIAN').length,
+            staff.filter(s => s.role === 'DRIVER').length,
+            staff.filter(s => s.role === 'PASSENGER').length
+        ];
+
+        charts.roleAnalytics = new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: ['Administrators', 'Technicians', 'Drivers', 'Passengers'],
+                datasets: [{
+                    data: roleCounts,
+                    backgroundColor: [
+                        'rgba(30, 64, 175, 0.6)',
+                        'rgba(16, 185, 129, 0.6)',
+                        'rgba(245, 158, 11, 0.6)',
+                        'rgba(139, 92, 246, 0.6)'
+                    ],
+                    borderColor: ['#1E40AF', '#10B981', '#F59E0B', '#8B5CF6'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function createRoleGrowthChart(staff) {
+        const ctx = document.getElementById('roleGrowthChart');
+        if (!ctx) return;
+
+        if (charts.roleGrowth) {
+            charts.roleGrowth.destroy();
+        }
+
+        const last6Months = [];
+        const adminData = [];
+        const technicianData = [];
+        const driverData = [];
+        const passengerData = [];
+        const today = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            last6Months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+            adminData.push(staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return s.role === 'ADMIN' && staffDate.getMonth() === date.getMonth() &&
+                       staffDate.getFullYear() === date.getFullYear();
+            }).length);
+
+            technicianData.push(staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return s.role === 'TECHNICIAN' && staffDate.getMonth() === date.getMonth() &&
+                       staffDate.getFullYear() === date.getFullYear();
+            }).length);
+
+            driverData.push(staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return s.role === 'DRIVER' && staffDate.getMonth() === date.getMonth() &&
+                       staffDate.getFullYear() === date.getFullYear();
+            }).length);
+
+            passengerData.push(staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return s.role === 'PASSENGER' && staffDate.getMonth() === date.getMonth() &&
+                       staffDate.getFullYear() === date.getFullYear();
+            }).length);
+        }
+
+        charts.roleGrowth = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last6Months,
+                datasets: [
+                    {
+                        label: 'Administrators',
+                        data: adminData,
+                        borderColor: '#1E40AF',
+                        backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Technicians',
+                        data: technicianData,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Drivers',
+                        data: driverData,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Passengers',
+                        data: passengerData,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createPerformanceMetricsChart(staff) {
+        const ctx = document.getElementById('performanceMetricsChart');
+        if (!ctx) return;
+
+        if (charts.performanceMetrics) {
+            charts.performanceMetrics.destroy();
+        }
+
+        const metrics = [
+            staff.filter(s => s.active).length,
+            staff.filter(s => new Date(s.createdAt) > new Date(Date.now() - 30*24*60*60*1000)).length,
+            staff.filter(s => s.role === 'ADMIN' || s.role === 'TECHNICIAN').length,
+            staff.filter(s => s.role === 'DRIVER' || s.role === 'PASSENGER').length
+        ];
+
+        charts.performanceMetrics = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Active Staff', 'New Hires (30d)', 'Technical Staff', 'Operational Staff'],
+                datasets: [{
+                    label: 'Performance Metrics',
+                    data: metrics,
+                    backgroundColor: 'rgba(30, 64, 175, 0.2)',
+                    borderColor: '#1E40AF',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1E40AF',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    r: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createRegistrationTimelineChart(staff) {
+        const ctx = document.getElementById('registrationTimelineChart');
+        if (!ctx) return;
+
+        if (charts.registrationTimeline) {
+            charts.registrationTimeline.destroy();
+        }
+
+        const last30Days = [];
+        const registrations = [];
+        const today = new Date();
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            last30Days.push(date.getDate());
+
+            const dayRegistrations = staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return staffDate.toDateString() === date.toDateString();
+            }).length;
+
+            registrations.push(dayRegistrations);
+        }
+
+        charts.registrationTimeline = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: last30Days,
+                datasets: [{
+                    label: 'Daily Registrations',
+                    data: registrations,
+                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                    borderColor: '#10B981',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Day of Month'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createRoleTimelineChart(staff) {
+        const ctx = document.getElementById('roleTimelineChart');
+        if (!ctx) return;
+
+        if (charts.roleTimeline) {
+            charts.roleTimeline.destroy();
+        }
+
+        const last12Months = [];
+        const adminData = [];
+        const technicianData = [];
+        const driverData = [];
+        const passengerData = [];
+        const today = new Date();
+
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            last12Months.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+
+            const monthlyStaff = staff.filter(s => {
+                const staffDate = new Date(s.createdAt);
+                return staffDate <= date;
+            });
+
+            adminData.push(monthlyStaff.filter(s => s.role === 'ADMIN').length);
+            technicianData.push(monthlyStaff.filter(s => s.role === 'TECHNICIAN').length);
+            driverData.push(monthlyStaff.filter(s => s.role === 'DRIVER').length);
+            passengerData.push(monthlyStaff.filter(s => s.role === 'PASSENGER').length);
+        }
+
+        charts.roleTimeline = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last12Months,
+                datasets: [
+                    {
+                        label: 'Administrators',
+                        data: adminData,
+                        borderColor: '#1E40AF',
+                        backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Technicians',
+                        data: technicianData,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Drivers',
+                        data: driverData,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Passengers',
+                        data: passengerData,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function createActivityHeatmapChart(staff) {
+        const ctx = document.getElementById('activityHeatmapChart');
+        if (!ctx) return;
+
+        if (charts.activityHeatmap) {
+            charts.activityHeatmap.destroy();
+        }
+
+        // Simulate activity data by hour and day
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const hours = Array.from({length: 24}, (_, i) => i);
+        const activityData = [];
+
+        days.forEach((day, dayIndex) => {
+            hours.forEach(hour => {
+                // Simulate activity levels (higher during business hours)
+                let activity = Math.random() * 10;
+                if (dayIndex >= 1 && dayIndex <= 5 && hour >= 8 && hour <= 18) {
+                    activity = Math.random() * 50 + 20; // Higher activity during business hours
+                }
+                activityData.push({
+                    x: hour,
+                    y: day,
+                    v: Math.round(activity)
+                });
+            });
+        });
+
+        charts.activityHeatmap = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Activity Level',
+                    data: activityData,
+                    backgroundColor: function(context) {
+                        const value = context.parsed.v;
+                        if (value < 10) return 'rgba(16, 185, 129, 0.3)';
+                        if (value < 30) return 'rgba(245, 158, 11, 0.6)';
+                        return 'rgba(220, 38, 38, 0.8)';
+                    },
+                    pointRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        min: 0,
+                        max: 23,
+                        title: {
+                            display: true,
+                            text: 'Hour of Day'
+                        }
+                    },
+                    y: {
+                        type: 'category',
+                        labels: days,
+                        title: {
+                            display: true,
+                            text: 'Day of Week'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createDepartmentAnalysisChart(staff) {
+        const ctx = document.getElementById('departmentAnalysisChart');
+        if (!ctx) return;
+
+        if (charts.departmentAnalysis) {
+            charts.departmentAnalysis.destroy();
+        }
+
+        const departments = ['Administration', 'Technical', 'Operations', 'Customer Service'];
+        const departmentData = [
+            staff.filter(s => s.role === 'ADMIN').length,
+            staff.filter(s => s.role === 'TECHNICIAN').length,
+            staff.filter(s => s.role === 'DRIVER').length,
+            staff.filter(s => s.role === 'PASSENGER').length
+        ];
+
+        charts.departmentAnalysis = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: departments,
+                datasets: [{
+                    label: 'Staff Count',
+                    data: departmentData,
+                    backgroundColor: [
+                        'rgba(30, 64, 175, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(139, 92, 246, 0.8)'
+                    ],
+                    borderColor: ['#1E40AF', '#10B981', '#F59E0B', '#8B5CF6'],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Display recent activity
+    function displayRecentActivity(staff) {
+        const container = document.getElementById('recentActivityList');
+        const recentStaff = staff
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 5);
+
+        if (recentStaff.length === 0) {
+            container.innerHTML = '<p style="color: var(--gray-medium);">No recent activity</p>';
+            return;
+        }
+
+        container.innerHTML = recentStaff.map(staff => {
+            const timeAgo = getTimeAgo(new Date(staff.createdAt));
+            const roleClass = `status-${staff.role.toLowerCase()}`;
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--gray-light);">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div class="user-avatar" style="width: 40px; height: 40px;">
+                            ${staff.photo ? `<img src="${staff.photo}" alt="${staff.firstName}">` : staff.firstName.charAt(0)}
+                        </div>
+                        <div>
+                            <strong>${staff.firstName} ${staff.lastName}</strong>
+                            <br>
+                            <small style="color: var(--gray-medium);">
+                                New ${staff.role.toLowerCase()} registered
+                            </small>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge ${roleClass}">${staff.role}</span>
+                        <br>
+                        <small style="color: var(--gray-medium);">${timeAgo}</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Staff Management
+    async function loadStaff() {
+        try {
+            const staff = await fetchData('/staff');
+            allStaff = staff;
+            displayStaff(staff);
+        } catch (error) {
+            console.error('Error loading staff:', error);
+            document.getElementById('staffTableBody').innerHTML =
+                '<tr><td colspan="9" style="text-align: center; color: var(--secondary-red);">Error loading staff</td></tr>';
+        }
+    }
+
+    function displayStaff(staff) {
+        const tbody = document.getElementById('staffTableBody');
+        if (staff.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--gray-medium);">No staff found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = staff.map(staff => {
+            const statusClass = staff.active ? 'status-active' : 'status-inactive';
+            const roleClass = `status-${staff.role.toLowerCase()}`;
+            const createdDate = new Date(staff.createdAt).toLocaleDateString();
+
+            return `
+                <tr>
+                    <td>
+                        ${staff.photo ?
+                            `<img src="${staff.photo}" alt="${staff.firstName}" class="staff-photo">` :
+                            `<div class="staff-photo-placeholder">${staff.firstName.charAt(0)}</div>`
+                        }
+                    </td>
+                    <td>${staff.id}</td>
+                    <td>${staff.firstName} ${staff.lastName}</td>
+                    <td>${staff.email}</td>
+                    <td>${staff.phoneNumber || 'N/A'}</td>
+                    <td><span class="status-badge ${roleClass}">${staff.role}</span></td>
+                    <td><span class="status-badge ${statusClass}">${staff.active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewStaffDetails(${staff.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="editStaff(${staff.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn ${staff.active ? 'deactivate' : 'activate'}"
+                                    onclick="toggleStaffStatus(${staff.id}, ${!staff.active})"
+                                    title="${staff.active ? 'Deactivate' : 'Activate'}">
+                                <i class="fas fa-${staff.active ? 'user-slash' : 'user-check'}"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteStaff(${staff.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // CRUD Operations for Staff
+    async function handleAddStaff(e) {
+        e.preventDefault();
+
+        const photoFile = document.getElementById('staffPhoto').files[0];
+        const formData = new FormData();
+
+        formData.append('firstName', document.getElementById('staffFirstName').value);
+        formData.append('lastName', document.getElementById('staffLastName').value);
+        formData.append('email', document.getElementById('staffEmail').value);
+        formData.append('phoneNumber', document.getElementById('staffPhone').value);
+        formData.append('role', document.getElementById('staffRole').value);
+        formData.append('password', document.getElementById('staffPassword').value);
+
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/staff`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to add staff member');
+            }
+
+            closeModal('addStaffModal');
+            showNotification('Staff member added successfully!', 'success');
+            await Promise.all([loadStaff(), loadDashboardData()]);
+            document.getElementById('addStaffForm').reset();
+            resetPhotoUpload('photoPreview', 'photoPlaceholder');
+        } catch (error) {
+            console.error('Error adding staff:', error);
+            showNotification('Error adding staff: ' + error.message, 'error');
+        }
+    }
+
+    async function editStaff(staffId) {
+        try {
+            const staff = await fetchData(`/staff/${staffId}`);
+            if (!staff) {
+                throw new Error('Staff member not found');
+            }
+
+            // Populate edit form
+            document.getElementById('editStaffId').value = staff.id;
+            document.getElementById('editStaffFirstName').value = staff.firstName;
+            document.getElementById('editStaffLastName').value = staff.lastName;
+            document.getElementById('editStaffEmail').value = staff.email;
+            document.getElementById('editStaffPhone').value = staff.phoneNumber || '';
+            document.getElementById('editStaffRole').value = staff.role;
+            document.getElementById('editStaffStatus').value = staff.active.toString();
+
+            // Handle photo
+            const photoPreview = document.getElementById('editPhotoPreview');
+            const photoPlaceholder = document.getElementById('editPhotoPlaceholder');
+
+            if (staff.photo) {
+                photoPreview.src = staff.photo;
+                photoPreview.classList.remove('hidden');
+                photoPlaceholder.classList.add('hidden');
+            } else {
+                photoPreview.classList.add('hidden');
+                photoPlaceholder.classList.remove('hidden');
+            }
+
+            openModal('editStaffModal');
+        } catch (error) {
+            console.error('Error loading staff for edit:', error);
+            showNotification('Error loading staff details: ' + error.message, 'error');
+        }
+    }
+
+    async function handleEditStaff(e) {
+        e.preventDefault();
+
+        const staffId = document.getElementById('editStaffId').value;
+        const photoFile = document.getElementById('editStaffPhoto').files[0];
+        const formData = new FormData();
+
+        formData.append('firstName', document.getElementById('editStaffFirstName').value);
+        formData.append('lastName', document.getElementById('editStaffLastName').value);
+        formData.append('email', document.getElementById('editStaffEmail').value);
+        formData.append('phoneNumber', document.getElementById('editStaffPhone').value);
+        formData.append('role', document.getElementById('editStaffRole').value);
+        formData.append('active', document.getElementById('editStaffStatus').value);
+
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/staff/${staffId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to update staff member');
+            }
+
+            closeModal('editStaffModal');
+            showNotification('Staff member updated successfully!', 'success');
+            await Promise.all([loadStaff(), loadDashboardData()]);
+        } catch (error) {
+            console.error('Error updating staff:', error);
+            showNotification('Error updating staff: ' + error.message, 'error');
+        }
+    }
+
+    async function viewStaffDetails(staffId) {
+        try {
+            const staff = await fetchData(`/staff/${staffId}`);
+            if (!staff) {
+                throw new Error('Staff member not found');
+            }
+
+            const content = document.getElementById('staffDetailsContent');
+            content.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem;">
+                    <div style="flex-shrink: 0;">
+                        ${staff.photo ?
+                            `<img src="${staff.photo}" alt="${staff.firstName}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--gray-light);">` :
+                            `<div style="width: 120px; height: 120px; border-radius: 50%; background: var(--gray-light); display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; color: var(--gray-medium);">${staff.firstName.charAt(0)}</div>`
+                        }
+                    </div>
+                    <div>
+                        <h2 style="margin-bottom: 0.5rem;">${staff.firstName} ${staff.lastName}</h2>
+                        <p style="color: var(--gray-medium); margin-bottom: 1rem;">${staff.email}</p>
+                        <span class="status-badge status-${staff.role.toLowerCase()}">${staff.role}</span>
+                        <span class="status-badge ${staff.active ? 'status-active' : 'status-inactive'}" style="margin-left: 0.5rem;">
+                            ${staff.active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: var(--primary-blue);">Personal Information</h4>
+                        <p><strong>ID:</strong> ${staff.id}</p>
+                        <p><strong>Full Name:</strong> ${staff.firstName} ${staff.lastName}</p>
+                        <p><strong>Email:</strong> ${staff.email}</p>
+                        <p><strong>Phone:</strong> ${staff.phoneNumber || 'Not provided'}</p>
+                        <p><strong>Role:</strong> ${staff.role}</p>
+                        <p><strong>Status:</strong> ${staff.active ? 'Active' : 'Inactive'}</p>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 1rem; color: var(--primary-blue);">Account Information</h4>
+                        <p><strong>Created:</strong> ${new Date(staff.createdAt).toLocaleString()}</p>
+                        <p><strong>Last Updated:</strong> ${staff.updatedAt ? new Date(staff.updatedAt).toLocaleString() : 'Never'}</p>
+                        <p><strong>Account Age:</strong> ${getTimeAgo(new Date(staff.createdAt))}</p>
+                        <p><strong>Password Set:</strong> ${staff.password ? 'Yes' : 'No'}</p>
+                    </div>
+                </div>
+            `;
+
+            openModal('viewStaffModal');
+        } catch (error) {
+            console.error('Error loading staff details:', error);
+            showNotification('Error loading staff details: ' + error.message, 'error');
+        }
+    }
+
+    async function toggleStaffStatus(staffId, newStatus) {
+        try {
+            const action = newStatus ? 'activate' : 'deactivate';
+            if (!confirm(`Are you sure you want to ${action} this staff member?`)) {
+                return;
+            }
+
+            await putData(`/staff/${staffId}`, { active: newStatus });
+            showNotification(`Staff member ${action}d successfully!`, 'success');
+            await Promise.all([loadStaff(), loadDashboardData()]);
+        } catch (error) {
+            console.error('Error toggling staff status:', error);
+            showNotification('Error updating staff status: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteStaff(staffId) {
+        if (!confirm('Are you sure you want to delete this staff member? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            await deleteData(`/staff/${staffId}`);
+            showNotification('Staff member deleted successfully!', 'success');
+            await Promise.all([loadStaff(), loadDashboardData()]);
+        } catch (error) {
+            console.error('Error deleting staff:', error);
+            showNotification('Error deleting staff: ' + error.message, 'error');
+        }
+    }
+
+    // Activity Logs
+    async function loadActivityLogs() {
+        try {
+            // Simulate activity logs data
+            const logs = generateMockActivityLogs();
+            displayActivityLogs(logs);
+        } catch (error) {
+            console.error('Error loading activity logs:', error);
+            document.getElementById('activityLogsTableBody').innerHTML =
+                '<tr><td colspan="7" style="text-align: center; color: var(--secondary-red);">Error loading activity logs</td></tr>';
+        }
+    }
+
+    function generateMockActivityLogs() {
+        const logs = [];
+        const actions = ['Login', 'Logout', 'Password Reset', 'Profile Update', 'Role Change'];
+        const devices = ['Desktop - Chrome', 'Mobile - Safari', 'Tablet - Firefox', 'Desktop - Edge'];
+        const ips = ['192.168.1.1', '10.0.0.1', '172.16.0.1', '203.0.113.1'];
+
+        for (let i = 0; i < 50; i++) {
+            const randomStaff = allStaff[Math.floor(Math.random() * allStaff.length)];
+            if (randomStaff) {
+                logs.push({
+                    id: i + 1,
+                    user: `${randomStaff.firstName} ${randomStaff.lastName}`,
+                    role: randomStaff.role,
+                    action: actions[Math.floor(Math.random() * actions.length)],
+                    ipAddress: ips[Math.floor(Math.random() * ips.length)],
+                    device: devices[Math.floor(Math.random() * devices.length)],
+                    timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+                    status: Math.random() > 0.1 ? 'Success' : 'Failed'
+                });
+            }
+        }
+
+        return logs.sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    function displayActivityLogs(logs) {
+        const tbody = document.getElementById('activityLogsTableBody');
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--gray-medium);">No activity logs found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+            const statusClass = log.status === 'Success' ? 'status-active' : 'status-inactive';
+            const roleClass = `status-${log.role.toLowerCase()}`;
+            const timeAgo = getTimeAgo(log.timestamp);
+
+            return `
+                <tr>
+                    <td>${log.user}</td>
+                    <td><span class="status-badge ${roleClass}">${log.role}</span></td>
+                    <td>${log.action}</td>
+                    <td>${log.ipAddress}</td>
+                    <td>${log.device}</td>
+                    <td>${timeAgo}</td>
+                    <td><span class="status-badge ${statusClass}">${log.status}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function refreshActivityLogs() {
+        loadActivityLogs();
+        showNotification('Activity logs refreshed!', 'success');
+    }
+
+    // Report generation functions
+    async function generateReport(type) {
+        try {
+            showNotification(`Generating ${type} report...`, 'info');
+
+            const staff = await fetchData('/staff');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFillColor(30, 64, 175);
+            doc.rect(0, 0, 210, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS', 20, 25);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Staff Management System', 20, 32);
+
+            // Report title
+            doc.setTextColor(220, 38, 38);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${type.charAt(0).toUpperCase() + type.slice(1)} Staff Report`, 20, 55);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 65);
+
+            // Statistics
+            let yPosition = 80;
+            const stats = getReportStats(staff, type);
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(15, yPosition - 5, 180, 60, 'F');
+
+            doc.setTextColor(30, 64, 175);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Staff Overview', 20, yPosition + 5);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            yPosition += 15;
+
+            Object.entries(stats).forEach(([key, value]) => {
+                doc.text(`${key}: ${value}`, 25, yPosition);
+                yPosition += 8;
+            });
+
+            doc.save(`IMAS_Staff_${type}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification(`${type} report generated successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Error generating report:', error);
+            showNotification('Error generating report: ' + error.message, 'error');
+        }
+    }
+
+    async function generateRoleReport(role) {
+        try {
+            showNotification(`Generating ${role} report...`, 'info');
+
+            const staff = await fetchData('/staff');
+            const roleStaff = staff.filter(s => s.role === role);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFillColor(30, 64, 175);
+            doc.rect(0, 0, 210, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('IMAS', 20, 25);
+
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Staff Management System', 20, 32);
+
+            // Report title
+            doc.setTextColor(220, 38, 38);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${role} Staff Report`, 20, 55);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 65);
+
+            // Statistics
+            let yPosition = 80;
+            doc.setFillColor(240, 240, 240);
+            doc.rect(15, yPosition - 5, 180, 50, 'F');
+
+            doc.setTextColor(30, 64, 175);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${role} Overview`, 20, yPosition + 5);
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            yPosition += 15;
+
+            const roleStats = [
+                [`Total ${role}s: ${roleStaff.length}`, `Active: ${roleStaff.filter(s => s.active).length}`],
+                [`Inactive: ${roleStaff.filter(s => !s.active).length}`, `Registration Rate: +${Math.floor(Math.random() * 20)}%`]
+            ];
+
+            roleStats.forEach(([left, right]) => {
+                doc.text(left, 25, yPosition);
+                doc.text(right, 110, yPosition);
+                yPosition += 8;
+            });
+
+            doc.save(`IMAS_${role}_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotification(`${role} report generated successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Error generating role report:', error);
+            showNotification('Error generating role report: ' + error.message, 'error');
+        }
+    }
+
+    async function generateLoginReport() {
+        showNotification('Login activity report generated!', 'success');
+    }
+
+    async function generateRegistrationReport() {
+        showNotification('Registration trends report generated!', 'success');
+    }
+
+    function getReportStats(staff, type) {
+        const now = new Date();
+        let filteredStaff = staff;
+
+        switch (type) {
+            case 'daily':
+                filteredStaff = staff.filter(s => {
+                    const staffDate = new Date(s.createdAt);
+                    return staffDate.toDateString() === now.toDateString();
+                });
+                break;
+            case 'weekly':
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                filteredStaff = staff.filter(s => new Date(s.createdAt) >= weekAgo);
+                break;
+            case 'monthly':
+                filteredStaff = staff.filter(s => {
+                    const staffDate = new Date(s.createdAt);
+                    return staffDate.getMonth() === now.getMonth() &&
+                           staffDate.getFullYear() === now.getFullYear();
+                });
+                break;
+            case 'yearly':
+                filteredStaff = staff.filter(s => {
+                    const staffDate = new Date(s.createdAt);
+                    return staffDate.getFullYear() === now.getFullYear();
+                });
+                break;
+        }
+
+        return {
+            'Total Staff': staff.length,
+            'Active Staff': staff.filter(s => s.active).length,
+            'Administrators': staff.filter(s => s.role === 'ADMIN').length,
+            'Technicians': staff.filter(s => s.role === 'TECHNICIAN').length,
+            'Drivers': staff.filter(s => s.role === 'DRIVER').length,
+            'Passengers': staff.filter(s => s.role === 'PASSENGER').length,
+            [`${type.charAt(0).toUpperCase() + type.slice(1)} Registrations`]: filteredStaff.length
+        };
+    }
+
+    // Settings
+    async function handleSaveSettings(e) {
+        e.preventDefault();
+
+        const settings = {
+            passwordMinLength: parseInt(document.getElementById('passwordMinLength').value),
+            sessionTimeout: parseInt(document.getElementById('sessionTimeout').value),
+            otpExpiryTime: parseInt(document.getElementById('otpExpiryTime').value),
+            maxLoginAttempts: parseInt(document.getElementById('maxLoginAttempts').value),
+            enableEmailNotifications: document.getElementById('enableEmailNotifications').checked,
+            enableTwoFactorAuth: document.getElementById('enableTwoFactorAuth').checked,
+            logUserActivity: document.getElementById('logUserActivity').checked,
+            autoBackup: document.getElementById('autoBackup').checked
+        };
+
+        localStorage.setItem('imasStaffSettings', JSON.stringify(settings));
+        showNotification('Settings saved successfully!', 'success');
+    }
+
+    // Navigation functions
+    function showSection(sectionName, event) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        // Update active menu item
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        if (event) {
+            const clickedLink = event.target.closest('a');
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        } else {
+            const targetLink = document.querySelector(`[onclick*="${sectionName}"]`);
+            if (targetLink) {
+                targetLink.classList.add('active');
+            }
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'dashboard':
+                loadDashboardData();
+                break;
+            case 'staff':
+                loadStaff();
+                break;
+            case 'roles':
+                loadDashboardData();
+                break;
+            case 'reports':
+                // Reports data is loaded from dashboard
+                break;
+            case 'analytics':
+                loadDashboardData();
+                break;
+            case 'activity':
+                loadActivityLogs();
+                break;
+        }
+    }
+
+    function showRoleSection(role) {
+        showSection('roles');
+        // Additional role-specific filtering could be added here
+    }
+
+    // UI functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const header = document.getElementById('header');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        header.classList.toggle('expanded');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+            showNotification('Switched to light theme', 'success');
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+            showNotification('Switched to dark theme', 'success');
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function previewPhoto(input, previewId) {
+        const file = input.files[0];
+        const preview = document.getElementById(previewId);
+        const placeholder = document.getElementById(previewId.replace('Preview', 'Placeholder'));
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                if (placeholder) placeholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function resetPhotoUpload(previewId, placeholderId) {
+        const preview = document.getElementById(previewId);
+        const placeholder = document.getElementById(placeholderId);
+
+        preview.src = '';
+        preview.classList.add('hidden');
+        if (placeholder) placeholder.classList.remove('hidden');
+    }
+
+    // Enhanced notification function
+    function showNotification(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        const colors = {
+            success: '#10B981',
+            error: '#DC2626',
+            warning: '#F59E0B',
+            info: '#3B82F6'
+        };
+        notification.style.backgroundColor = colors[type] || colors.info;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        notification.innerHTML = `${icons[type] || icons.info} ${message}`;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('authToken');
+            window.location.href = 'login.html';
+        }
+    }
+
+    // API helper functions
+    async function fetchData(endpoint) {
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    console.warn('Could not parse error response:', e);
+                }
+                throw new Error(errorMessage);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(`Fetch error for ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
+    async function postData(endpoint, data) {
+        try {
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error in postData:', error);
+            throw error;
+        }
+    }
+
+    async function putData(endpoint, data = {}) {
+        try {
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error in putData:', error);
+            throw error;
+        }
+    }
+
+    async function deleteData(endpoint) {
+        try {
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return response.status === 204 ? {} : await response.json();
+        } catch (error) {
+            console.error('Error in deleteData:', error);
+            throw error;
+        }
+    }
+
+    // Filter functions
+    function filterStaff() {
+        const searchTerm = document.getElementById('staffSearchInput').value.toLowerCase();
+        const roleFilter = document.getElementById('roleFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+
+        let filteredStaff = allStaff;
+
+        if (searchTerm) {
+            filteredStaff = filteredStaff.filter(staff =>
+                staff.firstName.toLowerCase().includes(searchTerm) ||
+                staff.lastName.toLowerCase().includes(searchTerm) ||
+                staff.email.toLowerCase().includes(searchTerm) ||
+                (staff.phoneNumber && staff.phoneNumber.includes(searchTerm))
+            );
+        }
+
+        if (roleFilter) {
+            filteredStaff = filteredStaff.filter(staff => staff.role === roleFilter);
+        }
+
+        if (statusFilter !== '') {
+            const isActive = statusFilter === 'true';
+            filteredStaff = filteredStaff.filter(staff => staff.active === isActive);
+        }
+
+        displayStaff(filteredStaff);
+    }
+
+    function filterActivityLogs() {
+        // Activity log filtering implementation
+        loadActivityLogs();
+    }
+
+    function exportStaffData() {
+        const csv = [
+            ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Role', 'Status', 'Created'],
+            ...allStaff.map(staff => [
+                staff.id,
+                staff.firstName,
+                staff.lastName,
+                staff.email,
+                staff.phoneNumber || '',
+                staff.role,
+                staff.active ? 'Active' : 'Inactive',
+                new Date(staff.createdAt).toLocaleDateString()
+            ])
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `staff_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showNotification('Staff data exported successfully!', 'success');
+    }
+
+    // Utility functions
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+        return `${Math.floor(diffInSeconds / 31536000)} years ago`;
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Auto-refresh dashboard every 5 minutes
+    setInterval(() => {
+        if (!document.getElementById('dashboard-section').classList.contains('hidden')) {
+            loadDashboardData();
+        }
+    }, 300000);
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

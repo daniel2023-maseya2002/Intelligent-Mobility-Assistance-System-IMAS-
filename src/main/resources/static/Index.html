@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - IMAS Kinshasa Transport</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 500px;
+        }
+
+        .login-form-section {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .login-brand img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .login-brand span {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+
+        .login-subtitle {
+            color: var(--text-light);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #ef4444;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            margin-top: 16px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            margin-top: 16px;
+            font-size: 1.1rem;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .forgot-password {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .forgot-password:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .login-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .login-btn:disabled {
+            background: var(--text-light);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 24px 0;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .social-login {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .social-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-light);
+        }
+
+        .signup-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .login-visual {
+            background: linear-gradient(45deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-visual::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .visual-icon {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 32px;
+            font-size: 3rem;
+        }
+
+        .visual-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .visual-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+            max-width: 280px;
+        }
+
+        .features-list {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .feature-item i {
+            color: var(--accent-color);
+            width: 20px;
+        }
+
+        .back-home {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-home:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-4px);
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .loading-btn {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading-btn i {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Role Selection */
+        .role-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .role-option {
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .role-option.selected {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .role-option i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .role-option h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .role-option p {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .login-container {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+
+            .login-visual {
+                display: none;
+            }
+
+            .login-form-section {
+                padding: 40px 24px;
+            }
+
+            .social-login {
+                grid-template-columns: 1fr;
+            }
+
+            .role-selection {
+                grid-template-columns: 1fr;
+            }
+
+            .form-options {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .back-home {
+                position: fixed;
+                z-index: 1000;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-page {
+                padding: 16px;
+            }
+
+            .login-form-section {
+                padding: 32px 20px;
+            }
+
+            .login-title {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="login-page">
+    <div class="login-container">
+        <div class="login-form-section">
+            <div class="login-brand">
+                <img src="images/logo.png" alt="IMAS Logo">
+                <span>IMAS</span>
+            </div>
+
+            <h1 class="login-title">Connexion</h1>
+            <p class="login-subtitle">Accédez à votre compte pour gérer vos trajets et profiter de toutes les fonctionnalités IMAS.</p>
+
+            <!-- Role Selection -->
+            <div class="role-selection">
+                <div class="role-option selected" data-role="passenger">
+                    <i class="fas fa-user"></i>
+                    <h4>Passager</h4>
+                    <p>Planifier mes trajets</p>
+                </div>
+                <div class="role-option" data-role="operator">
+                    <i class="fas fa-cog"></i>
+                    <h4>Opérateur</h4>
+                    <p>Gérer la flotte</p>
+                </div>
+            </div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="votre@email.com" required>
+                    <i class="fas fa-envelope input-icon"></i>
+                    <div class="error-message" id="email-error">Veuillez entrer un email valide</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Votre mot de passe" required>
+                    <button type="button" class="password-toggle" id="passwordToggle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <div class="error-message" id="password-error">Le mot de passe doit contenir au moins 6 caractères</div>
+                </div>
+
+                <div class="form-options">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Se souvenir de moi</label>
+                    </div>
+                    <a href="#" class="forgot-password">Mot de passe oublié?</a>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Se connecter
+                </button>
+
+                <div class="divider">
+                    <span>ou</span>
+                </div>
+
+                <div class="social-login">
+                    <a href="#" class="social-btn">
+                        <i class="fab fa-google"></i>
+                        Google
+                    </a>
+                    <a href="#" class="social-btn">
+                        <i class="fab fa-facebook"></i>
+                        Facebook
+                    </a>
+                </div>
+
+                <div class="signup-link">
+                    Pas encore de compte? <a href="#" id="signupLink">Créer un compte</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="login-visual">
+            <a href="index.html" class="back-home">
+                <i class="fas fa-arrow-left"></i>
+                Retour à l'accueil
+            </a>
+
+            <div class="visual-content">
+                <div class="visual-icon">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <h2 class="visual-title">Bienvenue sur IMAS</h2>
+                <p class="visual-subtitle">
+                    Votre système intelligent d'assistance à la mobilité pour Kinshasa
+                </p>
+
+                <div class="features-list">
+                    <div class="feature-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Suivi en temps réel des bus</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-route"></i>
+                        <span>Planification intelligente des trajets</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifications personnalisées</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-wheelchair"></i>
+                        <span>Accessibilité pour tous</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Login page JavaScript functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('loginForm');
+        const passwordToggle = document.getElementById('passwordToggle');
+        const passwordField = document.getElementById('password');
+        const roleOptions = document.querySelectorAll('.role-option');
+        const loginBtn = document.getElementById('loginBtn');
+
+        let selectedRole = 'passenger';
+
+        // Role selection
+        roleOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                roleOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedRole = this.getAttribute('data-role');
+                updateUIForRole(selectedRole);
+            });
+        });
+
+        // Password toggle
+        passwordToggle.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+
+        // Form validation
+        const emailField = document.getElementById('email');
+        const emailError = document.getElementById('email-error');
+        const passwordError = document.getElementById('password-error');
+
+        emailField.addEventListener('blur', function() {
+            if (!isValidEmail(this.value)) {
+                this.classList.add('error');
+                emailError.style.display = 'block';
+            } else {
+                this.classList.remove('error');
+                emailError.style.display = 'none';
+            }
+        });
+
+        passwordField.addEventListener('blur', function() {
+            if (this.value.length < 6) {
+                this.classList.add('error');
+                passwordError.style.display = 'block';
+            } else {
+                this.classList.remove('error');
+                passwordError.style.display = 'none';
+            }
+        });
+
+        // Form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = emailField.value;
+            const password = passwordField.value;
+            const remember = document.getElementById('remember').checked;
+
+            if (!isValidEmail(email)) {
+                emailField.classList.add('error');
+                emailError.style.display = 'block';
+                return;
+            }
+
+            if (password.length < 6) {
+                passwordField.classList.add('error');
+                passwordError.style.display = 'block';
+                return;
+            }
+
+            // Show loading state
+            loginBtn.classList.add('loading-btn');
+            loginBtn.innerHTML = '<i class="fas fa-spinner"></i> Connexion...';
+
+            // Simulate API call
+            setTimeout(() => {
+                // Store user data (in real app, this would come from API)
+                const userData = {
+                    email: email,
+                    role: selectedRole,
+                    name: selectedRole === 'passenger' ? 'Utilisateur IMAS' : 'Opérateur IMAS',
+                    loginTime: new Date().toISOString()
+                };
+
+                if (remember) {
+                    localStorage.setItem('imasUser', JSON.stringify(userData));
+                } else {
+                    sessionStorage.setItem('imasUser', JSON.stringify(userData));
+                }
+
+                // Show success message
+                showNotification('Connexion réussie! Redirection...', 'success');
+
+                // Redirect based on role
+                setTimeout(() => {
+                    if (selectedRole === 'operator') {
+                        window.location.href = 'index.html#dashboard';
+                    } else {
+                        window.location.href = 'index.html#schedule';
+                    }
+                }, 1500);
+
+            }, 2000);
+        });
+
+        // Social login handlers
+        document.querySelectorAll('.social-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const provider = this.textContent.trim();
+                showNotification(`Connexion via ${provider} non disponible pour le moment`, 'info');
+            });
+        });
+
+        // Forgot password handler
+        document.querySelector('.forgot-password').addEventListener('click', function(e) {
+            e.preventDefault();
+            showNotification('Fonctionnalité de récupération de mot de passe bientôt disponible', 'info');
+        });
+
+        // Signup link handler
+        document.getElementById('signupLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            showNotification('Page d\'inscription bientôt disponible', 'info');
+        });
+
+        // Functions
+        function updateUIForRole(role) {
+            const subtitle = document.querySelector('.login-subtitle');
+            if (role === 'operator') {
+                subtitle.textContent = 'Accédez au tableau de bord opérateur pour gérer votre flotte et surveiller les performances.';
+            } else {
+                subtitle.textContent = 'Accédez à votre compte pour gérer vos trajets et profiter de toutes les fonctionnalités IMAS.';
+            }
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                z-index: 10001;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 300px;
+                font-size: 0.9rem;
+                font-weight: 500;
+            `;
+
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+
+            notification.addEventListener('click', () => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            });
+        }
+
+        // Check if user is already logged in
+        const storedUser = localStorage.getItem('imasUser') || sessionStorage.getItem('imasUser');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            showNotification(`Déjà connecté en tant que ${user.name}`, 'info');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+    });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>
