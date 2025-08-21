@@ -1,0 +1,2298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Drivers Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --header-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --hover-bg: #f1f5f9;
+            --sky-blue: #0bdef9;
+            --sky-blue-dark: #0ea5e9;
+            --sky-blue-light: #e0f7fa;
+            --accent-blue: #3b82f6;
+            --success-green: #22c55e;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --border-radius: 8px;
+        }
+
+        body.dark-mode {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --header-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --hover-bg: #334155;
+            --sky-blue-light: #1e40af;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            transition: width 0.3s ease, transform 0.3s ease;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .company-name,
+        .sidebar.collapsed .logo-section img,
+        .sidebar.collapsed .logout-btn span,
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item,
+        .sidebar.collapsed .sidebar-menu a {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .nav-item i,
+        .sidebar.collapsed .sidebar-menu i {
+            margin-right: 0;
+            font-size: 20px;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .logo-section {
+            padding: 25px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, var(--sky-blue), var(--sky-blue-dark));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .logo-image:hover {
+            border-color: rgba(255,255,255,0.8);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        }
+
+        .company-name,
+        .logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-text span {
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid transparent;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-size: 15px;
+            margin: 0 10px;
+            border-radius: var(--border-radius);
+        }
+
+        .sidebar-menu a:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+            border-left-color: var(--sky-blue);
+        }
+
+        .sidebar-menu a.active {
+            background-color: var(--sky-blue-light);
+            color: var(--sky-blue-dark);
+            border-left-color: var(--sky-blue);
+            font-weight: 600;
+        }
+
+        .sidebar-menu i {
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .logout-section {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border-radius: var(--border-radius);
+        }
+
+        .logout-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            z-index: 999;
+            transition: left 0.3s ease;
+            height: var(--header-height);
+        }
+
+        .sidebar.collapsed ~ .main-content .header {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: var(--sky-blue);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            gap: 6px;
+            min-width: 100px;
+        }
+
+        .header-btn:hover {
+            background: var(--sky-blue-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: var(--sky-blue-light);
+            transition: all 0.3s ease;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(14, 165, 233, 0.3);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--sky-blue);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            object-fit: cover;
+            border: 2px solid var(--sky-blue-dark);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: var(--sky-blue);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .user-email {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            background-color: var(--bg-color);
+        }
+
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 80px;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .container-fluid {
+            padding: 30px;
+            margin-top: var(--header-height);
+            flex: 1;
+        }
+
+        .drivers-sidebar {
+            width: 350px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            height: calc(100vh - var(--header-height));
+            position: fixed;
+            right: 0;
+            top: var(--header-height);
+            z-index: 800;
+            transition: transform 0.3s ease;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .drivers-sidebar.collapsed {
+            transform: translateX(100%);
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header span {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .counter {
+            background-color: var(--sky-blue);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .driver-list {
+            margin-bottom: 20px;
+        }
+
+        .driver-item {
+            background-color: var(--bg-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .driver-item:hover {
+            border-color: var(--sky-blue);
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .driver-item.active {
+            border-left: 4px solid var(--sky-blue);
+            background-color: var(--sky-blue-light);
+        }
+
+        .driver-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .driver-name {
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .driver-status {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: var(--success-green);
+        }
+
+        .status-inactive {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .status-onbreak {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-yellow);
+        }
+
+        .driver-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .driver-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+        }
+
+        .driver-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .driver-info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--bg-color);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .driver-info-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .driver-info-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--sky-blue);
+        }
+
+        .driver-info-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .driver-info-role {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .driver-info-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .driver-info-details {
+            margin-top: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--text-color);
+            width: 120px;
+        }
+
+        .info-value {
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .driver-performance {
+            margin-top: 20px;
+        }
+
+        .performance-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-weight: 600;
+        }
+
+        .performance-bar {
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .performance-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sky-blue), var(--sky-blue-dark));
+        }
+
+        .map-container {
+            margin-right: 350px;
+            height: calc(100vh - var(--header-height));
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .custom-driver-icon {
+            background: var(--sky-blue);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .custom-driver-icon.inactive {
+            background: var(--danger-red);
+        }
+
+        .custom-driver-icon.onbreak {
+            background: var(--warning-yellow);
+        }
+
+        .modal-content {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            background: var(--sky-blue-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .bounce-hover:hover {
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .tab-content {
+            padding: 20px;
+            background-color: var(--bg-color);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            border: 1px solid var(--border-color);
+            border-top: none;
+        }
+
+        .nav-tabs {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            padding: 10px 20px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: var(--border-color);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--sky-blue-dark);
+            background-color: var(--bg-color);
+            border-color: var(--border-color) var(--border-color) var(--bg-color);
+            font-weight: 600;
+        }
+
+        .schedule-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-time {
+            font-weight: 500;
+        }
+
+        .schedule-route {
+            color: var(--text-secondary);
+        }
+
+        .document-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .document-item:last-child {
+            border-bottom: none;
+        }
+
+        .document-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .incident-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .incident-item:last-child {
+            border-bottom: none;
+        }
+
+        .incident-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .incident-description {
+            margin-top: 5px;
+        }
+
+        .incident-severity {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-right: 5px;
+        }
+
+        .severity-high {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .severity-medium {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-yellow);
+        }
+
+        .severity-low {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: var(--success-green);
+        }
+
+        @media (max-width: 1200px) {
+            .drivers-sidebar {
+                width: 300px;
+            }
+            .map-container {
+                margin-right: 300px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .drivers-sidebar {
+                transform: translateX(100%);
+            }
+            .drivers-sidebar:not(.collapsed) {
+                transform: translateX(0);
+            }
+            .map-container {
+                margin-right: 0;
+            }
+            .sidebar {
+                width: 80px;
+            }
+            .sidebar .menu-text {
+                display: none;
+            }
+            .main-content {
+                margin-left: 80px;
+            }
+            .header {
+                left: 80px;
+            }
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+            .sidebar-menu a {
+                padding: 12px;
+                justify-content: center;
+            }
+            .user-info {
+                display: none;
+            }
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-title {
+                display: none;
+            }
+            .header {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<header class="header">
+    <div class="header-left">
+        <button class="header-btn" id="sidebarToggle">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">IMAS - Drivers Management System</h1>
+    </div>
+    <div class="header-right">
+        <button class="header-btn" id="themeToggle">
+            <i class="bi bi-sun"></i>
+            <span class="btn-text">Light</span>
+        </button>
+        <div class="profile-container" id="profileDropdown">
+            <img src="https://ui-avatars.com/api/?name=Admin+User&background=0ea5e9&color=fff" alt="Profile" class="avatar">
+            <div class="user-info">
+                <h3 class="user-name">Admin User</h3>
+                <p class="user-email">admin@imas.com</p>
+            </div>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="logo-section">
+        <div class="logo">
+            <img src="https://via.placeholder.com/80" alt="IMAS Logo" class="logo-image">
+            <h2 class="company-name">IMAS</h2>
+            <p class="logo-text">Kinshasa <span>Transport</span></p>
+        </div>
+    </div>
+    <ul class="sidebar-menu">
+        <li>
+            <a href="dashboard.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="buses.html">
+                <i class="bi bi-bus-front"></i>
+                <span class="menu-text">Bus Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="routes.html">
+                <i class="bi bi-signpost-split"></i>
+                <span class="menu-text">Routes</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="active">
+                <i class="bi bi-person-badge"></i>
+                <span class="menu-text">Drivers</span>
+            </a>
+        </li>
+        <li>
+            <a href="maintenance.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="reports.html">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span class="menu-text">Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="statistics.html">
+                <i class="bi bi-graph-up"></i>
+                <span class="menu-text">Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="settings.html">
+                <i class="bi bi-gear"></i>
+                <span class="menu-text">Settings</span>
+            </a>
+        </li>
+        <li>
+            <a href="dispatch.html">
+                <i class="bi bi-megaphone"></i>
+                <span class="menu-text">Dispatch Center</span>
+            </a>
+        </li>
+        <li>
+            <a href="training.html">
+                <i class="bi bi-book"></i>
+                <span class="menu-text">Training</span>
+            </a>
+        </li>
+    </ul>
+    <div class="logout-section">
+        <a href="#" class="logout-btn" id="logoutBtn">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="menu-text">Logout</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container-fluid">
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+</main>
+
+<!-- Drivers Sidebar -->
+<div class="drivers-sidebar" id="driversSidebar">
+    <div class="sidebar-header">
+        <span>Drivers</span>
+        <div>
+            <button class="btn btn-primary btn-sm fade-in" data-bs-toggle="modal" data-bs-target="#addDriverModal">
+                <i class="fas fa-plus"></i> Add Driver
+            </button>
+            <button class="btn btn-outline-secondary btn-sm ms-2" id="toggleSidebar">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Search drivers..." id="driverSearch">
+        <button class="btn btn-outline-secondary" type="button">
+            <i class="fas fa-search"></i>
+        </button>
+    </div>
+
+    <div class="driver-list" id="driverList">
+        <!-- Driver items will be added here dynamically -->
+        <div class="text-center p-3 text-muted">
+            <i class="fas fa-spinner fa-spin"></i> Loading drivers...
+        </div>
+    </div>
+
+    <div class="driver-info-panel" id="driverInfoPanel">
+        <div class="text-center p-3 text-muted">
+            <i class="fas fa-info-circle"></i> Select a driver to view details
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Driver Modal -->
+<div class="modal fade" id="addDriverModal" tabindex="-1" aria-labelledby="addDriverModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content scale-in">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addDriverModalLabel">Add New Driver</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="driverForm">
+                    <input type="hidden" id="driverId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phoneNumber">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="licenseNumber" class="form-label">License Number</label>
+                                <input type="text" class="form-control" id="licenseNumber" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="licenseExpiry" class="form-label">License Expiry Date</label>
+                                <input type="date" class="form-control" id="licenseExpiry" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="hireDate" class="form-label">Hire Date</label>
+                                <input type="date" class="form-control" id="hireDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                    <option value="ON_LEAVE">On Leave</option>
+                                    <option value="ON_BREAK">On Break</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea class="form-control" id="address" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="photo" class="form-label">Driver Photo</label>
+                                <input type="file" class="form-control" id="photo" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveDriverBtn" class="btn btn-primary">Save Driver</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Driver Details Modal -->
+<div class="modal fade" id="driverDetailsModal" tabindex="-1" aria-labelledby="driverDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="driverDetailsModalLabel">Driver Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="driverTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">Profile</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">Schedule</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">Documents</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="incidents-tab" data-bs-toggle="tab" data-bs-target="#incidents" type="button" role="tab">Incidents</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">Performance</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="driverTabContent">
+                    <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                        <!-- Profile content will be loaded here -->
+                    </div>
+                    <div class="tab-pane fade" id="schedule" role="tabpanel">
+                        <!-- Schedule content will be loaded here -->
+                    </div>
+                    <div class="tab-pane fade" id="documents" role="tabpanel">
+                        <!-- Documents content will be loaded here -->
+                    </div>
+                    <div class="tab-pane fade" id="incidents" role="tabpanel">
+                        <!-- Incidents content will be loaded here -->
+                    </div>
+                    <div class="tab-pane fade" id="performance" role="tabpanel">
+                        <!-- Performance content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editDriverBtn">Edit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div class="modal fade" id="documentViewerModal" tabindex="-1" aria-labelledby="documentViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentViewerModalLabel">Document Viewer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="documentViewer" style="width: 100%; height: 70vh; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadDocumentBtn">Download</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dispatch Message Modal -->
+<div class="modal fade" id="dispatchMessageModal" tabindex="-1" aria-labelledby="dispatchMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="dispatchMessageModalLabel">Send Message to Driver</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dispatchMessageForm">
+                    <div class="mb-3">
+                        <label for="messageType" class="form-label">Message Type</label>
+                        <select class="form-select" id="messageType" required>
+                            <option value="INFO">Information</option>
+                            <option value="ALERT">Alert</option>
+                            <option value="EMERGENCY">Emergency</option>
+                            <option value="ROUTE_CHANGE">Route Change</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="messageContent" class="form-label">Message</label>
+                        <textarea class="form-control" id="messageContent" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="requireAck">
+                        <label class="form-check-label" for="requireAck">Require Acknowledgement</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendMessageBtn">Send Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="alertModalLabel">Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alertModalContent">
+                <!-- Alert content will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="respondToAlertBtn" class="btn btn-danger">Respond</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+
+<script>
+    // Kinshasa coordinates and stations
+    const kinshasaCenter = [-4.3250, 15.3222];
+    const stations = {
+        gare_centrale: { name: "Gare Centrale", lat: -4.3276, lng: 15.3136 },
+        matete: { name: "Matete", lat: -4.3833, lng: 15.3667 },
+        limete: { name: "Limete", lat: -4.3333, lng: 15.3333 },
+        bandalungwa: { name: "Bandalungwa", lat: -4.3167, lng: 15.2833 },
+        barumbu: { name: "Barumbu", lat: -4.3167, lng: 15.3167 },
+        kinshasa: { name: "Kinshasa", lat: -4.3250, lng: 15.3222 },
+        ndjili: { name: "Ndjili", lat: -4.3833, lng: 15.3833 },
+        masina: { name: "Masina", lat: -4.3833, lng: 15.4000 },
+        kimbanseke: { name: "Kimbanseke", lat: -4.4500, lng: 15.4167 },
+        ngaliema: { name: "Ngaliema", lat: -4.3167, lng: 15.2333 },
+        mont_ngafula: { name: "Mont Ngafula", lat: -4.4000, lng: 15.2667 },
+        selembao: { name: "Selembao", lat: -4.3500, lng: 15.2833 },
+        bumbu: { name: "Bumbu", lat: -4.3667, lng: 15.3000 },
+        makala: { name: "Makala", lat: -4.3667, lng: 15.3167 },
+        ngaba: { name: "Ngaba", lat: -4.3667, lng: 15.3500 }
+    };
+
+    // Kinshasa bus routes coordinates
+    const busRoutes = {
+        "line1": [
+            [-4.3276, 15.3136],  // Gare Centrale
+            [-4.3333, 15.3333],  // Limete
+            [-4.3833, 15.3667],  // Matete
+            [-4.3833, 15.3833],  // Ndjili
+            [-4.3833, 15.4000]   // Masina
+        ],
+        "line2": [
+            [-4.3276, 15.3136],  // Gare Centrale
+            [-4.3167, 15.3167],  // Barumbu
+            [-4.3167, 15.2833],  // Bandalungwa
+            [-4.3500, 15.2833],  // Selembao
+            [-4.3667, 15.3000],  // Bumbu
+            [-4.3667, 15.3167]   // Makala
+        ],
+        "line3": [
+            [-4.3276, 15.3136],  // Gare Centrale
+            [-4.3250, 15.3222],  // Kinshasa
+            [-4.3667, 15.3500],  // Ngaba
+            [-4.3833, 15.3667],  // Matete
+            [-4.4000, 15.3833],  // Extension Est
+            [-4.4167, 15.4000]   // Quartier Est
+        ],
+        "line4": [
+            [-4.3167, 15.2333],  // Ngaliema
+            [-4.3333, 15.2667],  // Mont Ngafula
+            [-4.3500, 15.2833],  // Selembao
+            [-4.3667, 15.3000],  // Bumbu
+            [-4.3667, 15.3167],  // Makala
+            [-4.3667, 15.3500]   // Ngaba
+        ],
+        "line5": [
+            [-4.4500, 15.4167],  // Kimbanseke
+            [-4.4167, 15.4000],  // Quartier Est
+            [-4.3833, 15.3833],  // Ndjili
+            [-4.3667, 15.3500],  // Ngaba
+            [-4.3667, 15.3167],  // Makala
+            [-4.3667, 15.3000]   // Bumbu
+        ]
+    };
+
+    // Driver simulation system
+    let map;
+    let driverMarkers = {};
+    let driverPositions = {};
+    let driverPaths = {};
+    let selectedDriverId = null;
+    let apiBaseUrl = 'http://localhost:8080/api';
+    let updateInterval;
+    let driverSimulationSpeed = 50000;
+    let drivers = [];
+    let selectedDriver = null;
+
+    // Initialize the application
+    function initMap() {
+        if (map) return;
+        map = L.map('map').setView(kinshasaCenter, 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Add bus routes to the map
+        Object.values(busRoutes).forEach(route => {
+            L.polyline(route, {
+                color: '#0ea5e9',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '5, 5'
+            }).addTo(map);
+        });
+
+        // Add stations to the map
+        Object.values(stations).forEach(station => {
+            L.marker([station.lat, station.lng], {
+                icon: L.divIcon({
+                    className: 'station-icon',
+                    html: '<i class="fas fa-map-marker-alt"></i>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                })
+            }).addTo(map)
+                .bindPopup(station.name);
+        });
+
+        initializeUIElements();
+        fetchDrivers();
+        updateInterval = setInterval(updateDriverPositions, 1000);
+        updateClock();
+        setInterval(updateClock, 1000);
+    }
+
+    // Initialize UI elements and event listeners
+    function initializeUIElements() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('saveDriverBtn').addEventListener('click', saveDriver);
+        document.getElementById('toggleSidebar').addEventListener('click', toggleDriversSidebar);
+        document.getElementById('driverSearch').addEventListener('input', filterDrivers);
+        document.getElementById('editDriverBtn').addEventListener('click', editSelectedDriver);
+        document.getElementById('sendMessageBtn').addEventListener('click', sendDispatchMessage);
+        document.getElementById('downloadDocumentBtn').addEventListener('click', downloadDocument);
+        document.getElementById('respondToAlertBtn').addEventListener('click', respondToAlert);
+
+        const driverTabs = document.getElementById('driverTabs');
+        if (driverTabs) {
+            driverTabs.addEventListener('shown.bs.tab', function(event) {
+                const tabId = event.target.getAttribute('data-bs-target');
+                if (tabId === '#profile' && selectedDriver) {
+                    loadDriverProfile(selectedDriver);
+                } else if (tabId === '#schedule' && selectedDriver) {
+                    loadDriverSchedule(selectedDriver);
+                } else if (tabId === '#documents' && selectedDriver) {
+                    loadDriverDocuments(selectedDriver);
+                } else if (tabId === '#incidents' && selectedDriver) {
+                    loadDriverIncidents(selectedDriver);
+                } else if (tabId === '#performance' && selectedDriver) {
+                    loadDriverPerformance(selectedDriver);
+                }
+            });
+        }
+    }
+
+    // Fetch all drivers
+    async function fetchDrivers() {
+        try {
+            const response = await fetch(`${apiBaseUrl}/staff?role=DRIVER`);
+            drivers = await response.json();
+            updateDriverList();
+            simulateDriverPositions();
+        } catch (error) {
+            console.error('Error fetching drivers:', error);
+            showAlert('Failed to load drivers', 'danger');
+        }
+    }
+
+    // Update driver list in the sidebar
+    function updateDriverList() {
+        const driverList = document.getElementById('driverList');
+        if (!driverList) return;
+
+        if (drivers.length === 0) {
+            driverList.innerHTML = `
+                <div class="text-center p-3 text-muted">
+                    <i class="fas fa-info-circle"></i> No drivers found
+                </div>
+            `;
+            return;
+        }
+
+        driverList.innerHTML = '';
+        drivers.forEach(driver => {
+            const statusClass = getStatusClass(driver.status);
+            const statusText = getStatusText(driver.status);
+
+            const driverItem = document.createElement('div');
+            driverItem.className = `driver-item ${selectedDriverId === driver.id ? 'active' : ''}`;
+            driverItem.id = `driver-${driver.id}`;
+            driverItem.innerHTML = `
+                <div class="driver-item-header">
+                    <div class="driver-name">
+                        <img src="${driver.photo ? `data:image/jpeg;base64,${driver.photo}` : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(driver.firstName + ' ' + driver.lastName)}"
+                             alt="${driver.firstName} ${driver.lastName}" class="driver-avatar">
+                        ${driver.firstName} ${driver.lastName}
+                    </div>
+                    <span class="driver-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="driver-details">
+                    <div>License: ${driver.licenseNumber || 'N/A'}</div>
+                    <div>Last seen: ${driver.lastSeen ? moment(driver.lastSeen).fromNow() : 'Unknown'}</div>
+                </div>
+            `;
+
+            driverItem.addEventListener('click', () => selectDriver(driver.id));
+            driverList.appendChild(driverItem);
+        });
+    }
+
+    // Select a driver
+    function selectDriver(driverId) {
+        selectedDriverId = driverId;
+        selectedDriver = drivers.find(d => d.id === driverId);
+
+        // Update UI
+        document.querySelectorAll('.driver-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.getElementById(`driver-${driverId}`).classList.add('active');
+
+        // Load driver info
+        loadDriverInfo(selectedDriver);
+
+        // Center map on driver if they have a position
+        if (driverPositions[driverId]) {
+            map.setView([driverPositions[driverId].lat, driverPositions[driverId].lng], 15);
+        }
+    }
+
+    // Load driver info in the sidebar panel
+    function loadDriverInfo(driver) {
+        const driverInfoPanel = document.getElementById('driverInfoPanel');
+        if (!driverInfoPanel) return;
+
+        const statusClass = getStatusClass(driver.status);
+        const statusText = getStatusText(driver.status);
+
+        driverInfoPanel.innerHTML = `
+            <div class="driver-info-header">
+                <img src="${driver.photo ? `data:image/jpeg;base64,${driver.photo}` : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(driver.firstName + ' ' + driver.lastName)}"
+                     alt="${driver.firstName} ${driver.lastName}" class="driver-info-avatar">
+                <div>
+                    <div class="driver-info-name">${driver.firstName} ${driver.lastName}</div>
+                    <div class="driver-info-role">${driver.role || 'Driver'}</div>
+                    <span class="driver-info-status ${statusClass}">${statusText}</span>
+                </div>
+            </div>
+            <div class="driver-info-details">
+                <div class="info-row">
+                    <span class="info-label">License:</span>
+                    <span class="info-value">${driver.licenseNumber || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Expiry:</span>
+                    <span class="info-value">${driver.licenseExpiry ? moment(driver.licenseExpiry).format('MMM D, YYYY') : 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">${driver.phoneNumber || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">${driver.email || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Hire Date:</span>
+                    <span class="info-value">${driver.hireDate ? moment(driver.hireDate).format('MMM D, YYYY') : 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Last Seen:</span>
+                    <span class="info-value">${driver.lastSeen ? moment(driver.lastSeen).fromNow() : 'Unknown'}</span>
+                </div>
+            </div>
+            <div class="driver-actions">
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#driverDetailsModal">
+                    <i class="fas fa-info-circle"></i> Details
+                </button>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#dispatchMessageModal">
+                    <i class="fas fa-comment"></i> Message
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="changeDriverStatus(${driver.id}, 'ON_BREAK')">
+                    <i class="fas fa-coffee"></i> Break
+                </button>
+            </div>
+        `;
+    }
+
+    // Load driver profile in the details modal
+    function loadDriverProfile(driver) {
+        const profileTab = document.getElementById('profile');
+        if (!profileTab) return;
+
+        const statusClass = getStatusClass(driver.status);
+        const statusText = getStatusText(driver.status);
+
+        profileTab.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label">First Name:</span>
+                        <span class="info-value">${driver.firstName || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Name:</span>
+                        <span class="info-value">${driver.lastName || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">${driver.email || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">${driver.phoneNumber || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Address:</span>
+                        <span class="info-value">${driver.address || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value"><span class="${statusClass}">${statusText}</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">License Number:</span>
+                        <span class="info-value">${driver.licenseNumber || 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">License Expiry:</span>
+                        <span class="info-value">${driver.licenseExpiry ? moment(driver.licenseExpiry).format('MMM D, YYYY') : 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Hire Date:</span>
+                        <span class="info-value">${driver.hireDate ? moment(driver.hireDate).format('MMM D, YYYY') : 'N/A'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Last Seen:</span>
+                        <span class="info-value">${driver.lastSeen ? moment(driver.lastSeen).fromNow() : 'Unknown'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Notes:</span>
+                <span class="info-value">${driver.notes || 'No notes available'}</span>
+            </div>
+        `;
+    }
+
+    // Load driver schedule in the details modal
+    function loadDriverSchedule(driver) {
+        const scheduleTab = document.getElementById('schedule');
+        if (!scheduleTab) return;
+
+        // Simulated schedule data - in a real app, this would come from the API
+        const scheduleData = [
+            { day: 'Monday', start: '08:00', end: '16:00', route: 'Line 1 - Gare Centrale to Masina' },
+            { day: 'Tuesday', start: '08:00', end: '16:00', route: 'Line 1 - Gare Centrale to Masina' },
+            { day: 'Wednesday', start: '12:00', end: '20:00', route: 'Line 2 - Gare Centrale to Makala' },
+            { day: 'Thursday', start: '12:00', end: '20:00', route: 'Line 2 - Gare Centrale to Makala' },
+            { day: 'Friday', start: '06:00', end: '14:00', route: 'Line 3 - Gare Centrale to Quartier Est' },
+            { day: 'Saturday', start: '06:00', end: '12:00', route: 'Line 4 - Ngaliema to Ngaba' },
+            { day: 'Sunday', start: 'OFF', end: 'OFF', route: 'Day off' }
+        ];
+
+        let scheduleHTML = '<div class="list-group">';
+        scheduleData.forEach(item => {
+            scheduleHTML += `
+                <div class="schedule-item">
+                    <div>
+                        <div class="schedule-time">${item.day}: ${item.start} - ${item.end}</div>
+                        <div class="schedule-route">${item.route}</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary">Details</button>
+                </div>
+            `;
+        });
+        scheduleHTML += '</div>';
+
+        scheduleTab.innerHTML = scheduleHTML;
+    }
+
+    // Load driver documents in the details modal
+    function loadDriverDocuments(driver) {
+        const documentsTab = document.getElementById('documents');
+        if (!documentsTab) return;
+
+        // Simulated documents data - in a real app, this would come from the API
+        const documentsData = [
+            { id: 1, name: 'Driver License', type: 'PDF', uploadDate: '2023-05-15', size: '2.4 MB' },
+            { id: 2, name: 'Medical Certificate', type: 'PDF', uploadDate: '2023-06-20', size: '1.8 MB' },
+            { id: 3, name: 'Training Certificate', type: 'PDF', uploadDate: '2023-04-10', size: '3.2 MB' },
+            { id: 4, name: 'Contract Agreement', type: 'PDF', uploadDate: '2023-01-05', size: '5.1 MB' }
+        ];
+
+        let documentsHTML = '<div class="list-group">';
+        documentsData.forEach(doc => {
+            documentsHTML += `
+                <div class="document-item">
+                    <div class="document-name">
+                        <i class="fas fa-file-pdf text-danger"></i>
+                        <div>
+                            <div>${doc.name}</div>
+                            <small class="text-muted">Uploaded ${moment(doc.uploadDate).fromNow()} • ${doc.size}</small>
+                        </div>
+                    </div>
+                    <div class="document-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewDocument(${doc.id}, '${doc.name}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="downloadDocument(${doc.id}, '${doc.name}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        documentsHTML += '</div>';
+
+        documentsTab.innerHTML = documentsHTML;
+    }
+
+    // Load driver incidents in the details modal
+    function loadDriverIncidents(driver) {
+        const incidentsTab = document.getElementById('incidents');
+        if (!incidentsTab) return;
+
+        // Simulated incidents data - in a real app, this would come from the API
+        const incidentsData = [
+            { id: 1, date: '2023-07-15', description: 'Minor collision with another vehicle', severity: 'MEDIUM', resolved: true },
+            { id: 2, date: '2023-06-28', description: 'Late arrival due to traffic congestion', severity: 'LOW', resolved: true },
+            { id: 3, date: '2023-05-10', description: 'Passenger complaint about driving style', severity: 'LOW', resolved: true },
+            { id: 4, date: '2023-04-02', description: 'Vehicle breakdown - mechanical issue', severity: 'MEDIUM', resolved: true }
+        ];
+
+        let incidentsHTML = '<div class="list-group">';
+        incidentsData.forEach(incident => {
+            const severityClass = getSeverityClass(incident.severity);
+            const severityText = getSeverityText(incident.severity);
+
+            incidentsHTML += `
+                <div class="incident-item">
+                    <div class="incident-date">
+                        <span class="incident-severity ${severityClass}">${severityText}</span>
+                        ${moment(incident.date).format('MMMM D, YYYY')}
+                        ${incident.resolved ? '<span class="badge bg-success ms-2">Resolved</span>' : '<span class="badge bg-warning ms-2">Pending</span>'}
+                    </div>
+                    <div class="incident-description">${incident.description}</div>
+                </div>
+            `;
+        });
+        incidentsHTML += '</div>';
+
+        incidentsTab.innerHTML = incidentsHTML;
+    }
+
+    // Load driver performance in the details modal
+    function loadDriverPerformance(driver) {
+        const performanceTab = document.getElementById('performance');
+        if (!performanceTab) return;
+
+        // Simulated performance data - in a real app, this would come from the API
+        const performanceData = {
+            onTimePercentage: 92,
+            safetyRating: 88,
+            passengerSatisfaction: 95,
+            fuelEfficiency: 76,
+            incidentCount: 2,
+            lastEvaluation: '2023-06-15',
+            nextEvaluation: '2023-12-15'
+        };
+
+        performanceTab.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="performance-metric">
+                        <span class="metric-label">On-Time Performance:</span>
+                        <span class="metric-value">${performanceData.onTimePercentage}%</span>
+                    </div>
+                    <div class="performance-bar">
+                        <div class="performance-progress" style="width: ${performanceData.onTimePercentage}%"></div>
+                    </div>
+
+                    <div class="performance-metric">
+                        <span class="metric-label">Safety Rating:</span>
+                        <span class="metric-value">${performanceData.safetyRating}%</span>
+                    </div>
+                    <div class="performance-bar">
+                        <div class="performance-progress" style="width: ${performanceData.safetyRating}%"></div>
+                    </div>
+
+                    <div class="performance-metric">
+                        <span class="metric-label">Passenger Satisfaction:</span>
+                        <span class="metric-value">${performanceData.passengerSatisfaction}%</span>
+                    </div>
+                    <div class="performance-bar">
+                        <div class="performance-progress" style="width: ${performanceData.passengerSatisfaction}%"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="performance-metric">
+                        <span class="metric-label">Fuel Efficiency:</span>
+                        <span class="metric-value">${performanceData.fuelEfficiency}%</span>
+                    </div>
+                    <div class="performance-bar">
+                        <div class="performance-progress" style="width: ${performanceData.fuelEfficiency}%"></div>
+                    </div>
+
+                    <div class="performance-metric">
+                        <span class="metric-label">Incidents (last 6 months):</span>
+                        <span class="metric-value">${performanceData.incidentCount}</span>
+                    </div>
+
+                    <div class="performance-metric">
+                        <span class="metric-label">Last Evaluation:</span>
+                        <span class="metric-value">${moment(performanceData.lastEvaluation).format('MMMM D, YYYY')}</span>
+                    </div>
+
+                    <div class="performance-metric">
+                        <span class="metric-label">Next Evaluation:</span>
+                        <span class="metric-value">${moment(performanceData.nextEvaluation).format('MMMM D, YYYY')}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <canvas id="performanceChart" height="200"></canvas>
+            </div>
+        `;
+
+        // Initialize performance chart
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['On-Time', 'Safety', 'Satisfaction', 'Fuel Efficiency'],
+                datasets: [{
+                    label: 'Performance Metrics',
+                    data: [
+                        performanceData.onTimePercentage,
+                        performanceData.safetyRating,
+                        performanceData.passengerSatisfaction,
+                        performanceData.fuelEfficiency
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(153, 102, 255, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+
+    // Simulate driver positions (for demo purposes)
+    function simulateDriverPositions() {
+        drivers.forEach(driver => {
+            if (!driverPositions[driver.id]) {
+                // Assign a random position along a route for each driver
+                const routeKey = `line${Math.floor(Math.random() * 5) + 1}`;
+                const route = busRoutes[routeKey];
+                const segmentIndex = Math.floor(Math.random() * (route.length - 1));
+                const progress = Math.random();
+
+                const startPoint = route[segmentIndex];
+                const endPoint = route[segmentIndex + 1];
+
+                driverPositions[driver.id] = {
+                    lat: startPoint[0] + (endPoint[0] - startPoint[0]) * progress,
+                    lng: startPoint[1] + (endPoint[1] - startPoint[1]) * progress,
+                    route: routeKey,
+                    segmentIndex: segmentIndex,
+                    progress: progress,
+                    direction: Math.random() > 0.5 ? 1 : -1,
+                    lastUpdate: new Date().getTime(),
+                    status: driver.status || 'ACTIVE'
+                };
+
+                updateDriverMarker(driver);
+            }
+        });
+    }
+
+    // Update driver positions
+    function updateDriverPositions() {
+        Object.keys(driverPositions).forEach(driverId => {
+            const position = driverPositions[driverId];
+            const driver = drivers.find(d => d.id == driverId);
+
+            if (!driver || position.status === 'INACTIVE') return;
+
+            // Skip if driver is on break
+            if (position.status === 'ON_BREAK') {
+                // Occasionally end the break
+                if (Math.random() < 0.1) {
+                    position.status = 'ACTIVE';
+                    if (driver) driver.status = 'ACTIVE';
+                    updateDriverMarker(driver);
+                }
+                return;
+            }
+
+            const route = busRoutes[position.route];
+            if (!route) return;
+
+            // Move along the route
+            const speedFactor = 0.0005 * (driverSimulationSpeed / 50000);
+            position.progress += speedFactor * position.direction;
+
+            // Reverse direction at end of route
+            if (position.progress >= 1) {
+                position.segmentIndex++;
+                position.progress = 0;
+
+                if (position.segmentIndex >= route.length - 1) {
+                    position.direction = -1;
+                    position.segmentIndex = route.length - 2;
+                    position.progress = 1;
+                }
+            } else if (position.progress <= 0) {
+                position.segmentIndex--;
+                position.progress = 1;
+
+                if (position.segmentIndex < 0) {
+                    position.direction = 1;
+                    position.segmentIndex = 0;
+                    position.progress = 0;
+                }
+            }
+
+            // Calculate new position
+            const startPoint = route[position.segmentIndex];
+            const endPoint = route[position.segmentIndex + 1];
+
+            position.lat = startPoint[0] + (endPoint[0] - startPoint[0]) * position.progress;
+            position.lng = startPoint[1] + (endPoint[1] - startPoint[1]) * position.progress;
+            position.lastUpdate = new Date().getTime();
+
+            // Randomly change status (for simulation)
+            if (Math.random() < 0.001) {
+                position.status = 'ON_BREAK';
+                if (driver) driver.status = 'ON_BREAK';
+            }
+
+            // Update marker
+            updateDriverMarker(driver);
+        });
+    }
+
+    // Update driver marker on the map
+    function updateDriverMarker(driver) {
+        const position = driverPositions[driver.id];
+        if (!position) return;
+
+        let icon;
+        if (position.status === 'INACTIVE') {
+            icon = L.divIcon({
+                className: 'custom-driver-icon inactive',
+                html: '<i class="fas fa-user"></i>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        } else if (position.status === 'ON_BREAK') {
+            icon = L.divIcon({
+                className: 'custom-driver-icon onbreak',
+                html: '<i class="fas fa-coffee"></i>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        } else {
+            icon = L.divIcon({
+                className: 'custom-driver-icon',
+                html: '<i class="fas fa-user"></i>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+        }
+
+        if (driverMarkers[driver.id]) {
+            driverMarkers[driver.id].setLatLng([position.lat, position.lng]);
+            driverMarkers[driver.id].setIcon(icon);
+        } else {
+            driverMarkers[driver.id] = L.marker([position.lat, position.lng], { icon })
+                .addTo(map)
+                .bindPopup(`
+                    <div>
+                        <h5>${driver.firstName} ${driver.lastName}</h5>
+                        <p>Status: ${getStatusText(position.status)}</p>
+                        <p>Route: ${position.route.toUpperCase()}</p>
+                        <p>Last Update: ${moment(position.lastUpdate).fromNow()}</p>
+                    </div>
+                `);
+        }
+    }
+
+    // Save driver (Create/Update)
+    async function saveDriver() {
+        const driverId = document.getElementById('driverId').value;
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const email = document.getElementById('email').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const licenseNumber = document.getElementById('licenseNumber').value;
+        const licenseExpiry = document.getElementById('licenseExpiry').value;
+        const hireDate = document.getElementById('hireDate').value;
+        const status = document.getElementById('status').value;
+        const address = document.getElementById('address').value;
+        const notes = document.getElementById('notes').value;
+        const photoFile = document.getElementById('photo').files[0];
+
+        if (!firstName || !lastName || !email || !licenseNumber || !licenseExpiry || !hireDate) {
+            showAlert('Please fill in all required fields.', 'warning');
+            return;
+        }
+
+        const driverData = {
+            firstName,
+            lastName,
+            email,
+            phoneNumber,
+            licenseNumber,
+            licenseExpiry,
+            hireDate,
+            status,
+            address,
+            notes,
+            role: 'DRIVER'
+        };
+
+        try {
+            let response;
+            if (driverId) {
+                // Update existing driver
+                response = await fetch(`${apiBaseUrl}/staff/${driverId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(driverData)
+                });
+            } else {
+                // Create new driver
+                response = await fetch(`${apiBaseUrl}/staff`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(driverData)
+                });
+            }
+
+            if (!response.ok) throw new Error('Failed to save driver');
+            const driver = await response.json();
+
+            // Handle photo upload if a file was selected
+            if (photoFile) {
+                const formData = new FormData();
+                formData.append('photo', photoFile);
+
+                const photoResponse = await fetch(`${apiBaseUrl}/staff/${driver.id}/photo`, {
+                    method: 'PATCH',
+                    body: formData
+                });
+
+                if (!photoResponse.ok) throw new Error('Failed to upload photo');
+                const updatedDriver = await photoResponse.json();
+                driver.photo = updatedDriver.photo;
+            }
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addDriverModal'));
+            modal.hide();
+            document.getElementById('driverForm').reset();
+            document.getElementById('driverId').value = '';
+            document.getElementById('addDriverModalLabel').textContent = 'Add New Driver';
+
+            // Update the driver in our local list
+            const index = drivers.findIndex(d => d.id === driver.id);
+            if (index >= 0) {
+                drivers[index] = driver;
+            } else {
+                drivers.push(driver);
+                // Initialize position for new driver
+                simulateDriverPositions();
+            }
+
+            updateDriverList();
+            if (selectedDriverId === driver.id) {
+                loadDriverInfo(driver);
+            }
+
+            showAlert(`Driver ${driver.firstName} ${driver.lastName} ${driverId ? 'updated' : 'added'} successfully`, 'success');
+        } catch (error) {
+            console.error('Error saving driver:', error);
+            showAlert(`Failed to ${driverId ? 'update' : 'add'} driver: ${error.message}`, 'danger');
+        }
+    }
+
+    // Edit selected driver
+    function editSelectedDriver() {
+        if (!selectedDriver) return;
+
+        document.getElementById('driverId').value = selectedDriver.id;
+        document.getElementById('firstName').value = selectedDriver.firstName;
+        document.getElementById('lastName').value = selectedDriver.lastName;
+        document.getElementById('email').value = selectedDriver.email;
+        document.getElementById('phoneNumber').value = selectedDriver.phoneNumber || '';
+        document.getElementById('licenseNumber').value = selectedDriver.licenseNumber || '';
+        document.getElementById('licenseExpiry').value = selectedDriver.licenseExpiry ? selectedDriver.licenseExpiry.split('T')[0] : '';
+        document.getElementById('hireDate').value = selectedDriver.hireDate ? selectedDriver.hireDate.split('T')[0] : '';
+        document.getElementById('status').value = selectedDriver.status || 'ACTIVE';
+        document.getElementById('address').value = selectedDriver.address || '';
+        document.getElementById('notes').value = selectedDriver.notes || '';
+        document.getElementById('addDriverModalLabel').textContent = 'Edit Driver';
+
+        const modal = new bootstrap.Modal(document.getElementById('addDriverModal'));
+        modal.show();
+    }
+
+    // Change driver status
+    async function changeDriverStatus(driverId, newStatus) {
+        try {
+            const response = await fetch(`${apiBaseUrl}/staff/${driverId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (!response.ok) throw new Error('Failed to update driver status');
+            const updatedDriver = await response.json();
+
+            // Update local driver data
+            const index = drivers.findIndex(d => d.id === driverId);
+            if (index >= 0) {
+                drivers[index] = updatedDriver;
+            }
+
+            // Update position status if it exists
+            if (driverPositions[driverId]) {
+                driverPositions[driverId].status = newStatus;
+            }
+
+            updateDriverList();
+            if (selectedDriverId === driverId) {
+                loadDriverInfo(updatedDriver);
+            }
+
+            updateDriverMarker(updatedDriver);
+            showAlert(`Driver status updated to ${getStatusText(newStatus)}`, 'success');
+        } catch (error) {
+            console.error('Error updating driver status:', error);
+            showAlert('Failed to update driver status', 'danger');
+        }
+    }
+
+    // Filter drivers based on search input
+    function filterDrivers() {
+        const searchTerm = document.getElementById('driverSearch').value.toLowerCase();
+        const driverItems = document.querySelectorAll('.driver-item');
+
+        driverItems.forEach(item => {
+            const driverName = item.querySelector('.driver-name').textContent.toLowerCase();
+            const licenseNumber = item.querySelector('.driver-details div:first-child').textContent.toLowerCase();
+
+            if (driverName.includes(searchTerm) || licenseNumber.includes(searchTerm)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // View document
+    function viewDocument(docId, docName) {
+        // In a real app, this would fetch the document from the server
+        // For demo purposes, we'll just show a placeholder
+        document.getElementById('documentViewerModalLabel').textContent = docName;
+        document.getElementById('documentViewer').src = 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
+
+        const modal = new bootstrap.Modal(document.getElementById('documentViewerModal'));
+        modal.show();
+    }
+
+    // Download document
+    function downloadDocument(docId, docName) {
+        // In a real app, this would download the document from the server
+        // For demo purposes, we'll just show an alert
+        showAlert(`Downloading document: ${docName}`, 'info');
+    }
+
+    // Send dispatch message to driver
+    async function sendDispatchMessage() {
+        const messageType = document.getElementById('messageType').value;
+        const messageContent = document.getElementById('messageContent').value;
+        const requireAck = document.getElementById('requireAck').checked;
+
+        if (!messageContent) {
+            showAlert('Please enter a message', 'warning');
+            return;
+        }
+
+        if (!selectedDriverId) {
+            showAlert('No driver selected', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiBaseUrl}/dispatch/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    driverId: selectedDriverId,
+                    messageType,
+                    content: messageContent,
+                    requireAcknowledgment: requireAck
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to send message');
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('dispatchMessageModal'));
+            modal.hide();
+            document.getElementById('dispatchMessageForm').reset();
+
+            showAlert('Message sent successfully', 'success');
+        } catch (error) {
+            console.error('Error sending dispatch message:', error);
+            showAlert('Failed to send message', 'danger');
+        }
+    }
+
+    // Respond to alert
+    function respondToAlert() {
+        // In a real app, this would send a response to the alert system
+        const alertModal = bootstrap.Modal.getInstance(document.getElementById('alertModal'));
+        alertModal.hide();
+        showAlert('Response recorded successfully', 'success');
+    }
+
+    // Toggle sidebar
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+    }
+
+    // Toggle drivers sidebar
+    function toggleDriversSidebar() {
+        const driversSidebar = document.getElementById('driversSidebar');
+        driversSidebar.classList.toggle('collapsed');
+
+        const toggleBtn = document.getElementById('toggleSidebar');
+        if (driversSidebar.classList.contains('collapsed')) {
+            toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        } else {
+            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        }
+    }
+
+    // Toggle theme
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+        const text = themeToggle.querySelector('.btn-text');
+        if (document.body.classList.contains('dark-mode')) {
+            icon.classList.replace('bi-sun', 'bi-moon');
+            text.textContent = 'Dark';
+        } else {
+            icon.classList.replace('bi-moon', 'bi-sun');
+            text.textContent = 'Light';
+        }
+    }
+
+    // Update clock
+    function updateClock() {
+        const now = moment().tz('Africa/Kinshasa');
+        const headerTitle = document.querySelector('.header-title');
+        if (headerTitle) {
+            headerTitle.textContent = `IMAS - Drivers Management System | ${now.format('dddd, MMMM Do YYYY, h:mm:ss A')}`;
+        }
+    }
+
+    // Show alert
+    function showAlert(message, type) {
+        const alertModalContent = document.getElementById('alertModalContent');
+        alertModalContent.innerHTML = message;
+        alertModalContent.className = `modal-body ${type}`;
+        new bootstrap.Modal(document.getElementById('alertModal')).show();
+    }
+
+    // Helper function to get status class
+    function getStatusClass(status) {
+        switch (status) {
+            case 'ACTIVE': return 'status-active';
+            case 'INACTIVE': return 'status-inactive';
+            case 'ON_BREAK': return 'status-onbreak';
+            case 'ON_LEAVE': return 'status-inactive';
+            default: return 'status-inactive';
+        }
+    }
+
+    // Helper function to get status text
+    function getStatusText(status) {
+        switch (status) {
+            case 'ACTIVE': return 'Active';
+            case 'INACTIVE': return 'Inactive';
+            case 'ON_BREAK': return 'On Break';
+            case 'ON_LEAVE': return 'On Leave';
+            default: return status;
+        }
+    }
+
+    // Helper function to get severity class
+    function getSeverityClass(severity) {
+        switch (severity) {
+            case 'HIGH': return 'severity-high';
+            case 'MEDIUM': return 'severity-medium';
+            case 'LOW': return 'severity-low';
+            default: return 'severity-low';
+        }
+    }
+
+    // Helper function to get severity text
+    function getSeverityText(severity) {
+        switch (severity) {
+            case 'HIGH': return 'High';
+            case 'MEDIUM': return 'Medium';
+            case 'LOW': return 'Low';
+            default: return severity;
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        initMap();
+        const addDriverModal = document.getElementById('addDriverModal');
+        addDriverModal.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('driverForm').reset();
+            document.getElementById('driverId').value = '';
+            document.getElementById('addDriverModalLabel').textContent = 'Add New Driver';
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/logout';
+            }
+        });
+    });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

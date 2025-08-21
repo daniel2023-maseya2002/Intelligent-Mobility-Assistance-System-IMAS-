@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMMS - Equipment Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            gap: 10px;
+        }
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+        .logo-text {
+            color: white;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .header-title {
+            margin-left: 20px;
+            font-size: 18px;
+            flex-grow: 1;
+        }
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+        }
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+        .stats-change {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #28c76f;
+            background-color: #e6fff0;
+        }
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        .table-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .status-badge {
+            padding: 0.5em 0.75em;
+            font-weight: 500;
+            border-radius: 30px;
+        }
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+            .sidebar .menu-text {
+                display: none;
+            }
+            .main-content {
+                margin-left: 70px;
+            }
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+            .user-info {
+                display: none;
+            }
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+        @media (max-width: 769px) {
+            .dropdown-menu {
+                display: none;
+            }
+        }
+        @media (max-width: 768px) {
+            .stats-cards {
+                flex-direction: column;
+            }
+            .table-actions {
+                flex-direction: column;
+            }
+            .user-info {
+                display: none;
+            }
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+            .logo-text {
+                font-size: 18px;
+            }
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+            .header {
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="logo">
+        <img src="https://via.placeholder.com/40" alt="PMMS Logo" class="logo-image">
+        <span class="logo-text">PMMS</span>
+    </div>
+    <div class="header-title">Equipment Report</div>
+    <div class="profile-container">
+        <div class="profile-image">
+            <img src="https://via.placeholder.com/35" alt="User Profile" class="avatar">
+        </div>
+        <div class="user-info">
+            <h3 class="user-name">John Doe</h3>
+            <p class="user-email">john.doe@example.com</p>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar">
+    <ul class="sidebar-menu">
+        <li><a href="#"><i class="bi bi-grid-1x2"></i><span class="menu-text">Dashboard</span></a></li>
+        <li><a href="#"><i class="bi bi-tools"></i><span class="menu-text">Maintenance</span></a></li>
+        <li><a href="#"><i class="bi bi-calendar-check"></i><span class="menu-text">Planning</span></a></li>
+        <li><a href="#"><i class="bi bi-calendar-week"></i><span class="menu-text">Scheduling</span></a></li>
+        <li><a href="#"><i class="bi bi-check2-square"></i><span class="menu-text">Task Tracking</span></a></li>
+        <li><a href="#"><i class="bi bi-clipboard-check"></i><span class="menu-text">Work Order</span></a></li>
+        <li><a href="equipment.html"><i class="bi bi-gear"></i><span class="menu-text">Equipment & Assets</span></a></li>
+        <li><a href="#"><i class="bi bi-clock-history"></i><span class="menu-text">Downtime</span></a></li>
+        <li><a href="#"><i class="bi bi-chat-dots"></i><span class="menu-text">Communication</span></a></li>
+        <li><a href="#"><i class="bi bi-box-seam"></i><span class="menu-text">Inventory</span></a></li>
+        <li><a href="#"><i class="bi bi-shield-check"></i><span class="menu-text">Compliance & Safety</span></a></li>
+        <li><a href="#" class="active"><i class="bi bi-graph-up"></i><span class="menu-text">Data Analytics & Reporting</span></a></li>
+    </ul>
+</nav>
+
+<main class="main-content">
+    <div class="container-fluid">
+        <div class="row stats-cards g-3">
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card high-priority">
+                    <div class="stats-icon"><i class="bi bi-tools"></i></div>
+                    <div class="stats-label">Total Equipment</div>
+                    <div class="stats-number" id="totalEquipment">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 15%</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="stats-label">Operational</div>
+                    <div class="stats-number" id="operationalEquipment">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 8%</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card low-priority">
+                    <div class="stats-icon"><i class="bi bi-wrench"></i></div>
+                    <div class="stats-label">Maintenance Needed</div>
+                    <div class="stats-number" id="maintenanceNeeded">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 12%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-actions">
+                <div>
+                    <button class="btn btn-outline-primary" id="exportPDFReportBtn"><i class="bi bi-file-earmark-pdf me-2"></i> Export PDF</button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group">
+                        <input type="text" id="searchEquipmentInput" class="form-control" placeholder="Search equipment...">
+                        <button class="btn btn-outline-secondary" type="button" id="searchEquipmentButton"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Model</th>
+                        <th>Serial Number</th>
+                        <th>Location</th>
+                        <th>Installation Date</th>
+                        <th>Status</th>
+                        <th>Last Maintenance</th>
+                    </tr>
+                    </thead>
+                    <tbody id="equipmentTableBody"></tbody>
+                </table>
+            </div>
+            <div id="equipmentPagination" class="d-flex justify-content-between align-items-center mt-3">
+                <div>Showing <span id="showingEntries">0-0</span> of <span id="totalEntries">0</span> entries</div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0" id="paginationLinks"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999" id="notificationToastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+    const BASE_URL = '/api/equipments';
+    let currentPage = 1;
+    const rowsPerPage = 5;
+    let equipmentData = [];
+
+    const equipmentTableBody = document.getElementById('equipmentTableBody');
+    const paginationLinksElement = document.getElementById('paginationLinks');
+    const showingEntriesElement = document.getElementById('showingEntries');
+    const totalEntriesElement = document.getElementById('totalEntries');
+    const searchEquipmentInput = document.getElementById('searchEquipmentInput');
+    const searchEquipmentButton = document.getElementById('searchEquipmentButton');
+    const totalEquipmentElement = document.getElementById('totalEquipment');
+    const operationalEquipmentElement = document.getElementById('operationalEquipment');
+    const maintenanceNeededElement = document.getElementById('maintenanceNeeded');
+    const exportPDFReportBtn = document.getElementById('exportPDFReportBtn');
+
+    const mockEquipmentData = [
+        {
+            equipmentId: 1, name: "Conveyor Belt A", model: "CB-2000", serialNumber: "CB2000-12345",
+            location: "Production Line 1", installationDate: "2023-01-15", status: "OPERATIONAL",
+            lastMaintenanceDate: "2024-04-10"
+        },
+        {
+            equipmentId: 2, name: "Hydraulic Press", model: "HP-500", serialNumber: "HP500-67890",
+            location: "Assembly Area", installationDate: "2022-06-22", status: "UNDER_MAINTENANCE",
+            lastMaintenanceDate: "2024-05-05"
+        },
+        {
+            equipmentId: 3, name: "Robotic Arm", model: "RA-750", serialNumber: "RA750-24680",
+            location: "Assembly Area", installationDate: "2023-09-10", status: "OPERATIONAL",
+            lastMaintenanceDate: "2024-03-18"
+        }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchEquipmentData();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        searchEquipmentButton.addEventListener('click', handleSearch);
+        searchEquipmentInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') handleSearch();
+        });
+        exportPDFReportBtn.addEventListener('click', exportPDFReport);
+    }
+
+    async function fetchEquipmentData(searchParams = '') {
+        try {
+            const url = searchParams ? `${BASE_URL}${searchParams}` : BASE_URL;
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            equipmentData = await response.json();
+        } catch (error) {
+            console.warn('Backend unavailable, using mock data:', error.message);
+            equipmentData = searchParams
+                ? mockEquipmentData.filter(item => item.name.toLowerCase().includes(searchParams.toLowerCase()))
+                : mockEquipmentData;
+        }
+        updateStatistics();
+        renderEquipmentTable();
+    }
+
+    function updateStatistics() {
+        totalEquipmentElement.textContent = equipmentData.length;
+        operationalEquipmentElement.textContent = equipmentData.filter(item => item.status === 'OPERATIONAL').length;
+        maintenanceNeededElement.textContent = equipmentData.filter(item =>
+            item.status === 'UNDER_MAINTENANCE' || item.status === 'DEFECTIVE'
+        ).length;
+    }
+
+    function renderEquipmentTable() {
+        const totalItems = equipmentData.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage);
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+        const currentPageData = equipmentData.slice(startIndex, endIndex);
+
+        showingEntriesElement.textContent = totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0-0';
+        totalEntriesElement.textContent = totalItems;
+        equipmentTableBody.innerHTML = '';
+
+        if (currentPageData.length === 0) {
+            equipmentTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No equipment found</td></tr>';
+        } else {
+            currentPageData.forEach(item => {
+                let statusBadgeClass, statusLabel;
+                switch (item.status) {
+                    case 'OPERATIONAL':
+                        statusBadgeClass = 'badge bg-success';
+                        statusLabel = 'Operational';
+                        break;
+                    case 'UNDER_MAINTENANCE':
+                        statusBadgeClass = 'badge bg-warning';
+                        statusLabel = 'Under Maintenance';
+                        break;
+                    case 'DEFECTIVE':
+                        statusBadgeClass = 'badge bg-danger';
+                        statusLabel = 'Defective';
+                        break;
+                    case 'RETIRED':
+                        statusBadgeClass = 'badge bg-secondary';
+                        statusLabel = 'Retired';
+                        break;
+                    default:
+                        statusBadgeClass = 'badge bg-info';
+                        statusLabel = item.status;
+                }
+
+                const installationDate = formatDate(item.installationDate);
+                const lastMaintenanceDate = item.lastMaintenanceDate ? formatDate(item.lastMaintenanceDate) : 'N/A';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.equipmentId}</td>
+                    <td>${item.name}</td>
+                    <td>${item.model}</td>
+                    <td>${item.serialNumber}</td>
+                    <td>${item.location}</td>
+                    <td>${installationDate}</td>
+                    <td><span class="${statusBadgeClass}">${statusLabel}</span></td>
+                    <td>${lastMaintenanceDate}</td>
+                `;
+                equipmentTableBody.appendChild(row);
+            });
+        }
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        paginationLinksElement.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" aria-label="Previous">«</a>`;
+        if (currentPage > 1) prevLi.addEventListener('click', () => goToPage(currentPage - 1));
+        paginationLinksElement.appendChild(prevLi);
+
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow) startPage = Math.max(1, endPage - maxPagesToShow + 1);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            li.addEventListener('click', () => goToPage(i));
+            paginationLinksElement.appendChild(li);
+        }
+
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" aria-label="Next">»</a>`;
+        if (currentPage < totalPages) nextLi.addEventListener('click', () => goToPage(currentPage + 1));
+        paginationLinksElement.appendChild(nextLi);
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderEquipmentTable();
+    }
+
+    function handleSearch() {
+        const searchTerm = searchEquipmentInput.value.trim();
+        currentPage = 1;
+        fetchEquipmentData(searchTerm ? `/search?name=${encodeURIComponent(searchTerm)}` : '');
+    }
+
+    function showNotification(title, message, type) {
+        const toastContainer = document.getElementById('notificationToastContainer');
+        const toastId = 'notification-' + Date.now();
+        const toastHTML = `
+            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">${title}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">${message}</div>
+            </div>
+        `;
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const toastElement = document.getElementById(toastId);
+        switch (type) {
+            case 'success': toastElement.classList.add('bg-success', 'text-white'); break;
+            case 'error': toastElement.classList.add('bg-danger', 'text-white'); break;
+            case 'warning': toastElement.classList.add('bg-warning', 'text-dark'); break;
+            default: toastElement.classList.add('bg-info', 'text-white');
+        }
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        setTimeout(() => {
+            toast.hide();
+            setTimeout(() => toastElement.remove(), 500);
+        }, 5000);
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
+    }
+
+    function exportPDFReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text('Equipment Inventory Report', 14, 20);
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+        doc.setFontSize(14);
+        doc.text('Equipment Summary', 14, 45);
+        doc.setFontSize(10);
+        doc.text(`Total Equipment: ${totalEquipmentElement.textContent}`, 14, 55);
+        doc.text(`Operational Equipment: ${operationalEquipmentElement.textContent}`, 14, 65);
+        doc.text(`Maintenance Needed: ${maintenanceNeededElement.textContent}`, 14, 75);
+
+        doc.autoTable({
+            startY: 85,
+            head: [['ID', 'Name', 'Model', 'Serial Number', 'Location', 'Installation Date', 'Status', 'Last Maintenance']],
+            body: equipmentData.map(item => [
+                item.equipmentId,
+                item.name || 'N/A',
+                item.model || 'N/A',
+                item.serialNumber || 'N/A',
+                item.location || 'N/A',
+                formatDate(item.installationDate),
+                item.status || 'N/A',
+                formatDate(item.lastMaintenanceDate)
+            ]),
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [13, 110, 253] },
+            margin: { top: 40 }
+        });
+
+        doc.save('equipment_report.pdf');
+        showNotification('Success', 'PDF report generated successfully', 'success');
+    }
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

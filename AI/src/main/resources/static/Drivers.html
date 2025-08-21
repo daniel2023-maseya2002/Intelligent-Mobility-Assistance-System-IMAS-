@@ -1,0 +1,2626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Driver Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --header-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --hover-bg: #f1f5f9;
+            --sky-blue: #0bdef9;
+            --sky-blue-dark: #0ea5e9;
+            --sky-blue-light: #e0f7fa;
+            --accent-blue: #3b82f6;
+            --success-green: #22c55e;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --border-radius: 8px;
+        }
+
+        body.dark-mode {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --header-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --hover-bg: #334155;
+            --sky-blue-light: #1e40af;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            transition: width 0.3s ease, transform 0.3s ease;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .company-name,
+        .sidebar.collapsed .logo-section img,
+        .sidebar.collapsed .logout-btn span,
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item,
+        .sidebar.collapsed .sidebar-menu a {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .nav-item i,
+        .sidebar.collapsed .sidebar-menu i {
+            margin-right: 0;
+            font-size: 20px;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .logo-section {
+            padding: 25px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, var(--sky-blue), var(--sky-blue-dark));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .logo-image:hover {
+            border-color: rgba(255,255,255,0.8);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        }
+
+        .company-name,
+        .logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-text span {
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            list-style: none;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid transparent;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-size: 15px;
+            margin: 0 10px;
+            border-radius: var(--border-radius);
+        }
+
+        .sidebar-menu a:hover {
+            background-color: var(--hover-bg);
+            color: var(--text-color);
+            border-left-color: var(--sky-blue);
+        }
+
+        .sidebar-menu a.active {
+            background-color: var(--sky-blue-light);
+            color: var(--sky-blue-dark);
+            border-left-color: var(--sky-blue);
+            font-weight: 600;
+        }
+
+        .sidebar-menu i {
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .logout-section {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--danger-red);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            border-radius: var(--border-radius);
+        }
+
+        .logout-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: var(--sidebar-width);
+            z-index: 999;
+            transition: left 0.3s ease;
+            height: var(--header-height);
+        }
+
+        .sidebar.collapsed ~ .main-content .header {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: var(--sky-blue);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            gap: 6px;
+            min-width: 100px;
+        }
+
+        .header-btn:hover {
+            background: var(--sky-blue-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: var(--sky-blue-light);
+            transition: all 0.3s ease;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(14, 165, 233, 0.3);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--sky-blue);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            object-fit: cover;
+            border: 2px solid var(--sky-blue-dark);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: var(--sky-blue);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .user-email {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s ease;
+            background-color: var(--bg-color);
+        }
+
+        .sidebar.collapsed ~ .main-content {
+            margin-left: 80px;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .container-fluid {
+            padding: 30px;
+            margin-top: var(--header-height);
+            flex: 1;
+        }
+
+        .map-container {
+            height: calc(100vh - var(--header-height));
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .custom-driver-icon {
+            background: var(--sky-blue);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .custom-driver-icon.inactive {
+            background: var(--danger-red);
+        }
+
+        .custom-driver-icon.onbreak {
+            background: var(--warning-yellow);
+        }
+
+        .modal-content {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-header {
+            background: var(--sky-blue-light);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .scale-in {
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .bounce-hover:hover {
+            animation: bounce 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .tab-content {
+            padding: 20px;
+            background-color: var(--bg-color);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            border: 1px solid var(--border-color);
+            border-top: none;
+        }
+
+        .nav-tabs {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-tabs .nav-link {
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            padding: 10px 20px;
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: var(--border-color);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--sky-blue-dark);
+            background-color: var(--bg-color);
+            border-color: var(--border-color) var(--border-color) var(--bg-color);
+            font-weight: 600;
+        }
+
+        .schedule-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-time {
+            font-weight: 500;
+        }
+
+        .schedule-route {
+            color: var(--text-secondary);
+        }
+
+        .document-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .document-item:last-child {
+            border-bottom: none;
+        }
+
+        .document-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .incident-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .incident-item:last-child {
+            border-bottom: none;
+        }
+
+        .incident-date {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .incident-description {
+            margin-top: 5px;
+        }
+
+        .incident-severity {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-right: 5px;
+        }
+
+        .severity-high {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .severity-medium {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-yellow);
+        }
+
+        .severity-low {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: var(--success-green);
+        }
+
+        .dashboard-card {
+            background-color: var(--sidebar-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .dashboard-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .card-footer {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: 15px;
+        }
+
+        .performance-chart {
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .alert-card {
+            border-left: 4px solid var(--warning-yellow);
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .message-card {
+            border-left: 4px solid var(--accent-blue);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .trip-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .trip-card:hover {
+            border-color: var(--sky-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .trip-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .trip-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .trip-status {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .trip-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .trip-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .status-planned {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .status-in-progress {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: var(--success-green);
+        }
+
+        .status-completed {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .status-delayed {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-yellow);
+        }
+
+        .status-cancelled {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .trip-map {
+            height: 200px;
+            margin-top: 15px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .document-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .document-card:hover {
+            border-color: var(--sky-blue);
+            box-shadow: var(--shadow);
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .document-title {
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .document-type {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .document-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .type-pdf {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .type-doc {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+        }
+
+        .type-image {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success-green);
+        }
+
+        .type-other {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .start-trip-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            font-weight: 500;
+        }
+
+        .trip-progress {
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .trip-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sky-blue), var(--sky-blue-dark));
+        }
+
+        .emergency-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--danger-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .emergency-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .break-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--warning-yellow);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .break-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(245, 158, 11, 0.4);
+        }
+
+        .break-btn.active {
+            background-color: var(--success-green);
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 80px;
+            }
+            .sidebar .menu-text {
+                display: none;
+            }
+            .main-content {
+                margin-left: 80px;
+            }
+            .header {
+                left: 80px;
+            }
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+            .sidebar-menu a {
+                padding: 12px;
+                justify-content: center;
+            }
+            .user-info {
+                display: none;
+            }
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-title {
+                display: none;
+            }
+            .header {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<header class="header">
+    <div class="header-left">
+        <button class="header-btn" id="sidebarToggle">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">IMAS - Driver Dashboard</h1>
+    </div>
+    <div class="header-right">
+        <button class="header-btn" id="themeToggle">
+            <i class="bi bi-sun"></i>
+            <span class="btn-text">Light</span>
+        </button>
+        <div class="profile-container" id="profileDropdown">
+            <img src="https://ui-avatars.com/api/?name=Driver+User&background=0ea5e9&color=fff" alt="Profile" class="avatar">
+            <div class="user-info">
+                <h3 class="user-name" id="driverName">Driver User</h3>
+                <p class="user-email" id="driverEmail">driver@imas.com</p>
+            </div>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+    </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="logo-section">
+        <div class="logo">
+            <img src="https://via.placeholder.com/80" alt="IMAS Logo" class="logo-image">
+            <h2 class="company-name">IMAS</h2>
+            <p class="logo-text">Kinshasa <span>Transport</span></p>
+        </div>
+    </div>
+    <ul class="sidebar-menu">
+        <li>
+            <a href="#" class="active" id="dashboardTab">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="tripsTab">
+                <i class="bi bi-calendar-check"></i>
+                <span class="menu-text">My Trips</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="mapTab">
+                <i class="bi bi-map"></i>
+                <span class="menu-text">Route Map</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="documentsTab">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Documents</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="reportsTab">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span class="menu-text">Reports</span>
+            </a>
+        </li>
+    </ul>
+    <div class="logout-section">
+        <a href="#" class="logout-btn" id="logoutBtn">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="menu-text">Logout</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container-fluid">
+        <!-- Dashboard Content -->
+        <div id="dashboardContent">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-calendar-week"></i> Today's Trips</h3>
+                        <div class="card-value" id="todayTrips">3</div>
+                        <div class="card-footer">2 completed, 1 in progress</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-check-circle"></i> On-Time Rate</h3>
+                        <div class="card-value" id="onTimeRate">92%</div>
+                        <div class="card-footer">Last 30 days</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-shield-check"></i> Safety Score</h3>
+                        <div class="card-value" id="safetyScore">88</div>
+                        <div class="card-footer">Out of 100</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-emoji-smile"></i> Satisfaction</h3>
+                        <div class="card-value" id="satisfactionScore">95%</div>
+                        <div class="card-footer">Passenger feedback</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-graph-up"></i> Performance Overview</h3>
+                        <div class="performance-chart">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card alert-card">
+                        <h3 class="card-title"><i class="bi bi-exclamation-triangle"></i> Alerts</h3>
+                        <div id="alertsList">
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong>Route Change:</strong> Line 1 detour due to construction
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <strong>Reminder:</strong> License renewal due in 15 days
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dashboard-card message-card">
+                        <h3 class="card-title"><i class="bi bi-chat-left-text"></i> Recent Messages</h3>
+                        <div id="messagesList">
+                            <div class="mb-2">
+                                <strong>Dispatch:</strong> Please confirm arrival at Gare Centrale
+                                <small class="text-muted d-block">10 min ago</small>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Manager:</strong> Good job on yesterday's performance
+                                <small class="text-muted d-block">2 hours ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trips Content -->
+        <div id="tripsContent" style="display: none;">
+            <h2 class="mb-4">My Trips</h2>
+            <div class="row">
+                <div class="col-md-8">
+                    <div id="upcomingTrips">
+                        <h4 class="mb-3">Upcoming Trips</h4>
+                        <div class="trip-card">
+                            <div class="trip-header">
+                                <div class="trip-title">Line 1 - Gare Centrale to Masina</div>
+                                <span class="trip-status status-planned">Planned</span>
+                            </div>
+                            <div class="trip-details">
+                                <div><strong>Date:</strong> Today, 14:00 - 16:00</div>
+                                <div><strong>Bus:</strong> #KIN-789 (45 seats)</div>
+                            </div>
+                            <div class="trip-actions">
+                                <button class="btn btn-sm btn-primary" onclick="viewTripDetails(1)">
+                                    <i class="bi bi-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="startTrip(1)">
+                                    <i class="bi bi-play-circle"></i> Start Trip
+                                </button>
+                            </div>
+                        </div>
+                        <div class="trip-card">
+                            <div class="trip-header">
+                                <div class="trip-title">Line 2 - Gare Centrale to Makala</div>
+                                <span class="trip-status status-planned">Planned</span>
+                            </div>
+                            <div class="trip-details">
+                                <div><strong>Date:</strong> Tomorrow, 08:00 - 10:00</div>
+                                <div><strong>Bus:</strong> #KIN-456 (32 seats)</div>
+                            </div>
+                            <div class="trip-actions">
+                                <button class="btn btn-sm btn-primary" onclick="viewTripDetails(2)">
+                                    <i class="bi bi-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm btn-secondary" disabled>
+                                    <i class="bi bi-clock"></i> Not started
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="currentTrip" class="mt-4" style="display: none;">
+                        <h4 class="mb-3">Current Trip</h4>
+                        <div class="trip-card">
+                            <div class="trip-header">
+                                <div class="trip-title" id="currentTripTitle">Line 1 - Gare Centrale to Masina</div>
+                                <span class="trip-status status-in-progress">In Progress</span>
+                            </div>
+                            <div class="trip-details">
+                                <div><strong>Started:</strong> <span id="currentTripStart">Today, 14:05</span></div>
+                                <div><strong>Next Stop:</strong> <span id="currentTripNextStop">Limete</span> (ETA: <span id="currentTripETA">14:25</span>)</div>
+                                <div><strong>Progress:</strong></div>
+                                <div class="trip-progress">
+                                    <div class="trip-progress-bar" style="width: 30%"></div>
+                                </div>
+                            </div>
+                            <div class="trip-map" id="currentTripMap"></div>
+                            <div class="trip-actions mt-3">
+                                <button class="btn btn-sm btn-warning" onclick="takeBreak()">
+                                    <i class="bi bi-cup-hot"></i> Take Break
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="endTrip(1)">
+                                    <i class="bi bi-stop-circle"></i> End Trip
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="completedTrips" class="mt-4">
+                        <h4 class="mb-3">Completed Trips</h4>
+                        <div class="trip-card">
+                            <div class="trip-header">
+                                <div class="trip-title">Line 3 - Gare Centrale to Quartier Est</div>
+                                <span class="trip-status status-completed">Completed</span>
+                            </div>
+                            <div class="trip-details">
+                                <div><strong>Date:</strong> Yesterday, 12:00 - 14:30</div>
+                                <div><strong>Bus:</strong> #KIN-123 (40 seats)</div>
+                                <div><strong>Performance:</strong> On-time, no incidents</div>
+                            </div>
+                            <div class="trip-actions">
+                                <button class="btn btn-sm btn-primary" onclick="viewTripDetails(3)">
+                                    <i class="bi bi-info-circle"></i> Details
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="downloadTripReport(3)">
+                                    <i class="bi bi-download"></i> Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-calendar-month"></i> Monthly Summary</h3>
+                        <div class="performance-chart">
+                            <canvas id="monthlyTripsChart"></canvas>
+                        </div>
+                        <div class="card-footer">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small><i class="bi bi-check-circle text-success"></i> Completed: 18</small>
+                                </div>
+                                <div class="col-6">
+                                    <small><i class="bi bi-clock text-warning"></i> Scheduled: 5</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Content -->
+        <div id="mapContent" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <h2>Route Map</h2>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <select class="form-select" id="routeSelector">
+                            <option value="line1">Line 1 - Gare Centrale to Masina</option>
+                            <option value="line2">Line 2 - Gare Centrale to Makala</option>
+                            <option value="line3">Line 3 - Gare Centrale to Quartier Est</option>
+                            <option value="line4">Line 4 - Ngaliema to Ngaba</option>
+                            <option value="line5">Line 5 - Kimbanseke to Bumbu</option>
+                        </select>
+                        <button class="btn btn-primary" type="button" id="showRouteBtn">
+                            <i class="bi bi-eye"></i> Show
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="map-container">
+                <div id="routeMap"></div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-signpost-split"></i> Route Stops</h3>
+                        <div id="routeStops">
+                            <ol class="list-group list-group-numbered">
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">Gare Centrale</div>
+                                        Departure point
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">Start</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">Limete</div>
+                                        Estimated arrival: 14:25
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">Matete</div>
+                                        Estimated arrival: 14:45
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">Ndjili</div>
+                                        Estimated arrival: 15:05
+                                    </div>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold">Masina</div>
+                                        Final destination
+                                    </div>
+                                    <span class="badge bg-success rounded-pill">End</span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-info-circle"></i> Route Information</h3>
+                        <div id="routeInfo">
+                            <div class="mb-3">
+                                <h5>Line 1 - Gare Centrale to Masina</h5>
+                                <p>Total distance: 12.5 km</p>
+                                <p>Estimated duration: 1 hour 30 minutes</p>
+                                <p>Average passengers per day: 450</p>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-exclamation-triangle"></i> <strong>Note:</strong> Construction work near Matete may cause delays
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents Content -->
+        <div id="documentsContent" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h2>My Documents</h2>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search documents..." id="documentSearch">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="document-card">
+                        <div class="document-header">
+                            <div class="document-title">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> Driver License
+                            </div>
+                            <span class="document-type type-pdf">PDF</span>
+                        </div>
+                        <div class="document-details">
+                            <div>Expires: 15/05/2024</div>
+                            <div>Uploaded: 15/05/2023</div>
+                            <div>Size: 2.4 MB</div>
+                        </div>
+                        <div class="document-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewDocument('license')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="downloadDocument('license')">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="document-card">
+                        <div class="document-header">
+                            <div class="document-title">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> Medical Certificate
+                            </div>
+                            <span class="document-type type-pdf">PDF</span>
+                        </div>
+                        <div class="document-details">
+                            <div>Expires: 20/06/2024</div>
+                            <div>Uploaded: 20/06/2023</div>
+                            <div>Size: 1.8 MB</div>
+                        </div>
+                        <div class="document-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewDocument('medical')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="downloadDocument('medical')">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="document-card">
+                        <div class="document-header">
+                            <div class="document-title">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> Training Certificate
+                            </div>
+                            <span class="document-type type-pdf">PDF</span>
+                        </div>
+                        <div class="document-details">
+                            <div>Valid until: 10/04/2025</div>
+                            <div>Uploaded: 10/04/2023</div>
+                            <div>Size: 3.2 MB</div>
+                        </div>
+                        <div class="document-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewDocument('training')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="downloadDocument('training')">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="document-card">
+                        <div class="document-header">
+                            <div class="document-title">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> Contract Agreement
+                            </div>
+                            <span class="document-type type-pdf">PDF</span>
+                        </div>
+                        <div class="document-details">
+                            <div>Signed: 05/01/2023</div>
+                            <div>Uploaded: 05/01/2023</div>
+                            <div>Size: 5.1 MB</div>
+                        </div>
+                        <div class="document-actions">
+                            <button class="btn btn-sm btn-primary" onclick="viewDocument('contract')">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="downloadDocument('contract')">
+                                <i class="bi bi-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Content -->
+        <div id="reportsContent" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h2>My Reports</h2>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <select class="form-select" id="reportPeriod">
+                            <option value="week">This Week</option>
+                            <option value="month" selected>This Month</option>
+                            <option value="quarter">This Quarter</option>
+                            <option value="year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <button class="btn btn-primary" type="button" id="generateReportBtn">
+                            <i class="bi bi-arrow-repeat"></i> Generate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-bar-chart"></i> Performance Report</h3>
+                        <div class="performance-chart">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-sm btn-success" onclick="downloadReport('performance')">
+                                <i class="bi bi-download"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-clipboard-data"></i> Key Metrics</h3>
+                        <div class="mb-3">
+                            <h5>Trips Completed</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 85%">17/20</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>On-Time Performance</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 92%">92%</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Fuel Efficiency</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 76%">76%</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Passenger Satisfaction</h5>
+                            <div class="progress mb-2">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 95%">95%</div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-sm btn-primary" onclick="downloadReport('metrics')">
+                                <i class="bi bi-download"></i> Download Metrics
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="dashboard-card">
+                        <h3 class="card-title"><i class="bi bi-list-check"></i> Recent Trip Reports</h3>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Route</th>
+                                <th>Status</th>
+                                <th>On-Time</th>
+                                <th>Incidents</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>15/07/2023</td>
+                                <td>Line 1 - Gare Centrale to Masina</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td><i class="bi bi-check-circle text-success"></i> Yes</td>
+                                <td>0</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="viewTripReport(1)">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="downloadTripReport(1)">
+                                        <i class="bi bi-download"></i> Download
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>14/07/2023</td>
+                                <td>Line 3 - Gare Centrale to Quartier Est</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td><i class="bi bi-check-circle text-success"></i> Yes</td>
+                                <td>0</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="viewTripReport(2)">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="downloadTripReport(2)">
+                                        <i class="bi bi-download"></i> Download
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>12/07/2023</td>
+                                <td>Line 2 - Gare Centrale to Makala</td>
+                                <td><span class="badge bg-success">Completed</span></td>
+                                <td><i class="bi bi-clock text-warning"></i> 5 min late</td>
+                                <td>1</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="viewTripReport(3)">
+                                        <i class="bi bi-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="downloadTripReport(3)">
+                                        <i class="bi bi-download"></i> Download
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Emergency Button -->
+<button class="emergency-btn" id="emergencyBtn" data-bs-toggle="modal" data-bs-target="#emergencyModal">
+    <i class="bi bi-exclamation-triangle"></i>
+</button>
+
+<!-- Break Button -->
+<button class="break-btn" id="breakBtn">
+    <i class="bi bi-cup-hot"></i>
+</button>
+
+<!-- Emergency Modal -->
+<div class="modal fade" id="emergencyModal" tabindex="-1" aria-labelledby="emergencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="emergencyModalLabel">Emergency Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emergencyForm">
+                    <div class="mb-3">
+                        <label for="emergencyType" class="form-label">Emergency Type</label>
+                        <select class="form-select" id="emergencyType" required>
+                            <option value="">Select emergency type</option>
+                            <option value="accident">Accident</option>
+                            <option value="medical">Medical Emergency</option>
+                            <option value="mechanical">Mechanical Failure</option>
+                            <option value="security">Security Threat</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emergencyDetails" class="form-label">Details</label>
+                        <textarea class="form-control" id="emergencyDetails" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="needAssistance">
+                        <label class="form-check-label" for="needAssistance">I need immediate assistance</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="sendEmergencyBtn">Send Alert</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trip Details Modal -->
+<div class="modal fade" id="tripDetailsModal" tabindex="-1" aria-labelledby="tripDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tripDetailsModalLabel">Trip Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 id="tripRoute">Line 1 - Gare Centrale to Masina</h5>
+                        <div class="mb-3">
+                            <strong>Date & Time:</strong> <span id="tripDateTime">Today, 14:00 - 16:00</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Bus:</strong> <span id="tripBus">#KIN-789 (45 seats)</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Status:</strong> <span id="tripStatus" class="badge bg-primary">Planned</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <strong>Estimated Duration:</strong> <span id="tripDuration">1 hour 30 minutes</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Distance:</strong> <span id="tripDistance">12.5 km</span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Passenger Capacity:</strong> <span id="tripCapacity">45</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Route Stops</h5>
+                    <div class="trip-map" id="tripDetailsMap" style="height: 200px;"></div>
+                    <ol class="list-group list-group-numbered mt-3" id="tripStopsList">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Gare Centrale</div>
+                                Departure point
+                            </div>
+                            <span class="badge bg-primary rounded-pill">Start</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Limete</div>
+                                Estimated arrival: 14:25
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">Masina</div>
+                                Final destination
+                            </div>
+                            <span class="badge bg-success rounded-pill">End</span>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Notes</h5>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Construction work near Matete may cause delays
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="startTripBtn">Start Trip</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div class="modal fade" id="documentViewerModal" tabindex="-1" aria-labelledby="documentViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentViewerModalLabel">Document Viewer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="documentViewer" style="width: 100%; height: 70vh; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadDocumentBtn">Download</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Viewer Modal -->
+<div class="modal fade" id="reportViewerModal" tabindex="-1" aria-labelledby="reportViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportViewerModalLabel">Trip Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="reportViewer" style="width: 100%; height: 70vh; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadReport('current')">Download</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Break Modal -->
+<div class="modal fade" id="breakModal" tabindex="-1" aria-labelledby="breakModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="breakModalLabel">Break Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="breakStatusContent">
+                    <p>You are currently on break. Dispatch has been notified.</p>
+                    <div class="mb-3">
+                        <label for="breakReason" class="form-label">Break Reason (optional)</label>
+                        <select class="form-select" id="breakReason">
+                            <option value="">Select reason</option>
+                            <option value="rest">Rest</option>
+                            <option value="meal">Meal</option>
+                            <option value="personal">Personal</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="breakNotes" class="form-label">Notes (optional)</label>
+                        <textarea class="form-control" id="breakNotes" rows="2"></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Maximum break duration is 30 minutes
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="endBreakBtn">End Break</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+
+
+
+
+
+    <script>
+
+
+        // Kinshasa coordinates and stations
+const kinshasaCenter = [-4.3250, 15.3222];
+const stations = {
+    gare_centrale: { name: "Gare Centrale", lat: -4.3276, lng: 15.3136 },
+    matete: { name: "Matete", lat: -4.3833, lng: 15.3667 },
+    limete: { name: "Limete", lat: -4.3333, lng: 15.3333 },
+    bandalungwa: { name: "Bandalungwa", lat: -4.3167, lng: 15.2833 },
+    barumbu: { name: "Barumbu", lat: -4.3167, lng: 15.3167 },
+    kinshasa: { name: "Kinshasa", lat: -4.3250, lng: 15.3222 },
+    ndjili: { name: "Ndjili", lat: -4.3833, lng: 15.3833 },
+    masina: { name: "Masina", lat: -4.3833, lng: 15.4000 },
+    kimbanseke: { name: "Kimbanseke", lat: -4.4500, lng: 15.4167 },
+    ngaliema: { name: "Ngaliema", lat: -4.3167, lng: 15.2333 },
+    mont_ngafula: { name: "Mont Ngafula", lat: -4.4000, lng: 15.2667 },
+    selembao: { name: "Selembao", lat: -4.3500, lng: 15.2833 },
+    bumbu: { name: "Bumbu", lat: -4.3667, lng: 15.3000 },
+    makala: { name: "Makala", lat: -4.3667, lng: 15.3167 },
+    ngaba: { name: "Ngaba", lat: -4.3667, lng: 15.3500 }
+};
+
+// Kinshasa bus routes coordinates
+const busRoutes = {
+    "line1": [
+        [-4.3276, 15.3136],  // Gare Centrale
+        [-4.3333, 15.3333],  // Limete
+        [-4.3833, 15.3667],  // Matete
+        [-4.3833, 15.3833],  // Ndjili
+        [-4.3833, 15.4000]   // Masina
+    ],
+    "line2": [
+        [-4.3276, 15.3136],  // Gare Centrale
+        [-4.3167, 15.3167],  // Barumbu
+        [-4.3167, 15.2833],  // Bandalungwa
+        [-4.3500, 15.2833],  // Selembao
+        [-4.3667, 15.3000],  // Bumbu
+        [-4.3667, 15.3167]   // Makala
+    ],
+    "line3": [
+        [-4.3276, 15.3136],  // Gare Centrale
+        [-4.3250, 15.3222],  // Kinshasa
+        [-4.3667, 15.3500],  // Ngaba
+        [-4.3833, 15.3667],  // Matete
+        [-4.4000, 15.3833],  // Extension Est
+        [-4.4167, 15.4000]   // Quartier Est
+    ],
+    "line4": [
+        [-4.3167, 15.2333],  // Ngaliema
+        [-4.3333, 15.2667],  // Mont Ngafula
+        [-4.3500, 15.2833],  // Selembao
+        [-4.3667, 15.3000],  // Bumbu
+        [-4.3667, 15.3167],  // Makala
+        [-4.3667, 15.3500]   // Ngaba
+    ],
+    "line5": [
+        [-4.4500, 15.4167],  // Kimbanseke
+        [-4.4167, 15.4000],  // Quartier Est
+        [-4.3833, 15.3833],  // Ndjili
+        [-4.3667, 15.3500],  // Ngaba
+        [-4.3667, 15.3167],  // Makala
+        [-4.3667, 15.3000]   // Bumbu
+    ]
+};
+
+// Driver data and state
+let driver = {
+    id: 123,
+    firstName: "Jean",
+    lastName: "Kabasele",
+    email: "driver@imas.com",
+    licenseNumber: "DRV-2023-12345",
+    status: "ACTIVE",
+    currentTrip: null,
+    onBreak: false,
+    position: null,
+    performance: {
+        onTimePercentage: 92,
+        safetyRating: 88,
+        passengerSatisfaction: 95,
+        fuelEfficiency: 76,
+        incidentCount: 2
+    }
+};
+
+let map;
+let routeMap;
+let currentTripMap;
+let tripDetailsMap;
+let currentPositionMarker;
+let currentTripInterval;
+let apiBaseUrl = 'http://localhost:8080/api';
+let isOnTrip = false;
+let currentTripProgress = 0;
+
+// Initialize the application
+$(document).ready(function() {
+    // Initialize session
+    initializeSession();
+
+    // Initialize maps
+    initMap();
+    initRouteMap();
+
+    // Initialize charts
+    initPerformanceChart();
+    initMonthlyTripsChart();
+    initReportChart();
+
+    // Set up event listeners
+    setupEventListeners();
+
+    // Update clock
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Simulate driver position if not on a trip
+    if (!isOnTrip) {
+        setInterval(updateDriverPosition, 5000);
+    }
+});
+
+// Initialize driver session
+function initializeSession() {
+    // In a real app, this would come from the server
+    document.getElementById('driverName').textContent = `${driver.firstName} ${driver.lastName}`;
+    document.getElementById('driverEmail').textContent = driver.email;
+
+    // Update dashboard stats
+    document.getElementById('todayTrips').textContent = '3';
+    document.getElementById('onTimeRate').textContent = `${driver.performance.onTimePercentage}%`;
+    document.getElementById('safetyScore').textContent = driver.performance.safetyRating;
+    document.getElementById('satisfactionScore').textContent = `${driver.performance.passengerSatisfaction}%`;
+}
+
+// Initialize main map
+function initMap() {
+    if (map) return;
+    map = L.map('routeMap').setView(kinshasaCenter, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
+
+    // Add stations to the map
+    Object.values(stations).forEach(station => {
+        L.marker([station.lat, station.lng], {
+            icon: L.divIcon({
+                className: 'station-icon',
+                html: '<i class="fas fa-map-marker-alt"></i>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 24]
+            })
+        }).addTo(map)
+            .bindPopup(station.name);
+    });
+
+    // Add current position marker
+    currentPositionMarker = L.marker(kinshasaCenter, {
+        icon: L.divIcon({
+            className: 'custom-driver-icon',
+            html: '<i class="fas fa-bus"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        })
+    }).addTo(map)
+        .bindPopup('Your current position');
+}
+
+// Initialize route map
+function initRouteMap() {
+    routeMap = L.map('routeMap').setView(kinshasaCenter, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(routeMap);
+
+    // Show default route (Line 1)
+    showRoute('line1');
+}
+
+// Initialize trip details map
+function initTripDetailsMap() {
+    if (!tripDetailsMap) {
+        tripDetailsMap = L.map('tripDetailsMap').setView(kinshasaCenter, 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(tripDetailsMap);
+    }
+    return tripDetailsMap;
+}
+
+// Show route on map
+function showRoute(routeKey) {
+    // Clear existing route if any
+    routeMap.eachLayer(layer => {
+        if (layer instanceof L.Polyline) {
+            routeMap.removeLayer(layer);
+        }
+    });
+
+    const route = busRoutes[routeKey];
+    if (!route) return;
+
+    // Add route to the map
+    L.polyline(route, {
+        color: '#0ea5e9',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '5, 5'
+    }).addTo(routeMap);
+
+    // Fit map to route bounds
+    routeMap.fitBounds(route);
+}
+
+// Initialize performance chart
+function initPerformanceChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['On-Time', 'Safety', 'Satisfaction', 'Fuel Efficiency'],
+            datasets: [{
+                label: 'Performance Metrics',
+                data: [
+                    driver.performance.onTimePercentage,
+                    driver.performance.safetyRating,
+                    driver.performance.passengerSatisfaction,
+                    driver.performance.fuelEfficiency
+                ],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(153, 102, 255, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// Initialize monthly trips chart
+function initMonthlyTripsChart() {
+    const ctx = document.getElementById('monthlyTripsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Completed Trips',
+                data: [5, 4, 6, 3],
+                backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                borderColor: 'rgba(14, 165, 233, 1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Initialize report chart
+function initReportChart() {
+    const ctx = document.getElementById('reportChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Punctuality', 'Safety', 'Comfort', 'Efficiency', 'Communication', 'Professionalism'],
+            datasets: [{
+                label: 'Performance',
+                data: [92, 88, 95, 76, 85, 90],
+                backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                borderColor: 'rgba(14, 165, 233, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(14, 165, 233, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// Set up event listeners
+function setupEventListeners() {
+    // Sidebar toggle
+    document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // Navigation tabs
+    document.getElementById('dashboardTab').addEventListener('click', () => showContent('dashboard'));
+    document.getElementById('tripsTab').addEventListener('click', () => showContent('trips'));
+    document.getElementById('mapTab').addEventListener('click', () => showContent('map'));
+    document.getElementById('documentsTab').addEventListener('click', () => showContent('documents'));
+    document.getElementById('reportsTab').addEventListener('click', () => showContent('reports'));
+
+    // Route selector
+    document.getElementById('showRouteBtn').addEventListener('click', () => {
+        const route = document.getElementById('routeSelector').value;
+        showRoute(route);
+    });
+
+    // Emergency button
+    document.getElementById('sendEmergencyBtn').addEventListener('click', sendEmergencyAlert);
+
+    // Break button
+    document.getElementById('breakBtn').addEventListener('click', toggleBreak);
+
+    // End break button
+    document.getElementById('endBreakBtn').addEventListener('click', endBreak);
+
+    // Start trip button in modal
+    document.getElementById('startTripBtn').addEventListener('click', startTripFromModal);
+}
+
+// Show content based on selection
+function showContent(content) {
+    // Hide all content sections
+    document.getElementById('dashboardContent').style.display = 'none';
+    document.getElementById('tripsContent').style.display = 'none';
+    document.getElementById('mapContent').style.display = 'none';
+    document.getElementById('documentsContent').style.display = 'none';
+    document.getElementById('reportsContent').style.display = 'none';
+
+    // Show selected content
+    document.getElementById(`${content}Content`).style.display = 'block';
+
+    // Update active tab
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.getElementById(`${content}Tab`).classList.add('active');
+
+    // Refresh maps if necessary
+    if (content === 'map') {
+        setTimeout(() => {
+            routeMap.invalidateSize();
+        }, 300);
+    }
+}
+
+// Toggle sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    sidebar.classList.toggle('collapsed');
+    mainContent.classList.toggle('expanded');
+}
+
+// Toggle theme
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const themeToggle = document.getElementById('themeToggle');
+    const icon = themeToggle.querySelector('i');
+    const text = themeToggle.querySelector('.btn-text');
+    if (document.body.classList.contains('dark-mode')) {
+        icon.classList.replace('bi-sun', 'bi-moon');
+        text.textContent = 'Dark';
+    } else {
+        icon.classList.replace('bi-moon', 'bi-sun');
+        text.textContent = 'Light';
+    }
+}
+
+// Update clock
+function updateClock() {
+    const now = moment().tz('Africa/Kinshasa');
+    const headerTitle = document.querySelector('.header-title');
+    if (headerTitle) {
+        headerTitle.textContent = `IMAS - Driver Dashboard | ${now.format('dddd, MMMM Do YYYY, h:mm:ss A')}`;
+    }
+}
+
+// View trip details
+function viewTripDetails(tripId) {
+    // In a real app, this would fetch trip details from the server
+    const tripDetails = {
+        id: tripId,
+        route: "Line 1 - Gare Centrale to Masina",
+        dateTime: "Today, 14:00 - 16:00",
+        bus: "#KIN-789 (45 seats)",
+        status: "Planned",
+        duration: "1 hour 30 minutes",
+        distance: "12.5 km",
+        capacity: "45",
+        stops: [
+            { name: "Gare Centrale", type: "start", eta: "14:00" },
+            { name: "Limete", type: "stop", eta: "14:25" },
+            { name: "Matete", type: "stop", eta: "14:45" },
+            { name: "Ndjili", type: "stop", eta: "15:05" },
+            { name: "Masina", type: "end", eta: "15:30" }
+        ]
+    };
+
+    // Update modal content
+    document.getElementById('tripRoute').textContent = tripDetails.route;
+    document.getElementById('tripDateTime').textContent = tripDetails.dateTime;
+    document.getElementById('tripBus').textContent = tripDetails.bus;
+    document.getElementById('tripStatus').textContent = tripDetails.status;
+    document.getElementById('tripStatus').className = 'badge ' + getStatusClass(tripDetails.status.toLowerCase());
+    document.getElementById('tripDuration').textContent = tripDetails.duration;
+    document.getElementById('tripDistance').textContent = tripDetails.distance;
+    document.getElementById('tripCapacity').textContent = tripDetails.capacity;
+
+    // Update stops list
+    const stopsList = document.getElementById('tripStopsList');
+    stopsList.innerHTML = '';
+    tripDetails.stops.forEach(stop => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-start';
+        li.innerHTML = `
+            <div class="ms-2 me-auto">
+                <div class="fw-bold">${stop.name}</div>
+                ${stop.type === 'start' ? 'Departure point' : stop.type === 'end' ? 'Final destination' : 'Estimated arrival: ' + stop.eta}
+            </div>
+            ${stop.type === 'start' ? '<span class="badge bg-primary rounded-pill">Start</span>' :
+              stop.type === 'end' ? '<span class="badge bg-success rounded-pill">End</span>' : ''}
+        `;
+        stopsList.appendChild(li);
+    });
+
+    // Show route on trip details map
+    const tripMap = initTripDetailsMap();
+    tripMap.eachLayer(layer => {
+        if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+            tripMap.removeLayer(layer);
+        }
+    });
+
+    // Add route to the map
+    const route = busRoutes['line1']; // Assuming this is Line 1
+    L.polyline(route, {
+        color: '#0ea5e9',
+        weight: 4,
+        opacity: 0.7
+    }).addTo(tripMap);
+
+    // Add markers for stops
+    tripDetails.stops.forEach((stop, index) => {
+        const station = Object.values(stations).find(s => s.name.includes(stop.name));
+        if (station) {
+            L.marker([station.lat, station.lng], {
+                icon: L.divIcon({
+                    className: 'station-icon',
+                    html: `<i class="fas fa-${stop.type === 'start' ? 'flag' : stop.type === 'end' ? 'flag-checkered' : 'map-marker-alt'}"></i>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 24]
+                })
+            }).addTo(tripMap)
+                .bindPopup(stop.name);
+        }
+    });
+
+    // Fit map to route bounds
+    tripMap.fitBounds(route);
+
+    // Update start trip button
+    const startTripBtn = document.getElementById('startTripBtn');
+    startTripBtn.textContent = 'Start Trip';
+    startTripBtn.className = 'btn btn-primary';
+    startTripBtn.onclick = function() { startTripFromModal(tripId); };
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('tripDetailsModal'));
+    modal.show();
+}
+
+// Start trip from modal
+function startTripFromModal(tripId) {
+    // In a real app, this would notify the server
+    startTrip(tripId);
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('tripDetailsModal'));
+    modal.hide();
+}
+
+// Start trip
+function startTrip(tripId) {
+    // In a real app, this would fetch trip details from the server
+    const trip = {
+        id: tripId,
+        route: "Line 1 - Gare Centrale to Masina",
+        stops: [
+            { name: "Gare Centrale", position: [-4.3276, 15.3136], passed: false },
+            { name: "Limete", position: [-4.3333, 15.3333], passed: false },
+            { name: "Matete", position: [-4.3833, 15.3667], passed: false },
+            { name: "Ndjili", position: [-4.3833, 15.3833], passed: false },
+            { name: "Masina", position: [-4.3833, 15.4000], passed: false }
+        ],
+        startTime: new Date(),
+        status: "IN_PROGRESS"
+    };
+
+    // Update driver state
+    driver.currentTrip = trip;
+    isOnTrip = true;
+    currentTripProgress = 0;
+
+    // Update UI
+    document.getElementById('upcomingTrips').style.display = 'none';
+    document.getElementById('currentTrip').style.display = 'block';
+    document.getElementById('currentTripTitle').textContent = trip.route;
+    document.getElementById('currentTripStart').textContent = `Today, ${moment(trip.startTime).format('HH:mm')}`;
+    document.getElementById('currentTripNextStop').textContent = trip.stops[1].name;
+    document.getElementById('currentTripETA').textContent = '14:25';
+
+    // Show trip on map
+    const tripMapContainer = document.getElementById('currentTripMap');
+    tripMapContainer.innerHTML = '';
+
+    const tripMap = L.map(tripMapContainer).setView(kinshasaCenter, 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(tripMap);
+
+    // Add route to the map
+    const route = busRoutes['line1']; // Assuming this is Line 1
+    L.polyline(route, {
+        color: '#0ea5e9',
+        weight: 4,
+        opacity: 0.7
+    }).addTo(tripMap);
+
+    // Add markers for stops
+    trip.stops.forEach((stop, index) => {
+        L.marker(stop.position, {
+            icon: L.divIcon({
+                className: 'station-icon',
+                html: `<i class="fas fa-${index === 0 ? 'flag' : index === trip.stops.length - 1 ? 'flag-checkered' : 'map-marker-alt'}"></i>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 24]
+            })
+        }).addTo(tripMap)
+            .bindPopup(stop.name);
+    });
+
+    // Add bus marker
+    const busMarker = L.marker(route[0], {
+        icon: L.divIcon({
+            className: 'custom-driver-icon',
+            html: '<i class="fas fa-bus"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        })
+    }).addTo(tripMap)
+        .bindPopup('Your bus');
+
+    // Fit map to route bounds
+    tripMap.fitBounds(route);
+
+    // Start trip simulation
+    simulateTripProgress(tripMap, busMarker, route);
+}
+
+// Simulate trip progress
+function simulateTripProgress(tripMap, busMarker, route) {
+    let currentSegment = 0;
+    let progress = 0;
+    const segmentCount = route.length - 1;
+    const segmentLengths = [];
+
+    // Calculate segment lengths
+    for (let i = 0; i < segmentCount; i++) {
+        const start = route[i];
+        const end = route[i + 1];
+        segmentLengths.push(Math.sqrt(Math.pow(end[0] - start[0], 2) + Math.pow(end[1] - start[1], 2));
+    }
+
+    // Clear any existing interval
+    if (currentTripInterval) {
+        clearInterval(currentTripInterval);
+    }
+
+    // Start new interval
+    currentTripInterval = setInterval(() => {
+        if (driver.onBreak) return;
+
+        progress += 0.01;
+        currentTripProgress = (currentSegment + progress) / segmentCount * 100;
+
+        // Update progress bar
+        document.querySelector('.trip-progress-bar').style.width = `${currentTripProgress}%`;
+
+        // Move to next segment if current one is complete
+        if (progress >= 1) {
+            progress = 0;
+            currentSegment++;
+
+            // Update next stop info
+            if (currentSegment < segmentCount) {
+                const nextStop = driver.currentTrip.stops[currentSegment + 1];
+                document.getElementById('currentTripNextStop').textContent = nextStop.name;
+
+                // Calculate ETA based on segment and progress
+                const etaMinutes = 20 + (currentSegment * 20);
+                const etaTime = moment(driver.currentTrip.startTime).add(etaMinutes, 'minutes').format('HH:mm');
+                document.getElementById('currentTripETA').textContent = etaTime;
+            }
+        }
+
+        // Check if trip is complete
+        if (currentSegment >= segmentCount) {
+            clearInterval(currentTripInterval);
+            endTrip(driver.currentTrip.id);
+            return;
+        }
+
+        // Calculate current position
+        const start = route[currentSegment];
+        const end = route[currentSegment + 1];
+        const lat = start[0] + (end[0] - start[0]) * progress;
+        const lng = start[1] + (end[1] - start[1]) * progress;
+
+        // Update bus marker position
+        busMarker.setLatLng([lat, lng]);
+
+        // Update driver position on main map
+        currentPositionMarker.setLatLng([lat, lng]);
+        map.panTo([lat, lng]);
+    }, 500);
+}
+
+// End trip
+function endTrip(tripId) {
+    // In a real app, this would notify the server
+    clearInterval(currentTripInterval);
+    isOnTrip = false;
+    driver.currentTrip = null;
+    currentTripProgress = 0;
+
+    // Update UI
+    document.getElementById('upcomingTrips').style.display = 'block';
+    document.getElementById('currentTrip').style.display = 'none';
+
+    // Show success message
+    showAlert('Trip completed successfully!', 'success');
+}
+
+// View document
+function viewDocument(docType) {
+    // In a real app, this would fetch the document from the server
+    document.getElementById('documentViewerModalLabel').textContent = `${docType.charAt(0).toUpperCase() + docType.slice(1)} Document`;
+
+    // For demo purposes, we'll show a sample PDF
+    const pdfUrl = 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
+    document.getElementById('documentViewer').src = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+
+    // Set up download button
+    document.getElementById('downloadDocumentBtn').onclick = function() { downloadDocument(docType); };
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('documentViewerModal'));
+    modal.show();
+}
+
+// Download document
+function downloadDocument(docType) {
+    // In a real app, this would download the document from the server
+    const docName = `${docType.charAt(0).toUpperCase() + docType.slice(1)}_Document.pdf`;
+    showAlert(`Downloading document: ${docName}`, 'info');
+
+    // Simulate download (in a real app, this would be a real download)
+    const link = document.createElement('a');
+    link.href = 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf';
+    link.download = docName;
+    link.click();
+}
+
+// View trip report
+function viewTripReport(tripId) {
+    // In a real app, this would fetch the report from the server
+    document.getElementById('reportViewerModalLabel').textContent = `Trip Report #${tripId}`;
+
+    // For demo purposes, we'll show a sample PDF
+    const pdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    document.getElementById('reportViewer').src = `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('reportViewerModal'));
+    modal.show();
+}
+
+// Download trip report
+function downloadTripReport(tripId) {
+    // In a real app, this would download the report from the server
+    const reportName = `Trip_Report_${tripId}.pdf`;
+    showAlert(`Downloading report: ${reportName}`, 'info');
+
+    // Simulate download (in a real app, this would be a real download)
+    const link = document.createElement('a');
+    link.href = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    link.download = reportName;
+    link.click();
+}
+
+// Download report
+function downloadReport(reportType) {
+    // In a real app, this would generate and download the report
+    const reportName = reportType === 'performance' ? 'Performance_Report.pdf' :
+                     reportType === 'metrics' ? 'Key_Metrics.csv' : 'Trip_Report.pdf';
+    showAlert(`Downloading report: ${reportName}`, 'info');
+
+    // Simulate download (in a real app, this would be a real download)
+    const link = document.createElement('a');
+    link.href = reportType === 'metrics' ?
+        'data:text/csv;charset=utf-8,Metric,Value\nOn-Time Performance,92%\nSafety Rating,88\nPassenger Satisfaction,95%\nFuel Efficiency,76%' :
+        'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    link.download = reportName;
+    link.click();
+}
+
+// Send emergency alert
+function sendEmergencyAlert() {
+    const emergencyType = document.getElementById('emergencyType').value;
+    const emergencyDetails = document.getElementById('emergencyDetails').value;
+    const needAssistance = document.getElementById('needAssistance').checked;
+
+    if (!emergencyType || !emergencyDetails) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+
+    // In a real app, this would send the alert to the server
+    console.log('Emergency alert sent:', {
+        type: emergencyType,
+        details: emergencyDetails,
+        needAssistance: needAssistance,
+        position: currentPositionMarker.getLatLng(),
+        time: new Date()
+    });
+
+    // Show success message
+    showAlert('Emergency alert sent! Help is on the way.', 'success');
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('emergencyModal'));
+    modal.hide();
+
+    // Reset form
+    document.getElementById('emergencyForm').reset();
+}
+
+// Take break
+function takeBreak() {
+    if (driver.onBreak) {
+        endBreak();
+    } else {
+        startBreak();
+    }
+}
+
+// Toggle break
+function toggleBreak() {
+    if (driver.onBreak) {
+        endBreak();
+    } else {
+        startBreak();
+    }
+}
+
+// Start break
+function startBreak() {
+    driver.onBreak = true;
+    document.getElementById('breakBtn').classList.add('active');
+
+    // In a real app, this would notify the server
+    console.log('Break started at:', new Date());
+
+    // Show break modal
+    const modal = new bootstrap.Modal(document.getElementById('breakModal'));
+    modal.show();
+}
+
+// End break
+function endBreak() {
+    driver.onBreak = false;
+    document.getElementById('breakBtn').classList.remove('active');
+
+    // In a real app, this would notify the server
+    console.log('Break ended at:', new Date());
+
+    // Close break modal if open
+    const modal = bootstrap.Modal.getInstance(document.getElementById('breakModal'));
+    if (modal) modal.hide();
+
+    showAlert('Break ended. Welcome back!', 'success');
+}
+
+// Update driver position (simulation)
+function updateDriverPosition() {
+    if (isOnTrip || driver.onBreak) return;
+
+    // Simulate random movement around Kinshasa
+    const lat = kinshasaCenter[0] + (Math.random() * 0.02 - 0.01);
+    const lng = kinshasaCenter[1] + (Math.random() * 0.02 - 0.01);
+
+    currentPositionMarker.setLatLng([lat, lng]);
+    map.panTo([lat, lng]);
+}
+
+// Show alert
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+
+    // Create temporary div to show alert
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = alertHtml;
+    document.body.appendChild(alertDiv);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Get status class
+function getStatusClass(status) {
+    switch (status) {
+        case 'planned': return 'bg-primary';
+        case 'in_progress': return 'bg-success';
+        case 'completed': return 'bg-secondary';
+        case 'delayed': return 'bg-warning';
+        case 'cancelled': return 'bg-danger';
+        default: return 'bg-primary';
+    }
+}
+
+// Logout
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        // In a real app, this would call the logout API
+        window.location.href = '/login.html';
+    }
+}
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

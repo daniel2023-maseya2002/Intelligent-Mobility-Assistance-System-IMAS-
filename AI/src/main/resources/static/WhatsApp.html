@@ -1,0 +1,4179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS WhatsApp Web - Staff Communication</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #111b21;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: #111b21;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 400px;
+            background: #111b21;
+            border-right: 1px solid #222d34;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .sidebar-header {
+            padding: 15px 20px;
+            background: #202c33;
+            color: #e9edef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #222d34;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #00a884;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-details h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #e9edef;
+        }
+
+        .user-details p {
+            color: #8696a0;
+            font-size: 13px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #8696a0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .header-btn:hover {
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .search-container {
+            position: relative;
+            margin: 12px 16px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 20px 10px 45px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .search-box::placeholder {
+            color: #8696a0;
+        }
+
+        .search-box:focus {
+            background: #111b21;
+            border: 1px solid #00a884;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8696a0;
+            font-size: 16px;
+        }
+
+        .contact-filters {
+            display: flex;
+            gap: 8px;
+            margin: 0 16px 12px;
+            padding: 0 4px;
+        }
+
+        .filter-btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #2a3942;
+            color: #8696a0;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: #00a884;
+            color: white;
+        }
+
+        .contacts-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .contacts-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .contacts-list::-webkit-scrollbar-track {
+            background: #202c33;
+        }
+
+        .contacts-list::-webkit-scrollbar-thumb {
+            background: #374045;
+            border-radius: 10px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border-bottom: 1px solid #222d34;
+        }
+
+        .contact-item:hover {
+            background: #2a3942;
+        }
+
+        .contact-item.active {
+            background: #2a3942;
+            border-right: 3px solid #00a884;
+        }
+
+        .contact-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #00a884;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .contact-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .contact-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .contact-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            color: #e9edef;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .contact-last-message {
+            font-size: 13px;
+            color: #8696a0;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .contact-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .contact-time {
+            font-size: 12px;
+            color: #8696a0;
+            white-space: nowrap;
+        }
+
+        .unread-count {
+            background: #00a884;
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 0 6px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #111b21;
+        }
+
+        .status-online {
+            background: #00a884;
+        }
+
+        .status-offline {
+            background: #8696a0;
+        }
+
+        /* Chat Area Styles */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0b141a;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 10px 16px;
+            background: #202c33;
+            border-bottom: 1px solid #222d34;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            color: #8696a0;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .back-btn:hover {
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .chat-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-user-details h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+            color: #e9edef;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-user-status {
+            font-size: 13px;
+            color: #8696a0;
+        }
+
+        .chat-user-status.online {
+            color: #00a884;
+            font-weight: 500;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-action-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #8696a0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .chat-action-btn:hover {
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 12px;
+            background: #0b141a;
+            background-image:
+                radial-gradient(circle at 25% 25%, rgba(0, 168, 132, 0.03) 0%, transparent 25%),
+                radial-gradient(circle at 75% 75%, rgba(0, 168, 132, 0.03) 0%, transparent 25%);
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #374045;
+            border-radius: 10px;
+        }
+
+        .message-date {
+            text-align: center;
+            margin: 20px 0 10px;
+        }
+
+        .message-date span {
+            background: #202c33;
+            color: #8696a0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 12px;
+            animation: fadeInUp 0.3s ease;
+            max-width: 100%;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 6px 12px 8px 12px;
+            border-radius: 8px;
+            position: relative;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+        }
+
+        .message.received .message-content {
+            background: #202c33;
+            color: #e9edef;
+        }
+
+        .message.sent .message-content {
+            background: #005c4b;
+            color: white;
+        }
+
+        .message-text {
+            margin-bottom: 4px;
+            line-height: 1.4;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: flex-end;
+            margin-top: 2px;
+        }
+
+        .message-status {
+            font-size: 14px;
+            color: #8696a0;
+        }
+
+        .message-status.read {
+            color: #53bdeb;
+        }
+
+        .message-media {
+            max-width: 300px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            background: #374045;
+        }
+
+        .message-media img,
+        .message-media video {
+            width: 100%;
+            height: auto;
+            max-height: 300px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            object-fit: cover;
+        }
+
+        .message-media img:hover,
+        .message-media video:hover {
+            transform: scale(1.02);
+        }
+
+        .message-file {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 250px;
+        }
+
+        .message-file:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #00a884;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-size {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #202c33;
+            border-top: 1px solid #222d34;
+            font-size: 14px;
+            color: #8696a0;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-indicator.hidden {
+            display: none;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #8696a0;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        .chat-input-container {
+            padding: 10px 16px 20px;
+            background: #202c33;
+            border-top: 1px solid #222d34;
+        }
+
+        .file-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #2a3942;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #00a884;
+            animation: slideDown 0.3s ease;
+        }
+
+        .file-preview.hidden {
+            display: none;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .file-preview img {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .file-preview-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-preview-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            color: #e9edef;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-preview-size {
+            font-size: 12px;
+            color: #8696a0;
+        }
+
+        .file-preview-remove {
+            background: none;
+            border: none;
+            color: #ff4444;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .file-preview-remove:hover {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .chat-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2a3942;
+            border-radius: 25px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus-within {
+            border-color: #00a884;
+            box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.1);
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .input-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #8696a0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .input-btn:hover {
+            background: #374045;
+            color: #e9edef;
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            outline: none;
+            padding: 10px 8px;
+            color: #e9edef;
+            resize: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .message-input::placeholder {
+            color: #8696a0;
+        }
+
+        .send-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 50%;
+            background: #00a884;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            background: #0a7c69;
+        }
+
+        .send-btn:disabled {
+            background: #8696a0;
+            cursor: not-allowed;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: #111b21;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #222d34;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e9edef;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #8696a0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #e9edef;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #374045;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: #2a3942;
+            color: #e9edef;
+        }
+
+        .form-input:focus {
+            border-color: #00a884;
+            box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.1);
+        }
+
+        .form-textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #222d34;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #00a884;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0a7c69;
+        }
+
+        .btn-secondary {
+            background: #8696a0;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #6b7c85;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: #2a3942;
+            border: 1px solid #374045;
+            border-radius: 8px;
+            padding: 4px 0;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            display: none;
+            min-width: 150px;
+        }
+
+        .context-menu.show {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .context-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            color: #e9edef;
+        }
+
+        .context-menu-item:hover {
+            background: #374045;
+        }
+
+        .context-menu-item.danger {
+            color: #ff4444;
+        }
+
+        .context-menu-item.danger:hover {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            background: #0b141a;
+            color: #8696a0;
+        }
+
+        .welcome-icon {
+            font-size: 120px;
+            margin-bottom: 32px;
+            color: #00a884;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-15px);
+            }
+            60% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            color: #e9edef;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #8696a0;
+            max-width: 460px;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #8696a0;
+            font-size: 14px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #374045;
+            border-top: 3px solid #00a884;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #202c33;
+            color: #e9edef;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid #374045;
+        }
+
+        .connection-status.hidden {
+            display: none;
+        }
+
+        .connection-status.connecting {
+            background: #ff8800;
+            color: white;
+        }
+
+        .connection-status.connected {
+            background: #00a884;
+            color: white;
+        }
+
+        .connection-status.error {
+            background: #ff4444;
+            color: white;
+        }
+
+        /* Profile Photo */
+        .photo-upload {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px dashed #00a884;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 auto 20px;
+            background: #2a3942;
+            overflow: hidden;
+        }
+
+        .photo-upload:hover {
+            border-color: #0a7c69;
+            transform: scale(1.02);
+        }
+
+        .photo-upload input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .photo-upload img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .photo-upload-text {
+            font-size: 12px;
+            color: #8696a0;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .photo-upload i {
+            color: #00a884;
+            font-size: 32px;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease-out;
+            font-size: 14px;
+        }
+
+        .notification.success {
+            background: #00a884;
+        }
+
+        .notification.error {
+            background: #ff4444;
+        }
+
+        .notification.warning {
+            background: #ff8800;
+        }
+
+        .notification.info {
+            background: #0088cc;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 100;
+                height: 100%;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .chat-area {
+                width: 100%;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .back-btn {
+                display: block;
+            }
+
+            .welcome-icon {
+                font-size: 80px;
+                margin-bottom: 20px;
+            }
+
+            .welcome-title {
+                font-size: 24px;
+            }
+
+            .welcome-subtitle {
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .back-btn {
+                display: none;
+            }
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .no-select {
+            user-select: none;
+        }
+
+        /* Media Gallery */
+        .media-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .media-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #2a3942;
+        }
+
+        .media-item:hover {
+            transform: scale(1.02);
+        }
+
+        .media-item img,
+        .media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .media-item:hover .media-overlay {
+            opacity: 1;
+        }
+
+        /* Empty states */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            color: #8696a0;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            color: #374045;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #8696a0;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Smooth transitions */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .message {
+            transition: none;
+        }
+
+        .message-content {
+            transition: none;
+        }
+
+
+
+        /* Styles pour les statuts de messages */
+.message-status {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.message-status.sending {
+    color: #8696a0;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.message-status.sent {
+    color: #8696a0;
+}
+
+.message-status.delivered {
+    color: #8696a0;
+}
+
+.message-status.read {
+    color: #53bdeb;  /* Bleu WhatsApp pour "lu" */
+}
+
+.message-status.failed {
+    color: #f15c6d;  /* Rouge pour les erreurs */
+    cursor: pointer;
+}
+
+.message-status.failed:hover {
+    opacity: 1;
+}
+
+/* Animation pour les messages en cours d'envoi */
+@keyframes pulse {
+    0% { opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { opacity: 0.4; }
+}
+
+/* Styles pour les messages temporaires */
+.message.sending {
+    opacity: 0.8;
+}
+
+.message.failed {
+    border-left: 3px solid #f15c6d;
+    background-color: rgba(241, 92, 109, 0.1);
+}
+
+.message.failed .message-content {
+    position: relative;
+}
+
+.message.failed .message-content::after {
+    content: "Failed to send. Tap to retry.";
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    font-size: 11px;
+    color: #f15c6d;
+    font-style: italic;
+}
+
+/* Indicateur de connexion amélioré */
+.connection-status {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #075e54;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 0 0 8px 8px;
+    font-size: 14px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.connection-status.connecting {
+    background: #ff9500;
+}
+
+.connection-status.error {
+    background: #f15c6d;
+}
+
+.connection-status.hidden {
+    transform: translateX(-50%) translateY(-100%);
+}
+
+/* Message de statut dans le chat */
+.message-persistence-warning {
+    background: rgba(255, 149, 0, 0.1);
+    border: 1px solid #ff9500;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+    text-align: center;
+    font-size: 13px;
+    color: #ff9500;
+}
+
+.message-persistence-warning i {
+    margin-right: 8px;
+}
+    </style>
+</head>
+<body>
+<!-- Connection Status -->
+<div class="connection-status hidden" id="connectionStatus">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="spinner"></div>
+        <span id="connectionText">Connecting...</span>
+    </div>
+</div>
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar" onclick="showProfileModal()">
+                    <img id="userAvatarImg" style="display: none;" alt="Profile" />
+                    <span id="userAvatarText">U</span>
+                </div>
+                <div class="user-details">
+                    <h3 id="userName">Loading...</h3>
+                    <p id="userRole">Loading...</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="showNotificationsModal()" title="Notifications" id="notificationBtn">
+                    <i class="fas fa-bell"></i>
+                    <div class="notification-badge hidden" id="notificationBadge">0</div>
+                </button>
+                <button class="header-btn" onclick="showProfileModal()" title="Profile">
+                    <i class="fas fa-user-edit"></i>
+                </button>
+                <button class="header-btn" onclick="showSettingsModal()" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="header-btn" onclick="logout()" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search or start new chat">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+
+        <div class="contact-filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="online">Online</button>
+            <button class="filter-btn" data-filter="unread">Unread</button>
+        </div>
+
+        <div class="contacts-list" id="contactsList">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading contacts...
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">
+                <i class="fab fa-whatsapp"></i>
+            </div>
+            <h1 class="welcome-title">WhatsApp Web</h1>
+            <p class="welcome-subtitle">
+                Send and receive messages without keeping your phone online.<br>
+                Use WhatsApp on your computer with IMAS Staff Communication System.
+            </p>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-interface hidden" id="chatInterface">
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <button class="back-btn" onclick="closeChatOnMobile()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="chat-user-info" onclick="showContactInfo()">
+                        <div class="contact-avatar" id="chatUserAvatar">
+                            <img id="chatUserAvatarImg" style="display: none;" alt="Contact" />
+                            <span id="chatUserAvatarText">U</span>
+                        </div>
+                        <div class="chat-user-details">
+                            <h3 id="chatUserName">User Name</h3>
+                            <p class="chat-user-status" id="chatUserStatus">last seen recently</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="chat-action-btn" onclick="makeVideoCall()" title="Video Call">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="chat-action-btn" onclick="makeCall()" title="Voice Call">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="chat-action-btn" onclick="showMediaGallery()" title="Media">
+                        <i class="fas fa-images"></i>
+                    </button>
+                    <button class="chat-action-btn" onclick="showChatMenu()" title="Menu">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be populated here -->
+            </div>
+
+            <div class="typing-indicator hidden" id="typingIndicator">
+                <div class="contact-avatar" style="width: 24px; height: 24px; font-size: 10px;">
+                    <span id="typingUserAvatar">U</span>
+                </div>
+                <div>
+                    <span id="typingUserName">User</span> is typing
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="file-preview hidden" id="filePreview">
+                    <!-- File preview will be shown here -->
+                </div>
+                <div class="chat-input">
+                    <div class="input-actions">
+                        <button class="input-btn" onclick="toggleEmojiPicker()" title="Emoji">
+                            <i class="fas fa-smile"></i>
+                        </button>
+                        <button class="input-btn" onclick="selectFile()" title="Attach File">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="input-btn" onclick="selectCamera()" title="Camera">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <textarea class="message-input" id="messageInput" placeholder="Type a message" rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal" id="profileModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Profile</h2>
+            <button class="modal-close" onclick="hideProfileModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="profileForm" enctype="multipart/form-data">
+            <div class="photo-upload" onclick="selectProfilePhoto()">
+                <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                <img id="profilePhotoPreview" style="display: none;">
+                <i class="fas fa-camera" id="profilePhotoIcon"></i>
+            </div>
+            <div class="photo-upload-text">Click to change profile photo</div>
+
+            <div class="form-group">
+                <label class="form-label">First Name</label>
+                <input type="text" class="form-input" id="profileFirstName" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Last Name</label>
+                <input type="text" class="form-input" id="profileLastName" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="profileEmail" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" class="form-input" id="profilePhone">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <input type="text" class="form-input" id="profileStatus" placeholder="Available">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideProfileModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="saveProfileBtn">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Media Gallery Modal -->
+<div class="modal" id="mediaGalleryModal">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2 class="modal-title">Media, links and docs</h2>
+            <button class="modal-close" onclick="hideMediaGallery()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="contact-filters">
+            <button class="filter-btn active" data-media-filter="all">All</button>
+            <button class="filter-btn" data-media-filter="IMAGE">Photos</button>
+            <button class="filter-btn" data-media-filter="VIDEO">Videos</button>
+            <button class="filter-btn" data-media-filter="DOCUMENT">Documents</button>
+        </div>
+        <div class="media-gallery" id="mediaGallery">
+            <!-- Media items will be populated here -->
+        </div>
+    </div>
+</div>
+
+<!-- Contact Info Modal -->
+<div class="modal" id="contactInfoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Contact info</h2>
+            <button class="modal-close" onclick="hideContactInfo()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="text-align: center; padding: 20px 0;">
+            <div class="contact-avatar" id="contactInfoAvatar" style="width: 120px; height: 120px; font-size: 48px; margin: 0 auto 16px;">
+                <img id="contactInfoAvatarImg" style="display: none;" alt="Contact">
+                <span id="contactInfoAvatarText">U</span>
+            </div>
+            <h3 id="contactInfoName" style="color: #e9edef; margin-bottom: 4px;">Contact Name</h3>
+            <p id="contactInfoEmail" style="color: #8696a0; margin-bottom: 8px;">email@example.com</p>
+            <p id="contactInfoRole" style="color: #00a884; font-weight: 500;">Role</p>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideContactInfo()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Modal -->
+<div class="modal" id="notificationsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Notifications</h2>
+            <button class="modal-close" onclick="hideNotificationsModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notificationsList">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading notifications...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Settings</h2>
+            <button class="modal-close" onclick="hideSettingsModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Notifications</label>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0;">
+                <input type="checkbox" id="enableNotifications" checked style="width: 16px; height: 16px;">
+                <label for="enableNotifications" style="color: #e9edef; margin: 0;">Enable desktop notifications</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Sound</label>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0;">
+                <input type="checkbox" id="enableSounds" checked style="width: 16px; height: 16px;">
+                <label for="enableSounds" style="color: #e9edef; margin: 0;">Enable message sounds</label>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideSettingsModal()">Close</button>
+            <button type="button" class="btn btn-primary" onclick="saveSettings()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" onclick="replyToMessage()">
+        <i class="fas fa-reply"></i>
+        Reply
+    </div>
+    <div class="context-menu-item" onclick="forwardMessage()">
+        <i class="fas fa-share"></i>
+        Forward
+    </div>
+    <div class="context-menu-item" onclick="copyMessage()">
+        <i class="fas fa-copy"></i>
+        Copy
+    </div>
+    <div class="context-menu-item" onclick="selectMessage()">
+        <i class="fas fa-check"></i>
+        Select
+    </div>
+    <div class="context-menu-item" onclick="starMessage()">
+        <i class="fas fa-star"></i>
+        Star
+    </div>
+    <div class="context-menu-item danger" onclick="deleteMessage()">
+        <i class="fas fa-trash"></i>
+        Delete
+    </div>
+</div>
+
+<!-- Hidden File Inputs -->
+<input type="file" id="fileInput" style="display: none;" multiple accept="image/*,video/*,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+<input type="file" id="cameraInput" style="display: none;" accept="image/*" capture="environment">
+
+<script>
+    // Global variables
+    let currentUser = null;
+    let stompClient = null;
+    let currentChatUser = null;
+    let contacts = [];
+    let messages = [];
+    let notifications = [];
+    let typingTimer = null;
+    let fileToSend = null;
+    let selectedMessage = null;
+    let isConnected = false;
+    let unreadMessages = new Map();
+    let userStatuses = new Map();
+    let reconnectAttempts = 0;
+    let maxReconnectAttempts = 5;
+    let reconnectTimer = null;
+    let heartbeatTimer = null;
+
+    // API configuration
+    const API_BASE = window.location.origin + '/api';
+    const CHAT_API = `${API_BASE}/chat`;
+    const STAFF_API = `${API_BASE}/staff`;
+
+    // Settings
+    let settings = {
+        enableNotifications: true,
+        enableSounds: true,
+        theme: 'dark'
+    };
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+
+
+
+
+async function initializeApp() {
+    try {
+        showConnectionStatus('Initializing WhatsApp Web...', 'connecting');
+
+        // Debug logs
+        console.log('=== WhatsApp Initialization Debug ===');
+        console.log('LocalStorage authToken:', localStorage.getItem('authToken'));
+        console.log('LocalStorage userSession:', localStorage.getItem('userSession'));
+
+        // Get current user from session
+        currentUser = getCurrentUser();
+        if (!currentUser) {
+            console.error('No current user found - redirecting to login');
+            showNotification('Please login first', 'error');
+            redirectToLogin();
+            return;
+        }
+
+        console.log('Current user loaded:', currentUser);
+
+// Améliorer la gestion d'erreur dans connectToWebSocket()
+const token = getAuthToken();
+if (!token) {
+    console.error('No authentication token available for WebSocket connection');
+    throw new Error('Authentication token required');
+}
+
+
+        console.log('Authentication token found:', token.substring(0, 20) + '...');
+
+        // Load settings
+        loadSettings();
+
+        // Update user info in UI
+        updateUserInfo();
+
+        // Setup event listeners
+        setupEventListeners();
+
+        // Request notification permission
+        requestNotificationPermission();
+
+        // Connect to WebSocket
+        await connectToWebSocket();
+
+        // Load contacts
+        await loadContacts();
+
+        // Load unread messages
+        await loadUnreadMessages();
+
+        // Load notifications
+        await loadNotifications();
+
+        // Setup periodic tasks
+        setupPeriodicTasks();
+
+        hideConnectionStatus();
+        showNotification('WhatsApp Web is ready!', 'success');
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showNotification('Error initializing WhatsApp Web. Please refresh the page.', 'error');
+        showConnectionStatus('Connection failed', 'error');
+    }
+}
+
+// 6. Ajouter une fonction pour vérifier le token côté serveur
+async function validateTokenWithServer() {
+    try {
+        const token = getAuthToken();
+        if (!token) return false;
+
+        const response = await fetch('/api/staff/validate-token', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Token validation error:', error);
+        return false;
+    }
+}
+
+function getCurrentUser() {
+    const userSession = localStorage.getItem('userSession');
+    console.log('User session from localStorage:', userSession); // Debug log
+
+    if (userSession) {
+        try {
+            const user = JSON.parse(userSession);
+            console.log('Parsed user:', user); // Debug log
+            console.log('User token:', user.token); // Debug log
+
+            // Vérifier que l'utilisateur a les propriétés requises
+            if (user.email && user.firstName && user.lastName) {
+                return user;
+            } else {
+                console.error('User session missing required fields:', user);
+            }
+        } catch (e) {
+            console.error('Error parsing user session:', e);
+            localStorage.removeItem('userSession');
+        }
+    } else {
+        console.log('No user session found in localStorage');
+    }
+    return null;
+}
+
+    // Redirect to login
+function redirectToLogin() {
+    setTimeout(() => {
+        // Nettoyer toutes les données de session
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('authToken');
+
+        // Rediriger vers la page de connexion
+        if (window.location.pathname !== '/login.html' && window.location.pathname !== '/') {
+            window.location.href = '/login.html';
+        }
+    }, 2000);
+}
+
+    // Update user info in UI
+    function updateUserInfo() {
+        if (!currentUser) return;
+
+        const fullName = `${currentUser.firstName} ${currentUser.lastName}`;
+        document.getElementById('userName').textContent = fullName;
+        document.getElementById('userRole').textContent = currentUser.role;
+
+        // Update avatar
+        updateAvatarDisplay('userAvatar', 'userAvatarImg', 'userAvatarText', currentUser);
+    }
+
+    // Update avatar display
+    function updateAvatarDisplay(containerId, imgId, textId, user) {
+        const avatarText = document.getElementById(textId);
+        const avatarImg = document.getElementById(imgId);
+
+        if (user.photo) {
+            avatarImg.src = `data:image/jpeg;base64,${user.photo}`;
+            avatarImg.style.display = 'block';
+            avatarText.style.display = 'none';
+        } else {
+            avatarText.textContent = user.firstName.charAt(0).toUpperCase();
+            avatarImg.style.display = 'none';
+            avatarText.style.display = 'block';
+        }
+    }
+
+    // Connection status management
+    function showConnectionStatus(message, type = 'connecting') {
+        const status = document.getElementById('connectionStatus');
+        const text = document.getElementById('connectionText');
+
+        text.textContent = message;
+        status.className = `connection-status ${type}`;
+        status.classList.remove('hidden');
+    }
+
+    function hideConnectionStatus() {
+        document.getElementById('connectionStatus').classList.add('hidden');
+    }
+
+
+
+
+
+let tempMessageMap = new Map(); // Map pour associer tempId -> message temporaire
+
+
+
+// Fixed WebSocket connection with better error handling and logging
+async function connectToWebSocket() {
+    return new Promise((resolve, reject) => {
+        try {
+            if (!checkAuthentication()) {
+                reject(new Error('Authentication required'));
+                return;
+            }
+
+            showConnectionStatus('Connecting to WhatsApp Web...', 'connecting');
+
+            const socket = new SockJS(`/ws`);
+            stompClient = Stomp.over(socket);
+
+            // Enable debug for troubleshooting (disable in production)
+            stompClient.debug = function(str) {
+                console.log('STOMP Debug:', str);
+            };
+
+            const token = getAuthToken();
+            const connectHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            stompClient.connect(connectHeaders, function(frame) {
+                console.log('✅ Connected to WebSocket:', frame);
+                isConnected = true;
+                reconnectAttempts = 0;
+                showConnectionStatus('Connected', 'connected');
+
+                // Subscribe to private messages
+                stompClient.subscribe(`/user/${currentUser.email}/queue/private`, function(message) {
+                    try {
+                        const chatMessage = JSON.parse(message.body);
+                        console.log('📨 Received message:', chatMessage);
+                        handleReceivedMessage(chatMessage);
+                    } catch (error) {
+                        console.error('Error handling received message:', error);
+                    }
+                });
+
+                // 🔥 FIXED: Subscribe to message confirmations with better logging
+                stompClient.subscribe(`/user/${currentUser.email}/queue/message.confirmation`, function(message) {
+                    try {
+                        const confirmation = JSON.parse(message.body);
+                        console.log('✅ Message confirmation received:', confirmation);
+                        handleMessageConfirmation(confirmation);
+                    } catch (error) {
+                        console.error('❌ Error handling message confirmation:', error);
+                    }
+                });
+
+                // Subscribe to message status with better logging
+                stompClient.subscribe(`/user/${currentUser.email}/queue/message.status`, function(message) {
+                    try {
+                        const statusUpdate = JSON.parse(message.body);
+                        console.log('📊 Message status update:', statusUpdate);
+                        handleMessageStatus(statusUpdate);
+                    } catch (error) {
+                        console.error('Error handling message status:', error);
+                    }
+                });
+
+                // Subscribe to typing indicators
+                stompClient.subscribe(`/user/${currentUser.email}/queue/typing`, function(message) {
+                    try {
+                        const typingInfo = JSON.parse(message.body);
+                        handleTypingIndicator(typingInfo);
+                    } catch (error) {
+                        console.error('Error handling typing indicator:', error);
+                    }
+                });
+
+                // Subscribe to user status updates
+                stompClient.subscribe('/topic/user.status', function(message) {
+                    try {
+                        const statusUpdate = JSON.parse(message.body);
+                        handleUserStatusUpdate(statusUpdate);
+                    } catch (error) {
+                        console.error('Error handling user status update:', error);
+                    }
+                });
+
+                // Subscribe to error messages with better handling
+                stompClient.subscribe(`/user/${currentUser.email}/queue/errors`, function(message) {
+                    try {
+                        const error = JSON.parse(message.body);
+                        console.error('❌ Server error:', error);
+                        showNotification(error.error || 'An error occurred', 'error');
+
+                        // Handle specific error types
+                        if (error.error && error.error.includes('Authentication')) {
+                            // Redirect to login or refresh token
+                            console.warn('Authentication error, may need to re-login');
+                        }
+                    } catch (e) {
+                        console.error('Error handling error message:', e);
+                    }
+                });
+
+                // Send online status
+                sendUserOnlineStatus();
+
+                // Start heartbeat
+                startHeartbeat();
+
+                setTimeout(() => hideConnectionStatus(), 1000);
+                resolve();
+            }, function(error) {
+                console.error('❌ WebSocket connection error:', error);
+                isConnected = false;
+                showConnectionStatus('Connection failed', 'error');
+                scheduleReconnect();
+                reject(error);
+            });
+
+            // Handle connection lost
+            socket.onclose = function() {
+                console.log('🔌 WebSocket connection closed');
+                isConnected = false;
+                stopHeartbeat();
+                showConnectionStatus('Reconnecting...', 'connecting');
+                scheduleReconnect();
+            };
+
+        } catch (error) {
+            console.error('WebSocket setup error:', error);
+            showConnectionStatus('Connection failed', 'error');
+            reject(error);
+        }
+    });
+}
+
+
+
+function handleMessageConfirmation(confirmation) {
+    console.log('🔄 Processing message confirmation:', confirmation);
+
+    const tempId = confirmation.tempId;
+    const realMessageId = confirmation.messageId;
+
+    if (!tempId) {
+        console.warn('⚠️ No tempId in confirmation, cannot match to temp message');
+        return;
+    }
+
+    // Find the temporary message in our list
+    const tempMessageIndex = messages.findIndex(m => m.id === tempId);
+
+    if (tempMessageIndex !== -1) {
+        // Replace the temporary message with the real message
+        const updatedMessage = {
+            id: realMessageId,
+            content: confirmation.content,
+            senderId: confirmation.senderId,
+            recipientId: confirmation.recipientId,
+            type: confirmation.type,
+            timestamp: confirmation.timestamp,
+            status: 'SAVED',
+            read: false
+        };
+
+        messages[tempMessageIndex] = updatedMessage;
+
+        console.log('✅ Successfully replaced temp message', tempId, 'with real message', realMessageId);
+        displayMessages();
+
+        // Remove from temporary message tracking
+        tempMessageMap.delete(tempId);
+
+        // Clear any existing timeout for this message
+        if (window.messageTimeouts && window.messageTimeouts[tempId]) {
+            clearTimeout(window.messageTimeouts[tempId]);
+            delete window.messageTimeouts[tempId];
+        }
+    } else {
+        console.warn('⚠️ Temp message not found for confirmation:', tempId, 'Available messages:', messages.map(m => m.id));
+    }
+}
+
+
+
+
+    // Schedule reconnection
+    function scheduleReconnect() {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            showConnectionStatus('Connection failed. Please refresh the page.', 'error');
+            return;
+        }
+
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+        }
+
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
+        reconnectAttempts++;
+
+        reconnectTimer = setTimeout(() => {
+            if (!isConnected) {
+                console.log(`Reconnection attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
+                connectToWebSocket().catch(console.error);
+            }
+        }, delay);
+    }
+
+    // Start heartbeat
+    function startHeartbeat() {
+        heartbeatTimer = setInterval(() => {
+            if (isConnected) {
+                sendUserOnlineStatus();
+            }
+        }, 30000); // Every 30 seconds
+    }
+
+    // Stop heartbeat
+    function stopHeartbeat() {
+        if (heartbeatTimer) {
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = null;
+        }
+    }
+
+
+
+
+
+async function loadContacts() {
+    try {
+        if (!checkAuthentication()) return;
+
+        const response = await makeAuthenticatedRequest(`${STAFF_API}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to load contacts`);
+        }
+
+        const allStaff = await response.json();
+
+        // Filter out passengers and current user
+        contacts = allStaff.filter(staff =>
+            staff.role !== 'PASSENGER' &&
+            staff.email !== currentUser.email &&
+            staff.active === true
+        );
+
+        displayContacts();
+        console.log(`Loaded ${contacts.length} contacts`);
+    } catch (error) {
+        console.error('Error loading contacts:', error);
+
+        if (error.message !== 'Unauthorized') {
+            showNotification('Error loading contacts. Please refresh the page.', 'error');
+        }
+
+        // Show empty state
+        const contactsList = document.getElementById('contactsList');
+        contactsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Failed to load contacts</h3>
+                <p>Please check your connection and try again.</p>
+            </div>
+        `;
+    }
+}
+
+    // Display contacts
+    function displayContacts() {
+        const contactsList = document.getElementById('contactsList');
+
+        if (contacts.length === 0) {
+            contactsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No contacts available</h3>
+                    <p>No other staff members found in the system.</p>
+                </div>
+            `;
+            return;
+        }
+
+        contactsList.innerHTML = contacts.map(contact => {
+            const unreadCount = unreadMessages.get(contact.email) || 0;
+            const isOnline = userStatuses.get(contact.email) === 'ONLINE';
+            const lastMessage = getLastMessage(contact.email);
+
+            return `
+                <div class="contact-item" data-email="${contact.email}" onclick="selectContact('${contact.email}')">
+                    <div class="contact-avatar">
+                        ${contact.photo ?
+                            `<img src="data:image/jpeg;base64,${contact.photo}" alt="${contact.firstName}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <span style="display: none;">${contact.firstName.charAt(0).toUpperCase()}</span>` :
+                            `<span>${contact.firstName.charAt(0).toUpperCase()}</span>`
+                        }
+                        <div class="status-indicator ${isOnline ? 'status-online' : 'status-offline'}"></div>
+                    </div>
+                    <div class="contact-info">
+                        <div class="contact-name">${contact.firstName} ${contact.lastName}</div>
+                        <div class="contact-last-message">${lastMessage || `${contact.role} - ${isOnline ? 'Online' : 'Offline'}`}</div>
+                    </div>
+                    <div class="contact-meta">
+                        <div class="contact-time">${formatContactTime(contact.email)}</div>
+                        ${unreadCount > 0 ? `<div class="unread-count">${unreadCount > 99 ? '99+' : unreadCount}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Get last message for contact
+    function getLastMessage(email) {
+        // This would normally come from an API call
+        // For now, we'll return empty to show status instead
+        return '';
+    }
+
+    // Format contact time
+    function formatContactTime(email) {
+        const status = userStatuses.get(email);
+        if (status === 'ONLINE') {
+            return 'online';
+        } else {
+            return 'offline';
+        }
+    }
+
+    // Select contact
+    async function selectContact(email) {
+        try {
+            const contact = contacts.find(c => c.email === email);
+            if (!contact) {
+                showNotification('Contact not found', 'error');
+                return;
+            }
+
+            // Update UI
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const contactElement = document.querySelector(`[data-email="${email}"]`);
+            if (contactElement) {
+                contactElement.classList.add('active');
+            }
+
+            // Set current chat user
+            currentChatUser = contact;
+
+            // Update chat header
+            updateChatHeader(contact);
+
+            // Show chat interface
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('chatInterface').classList.remove('hidden');
+
+            // Hide sidebar on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
+
+            // Load chat history
+            await loadChatHistory(email);
+
+            // Mark messages as read
+            await markMessagesAsRead(email);
+
+            // Clear unread count
+            unreadMessages.delete(email);
+            displayContacts();
+
+            // Focus message input
+            setTimeout(() => {
+                document.getElementById('messageInput').focus();
+            }, 100);
+
+        } catch (error) {
+            console.error('Error selecting contact:', error);
+            showNotification('Error loading chat: ' + error.message, 'error');
+        }
+    }
+
+    // Update chat header
+    function updateChatHeader(contact) {
+        const chatUserName = document.getElementById('chatUserName');
+        const chatUserStatus = document.getElementById('chatUserStatus');
+
+        chatUserName.textContent = `${contact.firstName} ${contact.lastName}`;
+        updateAvatarDisplay('chatUserAvatar', 'chatUserAvatarImg', 'chatUserAvatarText', contact);
+
+        const isOnline = userStatuses.get(contact.email) === 'ONLINE';
+        chatUserStatus.textContent = isOnline ? 'online' : 'last seen recently';
+        chatUserStatus.className = `chat-user-status ${isOnline ? 'online' : ''}`;
+    }
+
+
+
+
+
+async function loadChatHistory(recipientEmail) {
+    try {
+        if (!checkAuthentication()) return;
+
+        console.log('📚 Loading chat history with:', recipientEmail);
+
+        const response = await makeAuthenticatedRequest(`${CHAT_API}/history/${recipientEmail}?size=100`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to load chat history`);
+        }
+
+        const chatHistory = await response.json();
+        console.log('📚 Loaded', chatHistory.length, 'messages from database');
+
+        // 🔥 IMPORTANT: Réinitialiser complètement les messages
+        messages = [];
+        tempMessageMap.clear();
+
+        // Charger les messages persistés depuis la base de données
+        if (Array.isArray(chatHistory)) {
+            messages = chatHistory.map(msg => ({
+                ...msg,
+                status: msg.status || 'DELIVERED' // Assurer que tous les messages DB ont un statut
+            })).reverse(); // Plus récents en dernier
+        }
+
+        console.log('✅ Chat history loaded successfully:', messages.length, 'messages');
+        displayMessages();
+        scrollToBottom();
+    } catch (error) {
+        console.error('❌ Error loading chat history:', error);
+        showNotification('Error loading chat history', 'error');
+    }
+}
+
+
+
+async function makeAuthenticatedRequest(url, options = {}) {
+    const token = getAuthToken();
+
+    if (!token) {
+        showNotification('Session expired. Please log in again.', 'error');
+        redirectToLogin();
+        throw new Error('No authentication token');
+    }
+
+    if (!options.headers) {
+        options.headers = {};
+    }
+
+    options.headers['Authorization'] = `Bearer ${token}`;
+    options.headers['Content-Type'] = options.headers['Content-Type'] || 'application/json';
+
+    try {
+        const response = await fetch(url, options);
+
+        if (response.status === 401) {
+            // Token invalide ou expiré
+            console.warn('Authentication failed, clearing tokens');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userSession');
+            showNotification('Session expired. Please log in again.', 'error');
+            redirectToLogin();
+            throw new Error('Unauthorized');
+        }
+
+        return response;
+    } catch (error) {
+        if (error.message === 'Unauthorized') {
+            throw error;
+        }
+        console.error('Request failed:', error);
+        throw error;
+    }
+}
+
+
+    // Display messages
+    function displayMessages() {
+        const chatMessages = document.getElementById('chatMessages');
+
+        if (messages.length === 0) {
+            chatMessages.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h3>No messages yet</h3>
+                    <p>Start the conversation by sending a message!</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        let lastDate = null;
+
+        messages.forEach((message, index) => {
+            const messageDate = new Date(message.timestamp);
+            const dateStr = messageDate.toDateString();
+
+            // Add date separator
+            if (dateStr !== lastDate) {
+                html += `
+                    <div class="message-date">
+                        <span>${formatDateSeparator(messageDate)}</span>
+                    </div>
+                `;
+                lastDate = dateStr;
+            }
+
+            const isOwnMessage = message.senderId === currentUser.email;
+            const messageClass = isOwnMessage ? 'sent' : 'received';
+
+            html += `
+                <div class="message ${messageClass}" data-message-id="${message.id}">
+                    <div class="message-content" oncontextmenu="showContextMenu(event, ${message.id})">
+                        ${renderMessageContent(message)}
+                        <div class="message-time">
+                            ${formatMessageTime(message.timestamp)}
+                            ${isOwnMessage ? renderMessageStatus(message) : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        chatMessages.innerHTML = html;
+        addMediaClickListeners();
+    }
+
+    // Format date separator
+    function formatDateSeparator(date) {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    }
+
+    // Render message content based on type
+    function renderMessageContent(message) {
+        if (!message.content && !message.fileUrl) {
+            return '<div class="message-text">Message content unavailable</div>';
+        }
+
+        switch(message.type) {
+            case 'IMAGE':
+                return renderImageMessage(message);
+            case 'VIDEO':
+                return renderVideoMessage(message);
+            case 'AUDIO':
+                return renderAudioMessage(message);
+            case 'DOCUMENT':
+            case 'FILE':
+                return renderFileMessage(message);
+            default:
+                return renderTextMessage(message);
+        }
+    }
+
+    // Render different message types
+    function renderTextMessage(message) {
+        return `<div class="message-text">${escapeHtml(message.content || '')}</div>`;
+    }
+
+    function renderImageMessage(message) {
+        return `
+            <div class="message-media">
+                <img src="${CHAT_API}/media/stream/${message.id}"
+                     alt="${message.fileName || 'Image'}"
+                     onclick="openMediaViewer('${CHAT_API}/media/stream/${message.id}', 'image', '${escapeHtml(message.fileName || 'Image')}')"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center;">
+                    <i class="fas fa-image" style="font-size: 48px; margin-bottom: 12px; color: #8696a0;"></i>
+                    <p style="color: #8696a0;">Image unavailable</p>
+                </div>
+            </div>
+            ${message.content ? `<div class="message-text">${escapeHtml(message.content)}</div>` : ''}
+        `;
+    }
+
+    function renderVideoMessage(message) {
+        return `
+            <div class="message-media">
+                <video src="${CHAT_API}/media/stream/${message.id}"
+                       controls preload="metadata"
+                       onclick="openMediaViewer('${CHAT_API}/media/stream/${message.id}', 'video', '${escapeHtml(message.fileName || 'Video')}')">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            ${message.content ? `<div class="message-text">${escapeHtml(message.content)}</div>` : ''}
+        `;
+    }
+
+    function renderAudioMessage(message) {
+        return `
+            <div class="message-media">
+                <audio src="${CHAT_API}/media/stream/${message.id}" controls style="width: 100%; min-width: 200px;">
+                    Your browser does not support the audio tag.
+                </audio>
+            </div>
+            ${message.content ? `<div class="message-text">${escapeHtml(message.content)}</div>` : ''}
+        `;
+    }
+
+    function renderFileMessage(message) {
+        return `
+            <div class="message-file" onclick="downloadFile('${CHAT_API}/media/download/${message.id}', '${escapeHtml(message.fileName || 'file')}')">
+                <div class="file-icon">
+                    <i class="fas ${getFileIcon(message.fileName || '')}"></i>
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${escapeHtml(message.fileName || 'Unknown File')}</div>
+                    <div class="file-size">${formatFileSize(message.fileSize || 0)}</div>
+                </div>
+            </div>
+            ${message.content ? `<div class="message-text">${escapeHtml(message.content)}</div>` : ''}
+        `;
+    }
+
+
+
+
+async function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const messageText = messageInput.value.trim();
+
+    if (!messageText && !fileToSend) {
+        showNotification('Please type a message or select a file', 'warning');
+        return;
+    }
+
+    if (!currentChatUser) {
+        showNotification('Please select a contact first', 'warning');
+        return;
+    }
+
+    if (!isConnected) {
+        showNotification('Connection lost. Reconnecting...', 'error');
+        try {
+            await connectToWebSocket();
+        } catch (error) {
+            showNotification('Failed to reconnect. Please refresh the page.', 'error');
+            return;
+        }
+    }
+
+    try {
+        console.log('Sending message:', { text: messageText, hasFile: !!fileToSend });
+
+        if (fileToSend) {
+            await sendFileMessage(messageText);
+        } else {
+            await sendTextMessage(messageText);
+        }
+
+        messageInput.value = '';
+        hideFilePreview();
+        autoResizeTextarea(messageInput);
+        console.log('Message sent successfully');
+    } catch (error) {
+        console.error('Error sending message:', error);
+        showNotification('Failed to send message: ' + error.message, 'error');
+    }
+}
+
+
+
+
+async function sendTextMessage(text) {
+    // Generate a unique temporary ID
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    const message = {
+        senderId: currentUser.email,
+        recipientId: currentChatUser.email,
+        content: text,
+        type: 'CHAT',
+        timestamp: new Date().toISOString(),
+        tempId: tempId  // 🔥 CRITICAL: Include tempId for synchronization
+    };
+
+    console.log('📤 Preparing to send text message:', message);
+
+    // Create a temporary message for immediate UX
+    const tempMessage = {
+        id: tempId,
+        content: text,
+        senderId: currentUser.email,
+        recipientId: currentChatUser.email,
+        type: 'CHAT',
+        timestamp: new Date().toISOString(),
+        status: 'SENDING',
+        read: false
+    };
+
+    // Add to message list and tracking map
+    messages.push(tempMessage);
+    tempMessageMap.set(tempId, tempMessage);
+
+    displayMessages();
+    scrollToBottom();
+
+    // Initialize timeout tracking if not exists
+    if (!window.messageTimeouts) {
+        window.messageTimeouts = {};
+    }
+
+    try {
+        if (stompClient && isConnected) {
+            console.log('📡 Sending via WebSocket with tempId:', tempId);
+            stompClient.send('/app/chat.private', {}, JSON.stringify(message));
+
+            // Set timeout to handle unconfirmed messages
+            window.messageTimeouts[tempId] = setTimeout(() => {
+                if (tempMessageMap.has(tempId)) {
+                    console.warn('⚠️ Message not confirmed after 15s, marking as failed:', tempId);
+                    const failedIndex = messages.findIndex(m => m.id === tempId);
+                    if (failedIndex !== -1) {
+                        messages[failedIndex].status = 'FAILED';
+                        displayMessages();
+                    }
+                    tempMessageMap.delete(tempId);
+                    delete window.messageTimeouts[tempId];
+                }
+            }, 15000); // Increased to 15 seconds
+
+        } else {
+            console.log('📡 WebSocket not available, using REST API fallback...');
+
+            // REST API fallback
+            const response = await sendMessageViaRest({
+                content: text,
+                senderId: currentUser.email,
+                recipientId: currentChatUser.email,
+                type: 'CHAT',
+                timestamp: new Date().toISOString()
+            });
+
+            // Replace temp message with response
+            const tempIndex = messages.findIndex(m => m.id === tempId);
+            if (tempIndex !== -1) {
+                messages[tempIndex] = response;
+                displayMessages();
+                scrollToBottom();
+            }
+            tempMessageMap.delete(tempId);
+
+            if (window.messageTimeouts[tempId]) {
+                clearTimeout(window.messageTimeouts[tempId]);
+                delete window.messageTimeouts[tempId];
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error in sendTextMessage:', error);
+
+        // Mark temporary message as failed
+        const failedIndex = messages.findIndex(m => m.id === tempId);
+        if (failedIndex !== -1) {
+            messages[failedIndex].status = 'FAILED';
+            displayMessages();
+        }
+        tempMessageMap.delete(tempId);
+
+        if (window.messageTimeouts[tempId]) {
+            clearTimeout(window.messageTimeouts[tempId]);
+            delete window.messageTimeouts[tempId];
+        }
+
+        throw error;
+    }
+}
+
+
+
+
+
+    // Send file message
+    async function sendFileMessage(caption = '') {
+        try {
+            const formData = new FormData();
+            formData.append('file', fileToSend);
+            formData.append('recipientId', currentChatUser.email);
+
+            const response = await fetch(`${CHAT_API}/upload-media`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Failed to send file' }));
+                throw new Error(errorData.error || 'Failed to send file');
+            }
+
+            const result = await response.json();
+
+            // Add caption if provided
+            if (caption) {
+                result.content = caption;
+            }
+
+            // Add to local messages
+            messages.push(result);
+            displayMessages();
+            scrollToBottom();
+
+            fileToSend = null;
+        } catch (error) {
+            console.error('Error sending file:', error);
+            throw error;
+        }
+    }
+
+    // Send message via REST API (fallback)
+    async function sendMessageViaRest(message) {
+        try {
+            const response = await fetch(`${CHAT_API}/send`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(message)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Failed to send message' }));
+                throw new Error(errorData.error || 'Failed to send message');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error sending message via REST:', error);
+            throw error;
+        }
+    }
+
+
+
+
+function handleReceivedMessage(message) {
+    try {
+        console.log('📨 Processing received message:', message);
+
+        // Vérifier si c'est pour la conversation actuelle
+        if (currentChatUser && (message.senderId === currentChatUser.email || message.recipientId === currentChatUser.email)) {
+            // Vérifier si le message existe déjà (éviter les doublons)
+            const existingMessageIndex = messages.findIndex(m => m.id === message.id);
+            if (existingMessageIndex === -1) {
+                // Nouveau message, l'ajouter
+                messages.push({
+                    ...message,
+                    status: message.status || 'DELIVERED'
+                });
+                displayMessages();
+                scrollToBottom();
+                console.log('✅ Added new received message to current chat');
+            } else {
+                console.log('ℹ️ Message already exists, skipping');
+            }
+
+            // Marquer comme lu si c'est un message reçu dans la conversation active
+            if (message.senderId === currentChatUser.email) {
+                markMessageAsRead(message.id);
+            }
+        } else {
+            // Mettre à jour le compteur de messages non lus
+            const senderEmail = message.senderId;
+            if (senderEmail !== currentUser.email) {
+                const currentCount = unreadMessages.get(senderEmail) || 0;
+                unreadMessages.set(senderEmail, currentCount + 1);
+                displayContacts();
+            }
+        }
+
+        // Afficher la notification
+        if (message.senderId !== currentUser.email) {
+            const sender = contacts.find(c => c.email === message.senderId);
+            const senderName = sender ? `${sender.firstName} ${sender.lastName}` : message.senderId;
+
+            showNotification(`New message from ${senderName}`, 'info');
+            showDesktopNotification(`New message from ${senderName}`, message.content || 'Sent a file');
+            playNotificationSound();
+        }
+    } catch (error) {
+        console.error('❌ Error handling received message:', error);
+    }
+}
+
+
+
+function handleMessageStatus(statusUpdate) {
+    console.log('📊 Processing message status update:', statusUpdate);
+
+    const messageId = statusUpdate.messageId;
+    const status = statusUpdate.status;
+
+    // Find and update the message status
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex !== -1) {
+        messages[messageIndex].status = status;
+        console.log('✅ Updated message', messageId, 'status to', status);
+        displayMessages();
+    } else {
+        console.warn('⚠️ Message not found for status update:', messageId);
+    }
+}
+
+    // Handle typing indicator
+    function handleTypingIndicator(typingInfo) {
+        try {
+            const typingIndicator = document.getElementById('typingIndicator');
+            const typingUserName = document.getElementById('typingUserName');
+            const typingUserAvatar = document.getElementById('typingUserAvatar');
+
+            if (currentChatUser && typingInfo.senderId === currentChatUser.email) {
+                if (typingInfo.isTyping) {
+                    typingUserName.textContent = `${currentChatUser.firstName}`;
+                    typingUserAvatar.textContent = currentChatUser.firstName.charAt(0).toUpperCase();
+                    typingIndicator.classList.remove('hidden');
+                    scrollToBottom();
+                } else {
+                    typingIndicator.classList.add('hidden');
+                }
+            }
+        } catch (error) {
+            console.error('Error handling typing indicator:', error);
+        }
+    }
+
+    // Handle user status update
+    function handleUserStatusUpdate(statusUpdate) {
+        try {
+            userStatuses.set(statusUpdate.userId, statusUpdate.status);
+
+            // Update contact list
+            displayContacts();
+
+            // Update chat header if it's the current chat user
+            if (currentChatUser && statusUpdate.userId === currentChatUser.email) {
+                const chatUserStatus = document.getElementById('chatUserStatus');
+                const isOnline = statusUpdate.status === 'ONLINE';
+                chatUserStatus.textContent = isOnline ? 'online' : 'last seen recently';
+                chatUserStatus.className = `chat-user-status ${isOnline ? 'online' : ''}`;
+            }
+        } catch (error) {
+            console.error('Error handling user status update:', error);
+        }
+    }
+
+
+
+
+async function loadUnreadMessages() {
+    try {
+        if (!checkAuthentication()) return;
+
+        const response = await makeAuthenticatedRequest(`${CHAT_API}/unread`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to load unread messages`);
+        }
+
+        const unreadList = await response.json();
+
+        // Grouper par expéditeur
+        const unreadCounts = {};
+        unreadList.forEach(message => {
+            if (message.senderId !== currentUser.email) {
+                unreadCounts[message.senderId] = (unreadCounts[message.senderId] || 0) + 1;
+            }
+        });
+
+        // Mettre à jour la map des messages non lus
+        unreadMessages.clear();
+        Object.entries(unreadCounts).forEach(([email, count]) => {
+            unreadMessages.set(email, count);
+        });
+
+        displayContacts();
+    } catch (error) {
+        console.error('Error loading unread messages:', error);
+        // Ne pas afficher d'erreur si c'est juste un problème d'auth
+        if (error.message !== 'Unauthorized') {
+            showNotification('Could not load unread messages', 'warning');
+        }
+    }
+}
+
+async function loadNotifications() {
+    try {
+        if (!checkAuthentication()) return;
+
+        const response = await makeAuthenticatedRequest(`${CHAT_API}/notifications`);
+
+        if (response.ok) {
+            notifications = await response.json();
+            updateNotificationBadge();
+        } else {
+            console.error('Failed to load notifications');
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        // Ne pas afficher d'erreur si c'est juste un problème d'auth
+        if (error.message !== 'Unauthorized') {
+            console.warn('Could not load notifications');
+        }
+    }
+}
+
+    // Update notification badge
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        const unreadNotifications = notifications.filter(n => !n.read);
+
+        if (unreadNotifications.length > 0) {
+            badge.textContent = unreadNotifications.length > 99 ? '99+' : unreadNotifications.length;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+
+
+
+async function markMessagesAsRead(senderEmail) {
+    try {
+        if (!checkAuthentication()) return;
+
+        const response = await makeAuthenticatedRequest(`${CHAT_API}/mark-read`, {
+            method: 'POST',
+            body: JSON.stringify({ senderId: senderEmail })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to mark messages as read');
+        }
+    } catch (error) {
+        console.error('Error marking messages as read:', error);
+    }
+}
+
+    // Mark single message as read
+    async function markMessageAsRead(messageId) {
+        try {
+            const response = await fetch(`${CHAT_API}/mark-read/${messageId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('Failed to mark message as read');
+            }
+        } catch (error) {
+            console.error('Error marking message as read:', error);
+        }
+    }
+
+    // Send typing indicator
+    function sendTypingIndicator(isTyping) {
+        try {
+            if (stompClient && isConnected && currentChatUser) {
+                stompClient.send('/app/message.typing', {}, JSON.stringify({
+                    senderId: currentUser.email,
+                    recipientId: currentChatUser.email,
+                    isTyping: isTyping
+                }));
+            }
+        } catch (error) {
+            console.error('Error sending typing indicator:', error);
+        }
+    }
+
+    // Send user online status
+    function sendUserOnlineStatus() {
+        try {
+            if (stompClient && isConnected) {
+                stompClient.send('/app/user.online', {}, JSON.stringify({
+                    userId: currentUser.email
+                }));
+            }
+        } catch (error) {
+            console.error('Error sending online status:', error);
+        }
+    }
+
+    // Send user offline status
+    function sendUserOfflineStatus() {
+        try {
+            if (stompClient && isConnected) {
+                stompClient.send('/app/user.offline', {}, JSON.stringify({
+                    userId: currentUser.email
+                }));
+            }
+        } catch (error) {
+            console.error('Error sending offline status:', error);
+        }
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+        // Message input
+        const messageInput = document.getElementById('messageInput');
+
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function(e) {
+            autoResizeTextarea(this);
+
+            // Typing indicator
+            sendTypingIndicator(true);
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                sendTypingIndicator(false);
+            }, 1500);
+        });
+
+        // Search
+        const searchBox = document.getElementById('searchBox');
+        searchBox.addEventListener('input', function(e) {
+            filterContacts(e.target.value);
+        });
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filterContacts(searchBox.value, this.dataset.filter);
+            });
+        });
+
+        // Media filter buttons
+        document.querySelectorAll('[data-media-filter]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-media-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                filterMediaGallery(this.dataset.mediaFilter);
+            });
+        });
+
+        // File inputs
+        document.getElementById('fileInput').addEventListener('change', handleFileSelection);
+        document.getElementById('cameraInput').addEventListener('change', handleFileSelection);
+        document.getElementById('profilePhotoInput').addEventListener('change', handleProfilePhotoSelection);
+
+        // Profile form
+        document.getElementById('profileForm').addEventListener('submit', updateProfile);
+
+        // Window events
+        window.addEventListener('beforeunload', function() {
+            sendUserOfflineStatus();
+        });
+
+        window.addEventListener('focus', function() {
+            sendUserOnlineStatus();
+        });
+
+        window.addEventListener('blur', function() {
+            // Don't send offline immediately, use a delay
+            setTimeout(() => {
+                if (!document.hasFocus()) {
+                    sendUserOfflineStatus();
+                }
+            }, 5000);
+        });
+
+        // Hide context menu on click
+        document.addEventListener('click', function() {
+            hideContextMenu();
+        });
+
+        // Prevent context menu on right click except for messages
+        document.addEventListener('contextmenu', function(e) {
+            if (!e.target.closest('.message-content')) {
+                e.preventDefault();
+            }
+        });
+
+        // Escape key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideAllModals();
+            }
+        });
+
+        // Handle send button
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    }
+
+    // Auto-resize textarea
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        const maxHeight = 100; // 5 lines approximately
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.height = newHeight + 'px';
+    }
+
+    // Setup periodic tasks
+    function setupPeriodicTasks() {
+        // Refresh contacts every 5 minutes
+        setInterval(function() {
+            if (isConnected) {
+                loadContacts();
+            }
+        }, 300000);
+
+        // Refresh notifications every 30 seconds
+        setInterval(function() {
+            if (isConnected) {
+                loadNotifications();
+            }
+        }, 30000);
+    }
+
+    // File handling functions
+    function selectFile() {
+        document.getElementById('fileInput').click();
+    }
+
+    function selectCamera() {
+        document.getElementById('cameraInput').click();
+    }
+
+    function selectProfilePhoto() {
+        document.getElementById('profilePhotoInput').click();
+    }
+
+    function handleFileSelection(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file size (25MB max)
+        if (file.size > 25 * 1024 * 1024) {
+            showNotification('File too large. Maximum size is 25MB.', 'error');
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'video/mp4', 'video/avi', 'video/mov', 'video/webm',
+            'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/mpeg',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            showNotification('File type not supported.', 'error');
+            return;
+        }
+
+        fileToSend = file;
+        showFilePreview(file);
+
+        // Clear the input
+        event.target.value = '';
+    }
+
+    function handleProfilePhotoSelection(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file size (2MB max for profile photos)
+        if (file.size > 2 * 1024 * 1024) {
+            showNotification('Profile photo too large. Maximum size is 2MB.', 'error');
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showNotification('Please select an image file.', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePhotoPreview');
+            const icon = document.getElementById('profilePhotoIcon');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            icon.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function showFilePreview(file) {
+        const preview = document.getElementById('filePreview');
+        const fileType = file.type.split('/')[0];
+        let previewContent = '';
+
+        if (fileType === 'image') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewContent = `
+                    <img src="${e.target.result}" alt="${file.name}">
+                    <div class="file-preview-info">
+                        <div class="file-preview-name">${file.name}</div>
+                        <div class="file-preview-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button class="file-preview-remove" onclick="hideFilePreview()" type="button">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                preview.innerHTML = previewContent;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContent = `
+                <div class="file-icon">
+                    <i class="fas ${getFileIcon(file.name)}"></i>
+                </div>
+                <div class="file-preview-info">
+                    <div class="file-preview-name">${file.name}</div>
+                    <div class="file-preview-size">${formatFileSize(file.size)}</div>
+                </div>
+                <button class="file-preview-remove" onclick="hideFilePreview()" type="button">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            preview.innerHTML = previewContent;
+        }
+
+        preview.classList.remove('hidden');
+    }
+
+    function hideFilePreview() {
+        document.getElementById('filePreview').classList.add('hidden');
+        fileToSend = null;
+    }
+
+    // Profile management
+    function showProfileModal() {
+        if (!currentUser) return;
+
+        // Populate form fields
+        document.getElementById('profileFirstName').value = currentUser.firstName || '';
+        document.getElementById('profileLastName').value = currentUser.lastName || '';
+        document.getElementById('profileEmail').value = currentUser.email || '';
+        document.getElementById('profilePhone').value = currentUser.phoneNumber || '';
+        document.getElementById('profileStatus').value = currentUser.status || 'Available';
+
+        // Show current photo
+        const preview = document.getElementById('profilePhotoPreview');
+        const icon = document.getElementById('profilePhotoIcon');
+
+        if (currentUser.photo) {
+            preview.src = `data:image/jpeg;base64,${currentUser.photo}`;
+            preview.style.display = 'block';
+            icon.style.display = 'none';
+        } else {
+            preview.style.display = 'none';
+            icon.style.display = 'block';
+        }
+
+        document.getElementById('profileModal').classList.add('show');
+    }
+
+    function hideProfileModal() {
+        document.getElementById('profileModal').classList.remove('show');
+        document.getElementById('profilePhotoInput').value = '';
+    }
+
+    async function updateProfile(event) {
+        event.preventDefault();
+
+        const saveBtn = document.getElementById('saveProfileBtn');
+        const originalText = saveBtn.textContent;
+
+        try {
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('firstName', document.getElementById('profileFirstName').value);
+            formData.append('lastName', document.getElementById('profileLastName').value);
+            formData.append('email', currentUser.email);
+            formData.append('phoneNumber', document.getElementById('profilePhone').value);
+            formData.append('role', currentUser.role);
+            formData.append('active', 'true');
+
+            // Add photo if selected
+            const photoInput = document.getElementById('profilePhotoInput');
+            if (photoInput.files[0]) {
+                formData.append('photo', photoInput.files[0]);
+            }
+
+            const response = await fetch(`${STAFF_API}/${currentUser.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to update profile' }));
+                throw new Error(errorData.message || 'Failed to update profile');
+            }
+
+            const updatedUser = await response.json();
+
+            // Update current user
+            currentUser = { ...currentUser, ...updatedUser };
+            localStorage.setItem('userSession', JSON.stringify(currentUser));
+
+            // Update UI
+            updateUserInfo();
+            hideProfileModal();
+            showNotification('Profile updated successfully!', 'success');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showNotification('Error updating profile: ' + error.message, 'error');
+        } finally {
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+
+    // Media gallery
+    function showMediaGallery() {
+        if (!currentChatUser) {
+            showNotification('Please select a chat first', 'warning');
+            return;
+        }
+
+        document.getElementById('mediaGalleryModal').classList.add('show');
+        loadMediaGallery();
+    }
+
+    function hideMediaGallery() {
+        document.getElementById('mediaGalleryModal').classList.remove('show');
+    }
+
+    async function loadMediaGallery(type = null) {
+        try {
+            const url = type && type !== 'all' ?
+                `${CHAT_API}/conversation/${currentChatUser.email}/media?type=${type}` :
+                `${CHAT_API}/conversation/${currentChatUser.email}/media`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load media');
+            }
+
+            const data = await response.json();
+            displayMediaGallery(data.media || []);
+        } catch (error) {
+            console.error('Error loading media gallery:', error);
+            showNotification('Error loading media', 'error');
+
+            // Show empty state
+            document.getElementById('mediaGallery').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-images"></i>
+                    <h3>No media found</h3>
+                    <p>Share photos, videos and documents to see them here.</p>
+                </div>
+            `;
+        }
+    }
+
+    function displayMediaGallery(mediaList) {
+        const gallery = document.getElementById('mediaGallery');
+
+        if (mediaList.length === 0) {
+            gallery.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-images"></i>
+                    <h3>No media found</h3>
+                    <p>Share photos, videos and documents to see them here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        gallery.innerHTML = mediaList.map(media => {
+            if (media.type === 'IMAGE') {
+                return `
+                    <div class="media-item" onclick="openMediaViewer('${media.fileUrl}', 'image', '${escapeHtml(media.fileName || 'Image')}')">
+                        <img src="${media.thumbnailUrl || media.fileUrl}" alt="${media.fileName}" loading="lazy">
+                        <div class="media-overlay">
+                            <i class="fas fa-expand"></i>
+                        </div>
+                    </div>
+                `;
+            } else if (media.type === 'VIDEO') {
+                return `
+                    <div class="media-item" onclick="openMediaViewer('${media.fileUrl}', 'video', '${escapeHtml(media.fileName || 'Video')}')">
+                        <video src="${media.fileUrl}" preload="metadata"></video>
+                        <div class="media-overlay">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="media-item" onclick="downloadFile('${media.downloadUrl}', '${escapeHtml(media.fileName || 'File')}')">
+                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #2a3942; color: #8696a0;">
+                            <i class="fas ${getFileIcon(media.fileName || '')} fa-2x"></i>
+                        </div>
+                        <div class="media-overlay">
+                            <i class="fas fa-download"></i>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+
+    function filterMediaGallery(type) {
+        loadMediaGallery(type);
+    }
+
+    // Contact info modal
+    function showContactInfo() {
+        if (!currentChatUser) return;
+
+        const modal = document.getElementById('contactInfoModal');
+        document.getElementById('contactInfoName').textContent = `${currentChatUser.firstName} ${currentChatUser.lastName}`;
+        document.getElementById('contactInfoEmail').textContent = currentChatUser.email;
+        document.getElementById('contactInfoRole').textContent = currentChatUser.role;
+
+        updateAvatarDisplay('contactInfoAvatar', 'contactInfoAvatarImg', 'contactInfoAvatarText', currentChatUser);
+
+        modal.classList.add('show');
+    }
+
+    function hideContactInfo() {
+        document.getElementById('contactInfoModal').classList.remove('show');
+    }
+
+    // Notifications modal
+    function showNotificationsModal() {
+        document.getElementById('notificationsModal').classList.add('show');
+        displayNotifications();
+    }
+
+    function hideNotificationsModal() {
+        document.getElementById('notificationsModal').classList.remove('show');
+    }
+
+    function displayNotifications() {
+        const list = document.getElementById('notificationsList');
+
+        if (notifications.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <h3>No notifications</h3>
+                    <p>You're all caught up!</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = notifications.map(notification => `
+            <div class="contact-item ${notification.read ? '' : 'unread'}" onclick="markNotificationAsRead(${notification.id})">
+                <div class="contact-avatar" style="background: ${getNotificationColor(notification.type)};">
+                    <i class="fas ${getNotificationIcon(notification.type)}"></i>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-name">${notification.content}</div>
+                    <div class="contact-last-message">${formatMessageTime(notification.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function markNotificationAsRead(id) {
+        try {
+            const response = await fetch(`${CHAT_API}/notifications/${id}/read`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const notification = notifications.find(n => n.id === id);
+                if (notification) {
+                    notification.read = true;
+                    updateNotificationBadge();
+                    displayNotifications();
+                }
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    }
+
+    // Settings modal
+    function showSettingsModal() {
+        document.getElementById('settingsModal').classList.add('show');
+
+        // Update settings UI
+        document.getElementById('enableNotifications').checked = settings.enableNotifications;
+        document.getElementById('enableSounds').checked = settings.enableSounds;
+    }
+
+    function hideSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function saveSettings() {
+        settings.enableNotifications = document.getElementById('enableNotifications').checked;
+        settings.enableSounds = document.getElementById('enableSounds').checked;
+
+        localStorage.setItem('whatsapp_settings', JSON.stringify(settings));
+        showNotification('Settings saved!', 'success');
+        hideSettingsModal();
+    }
+
+    function loadSettings() {
+        try {
+            const savedSettings = localStorage.getItem('whatsapp_settings');
+            if (savedSettings) {
+                settings = { ...settings, ...JSON.parse(savedSettings) };
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+
+    // Context menu functions
+    function showContextMenu(event, messageId) {
+        event.preventDefault();
+        selectedMessage = messageId;
+
+        const contextMenu = document.getElementById('contextMenu');
+
+        // Position the menu
+        let x = event.pageX;
+        let y = event.pageY;
+
+        // Ensure menu doesn't go off screen
+        const menuWidth = 150;
+        const menuHeight = 200;
+
+        if (x + menuWidth > window.innerWidth) {
+            x = window.innerWidth - menuWidth - 10;
+        }
+        if (y + menuHeight > window.innerHeight) {
+            y = y - menuHeight;
+        }
+
+        contextMenu.style.left = x + 'px';
+        contextMenu.style.top = y + 'px';
+        contextMenu.classList.add('show');
+    }
+
+    function hideContextMenu() {
+        document.getElementById('contextMenu').classList.remove('show');
+        selectedMessage = null;
+    }
+
+    function replyToMessage() {
+        hideContextMenu();
+        showNotification('Reply feature coming soon!', 'info');
+    }
+
+    function forwardMessage() {
+        hideContextMenu();
+        showNotification('Forward feature coming soon!', 'info');
+    }
+
+    function copyMessage() {
+        const message = messages.find(m => m.id === selectedMessage);
+        if (message && message.content) {
+            navigator.clipboard.writeText(message.content).then(() => {
+                showNotification('Message copied to clipboard', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = message.content;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification('Message copied to clipboard', 'success');
+                } catch (err) {
+                    showNotification('Failed to copy message', 'error');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+        hideContextMenu();
+    }
+
+    function selectMessage() {
+        hideContextMenu();
+        showNotification('Select feature coming soon!', 'info');
+    }
+
+    function starMessage() {
+        hideContextMenu();
+        showNotification('Star feature coming soon!', 'info');
+    }
+
+    async function deleteMessage() {
+        if (!selectedMessage) return;
+
+        if (!confirm('Delete this message? This cannot be undone.')) {
+            hideContextMenu();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${CHAT_API}/message/${selectedMessage}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete message');
+            }
+
+            // Remove from local messages
+            messages = messages.filter(m => m.id !== selectedMessage);
+            displayMessages();
+            showNotification('Message deleted', 'success');
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            showNotification('Error deleting message', 'error');
+        }
+
+        hideContextMenu();
+    }
+
+    // Utility functions
+    function filterContacts(searchTerm, filter = 'all') {
+        const contactItems = document.querySelectorAll('.contact-item');
+
+        contactItems.forEach(item => {
+            const email = item.dataset.email;
+            if (!email) return;
+
+            const contact = contacts.find(c => c.email === email);
+            if (!contact) return;
+
+            const contactName = `${contact.firstName} ${contact.lastName}`.toLowerCase();
+            const contactRole = contact.role.toLowerCase();
+            let showItem = true;
+
+            // Text filter
+            if (searchTerm && searchTerm.trim()) {
+                const term = searchTerm.toLowerCase();
+                showItem = contactName.includes(term) ||
+                          email.toLowerCase().includes(term) ||
+                          contactRole.includes(term);
+            }
+
+            // Status filter
+            if (showItem && filter !== 'all') {
+                switch (filter) {
+                    case 'online':
+                        showItem = userStatuses.get(email) === 'ONLINE';
+                        break;
+                    case 'unread':
+                        showItem = unreadMessages.has(email) && unreadMessages.get(email) > 0;
+                        break;
+                }
+            }
+
+            item.style.display = showItem ? 'flex' : 'none';
+        });
+    }
+
+    function scrollToBottom() {
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function formatMessageTime(timestamp) {
+        if (!timestamp) return '';
+
+        const date = new Date(timestamp);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        if (messageDate.getTime() === today.getTime()) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (messageDate.getTime() === today.getTime() - 86400000) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(fileName) {
+        if (!fileName) return 'fa-file';
+
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        const iconMap = {
+            pdf: 'fa-file-pdf',
+            doc: 'fa-file-word', docx: 'fa-file-word',
+            xls: 'fa-file-excel', xlsx: 'fa-file-excel',
+            ppt: 'fa-file-powerpoint', pptx: 'fa-file-powerpoint',
+            zip: 'fa-file-archive', rar: 'fa-file-archive', '7z': 'fa-file-archive',
+            mp3: 'fa-file-audio', wav: 'fa-file-audio', ogg: 'fa-file-audio', m4a: 'fa-file-audio',
+            mp4: 'fa-file-video', avi: 'fa-file-video', mov: 'fa-file-video', webm: 'fa-file-video',
+            jpg: 'fa-file-image', jpeg: 'fa-file-image', png: 'fa-file-image', gif: 'fa-file-image', webp: 'fa-file-image',
+            txt: 'fa-file-alt', md: 'fa-file-alt'
+        };
+
+        return iconMap[extension] || 'fa-file';
+    }
+
+    function getStatusIcon(status) {
+        const icons = {
+            SENT: '<i class="fas fa-check"></i>',
+            DELIVERED: '<i class="fas fa-check-double"></i>',
+            READ: '<i class="fas fa-check-double"></i>',
+            SENDING: '<i class="fas fa-clock"></i>'
+        };
+        return icons[status] || icons.SENT;
+    }
+
+
+// Améliorer la fonction de rendu des statuts de message
+function renderMessageStatus(message) {
+    if (!message.status) return '';
+
+    let statusIcon = '';
+    let statusClass = message.status.toLowerCase();
+
+    switch (message.status.toUpperCase()) {
+        case 'SENDING':
+            statusIcon = '<i class="fas fa-clock"></i>';
+            statusClass = 'sending';
+            break;
+        case 'SENT':
+        case 'SAVED':
+            statusIcon = '<i class="fas fa-check"></i>';
+            statusClass = 'sent';
+            break;
+        case 'DELIVERED':
+            statusIcon = '<i class="fas fa-check-double"></i>';
+            statusClass = 'delivered';
+            break;
+        case 'READ':
+            statusIcon = '<i class="fas fa-check-double"></i>';
+            statusClass = 'read';
+            break;
+        case 'FAILED':
+            statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
+            statusClass = 'failed';
+            break;
+        default:
+            statusIcon = '<i class="fas fa-check"></i>';
+            statusClass = 'sent';
+    }
+
+    return `<span class="message-status ${statusClass}">${statusIcon}</span>`;
+}
+
+    function getNotificationColor(type) {
+        const colors = {
+            MESSAGE: '#00a884',
+            SYSTEM_ALERT: '#ff8800',
+            URGENT: '#ff4444',
+            GENERAL: '#0088cc'
+        };
+        return colors[type] || '#8696a0';
+    }
+
+    function getNotificationIcon(type) {
+        const icons = {
+            MESSAGE: 'fa-comment',
+            SYSTEM_ALERT: 'fa-exclamation-triangle',
+            URGENT: 'fa-exclamation-circle',
+            GENERAL: 'fa-info-circle'
+        };
+        return icons[type] || 'fa-bell';
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+async function ensureMessagePersistence() {
+    // Vérifier s'il y a des messages temporaires non confirmés
+    const tempMessages = messages.filter(msg =>
+        msg.id && msg.id.toString().startsWith('temp_') &&
+        msg.status === 'SENDING'
+    );
+
+    if (tempMessages.length > 0) {
+        console.log('⚠️ Found', tempMessages.length, 'unconfirmed temp messages');
+
+        // Recharger l'historique pour synchroniser
+        if (currentChatUser) {
+            await loadChatHistory(currentChatUser.email);
+        }
+    }
+}
+
+// Appeler cette fonction périodiquement pour s'assurer de la persistance
+setInterval(ensureMessagePersistence, 30000);
+
+
+function getAuthToken() {
+    // Debug logs
+    const authToken = localStorage.getItem('authToken');
+    console.log('Auth token from localStorage:', authToken);
+
+    const userSession = localStorage.getItem('userSession');
+    console.log('User session for token:', userSession);
+
+    // Essayer d'abord localStorage pour le token d'authentification
+    let token = authToken;
+    if (token && token.trim()) {
+        console.log('Using auth token from localStorage');
+        return token.trim();
+    }
+
+    // Ensuite essayer le token de session utilisateur
+    if (userSession) {
+        try {
+            const user = JSON.parse(userSession);
+            if (user.token) {
+                console.log('Using token from user session');
+                return user.token.trim();
+            }
+        } catch (e) {
+            console.error('Error parsing user session for token:', e);
+        }
+    }
+
+    // Si aucun token trouvé
+    console.warn('No authentication token found');
+    return null;
+}
+
+
+function checkAuthentication() {
+    const token = getAuthToken();
+    if (!token) {
+        showNotification('Authentication required. Please login again.', 'error');
+        redirectToLogin();
+        return false;
+    }
+    return true;
+}
+
+
+
+    // Notification functions
+    function requestNotificationPermission() {
+        if ('Notification' in window && settings.enableNotifications) {
+            Notification.requestPermission().then(permission => {
+                if (permission !== 'granted') {
+                    console.log('Notification permission denied');
+                }
+            });
+        }
+    }
+
+    function showDesktopNotification(title, body) {
+        if ('Notification' in window && Notification.permission === 'granted' && settings.enableNotifications) {
+            new Notification(title, {
+                body: body,
+                icon: '/favicon.ico',
+                badge: '/favicon.ico'
+            });
+        }
+    }
+
+    function playNotificationSound() {
+        if (!settings.enableSounds) return;
+
+        try {
+            // Create a short notification beep
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+            console.log('Cannot play notification sound:', error);
+        }
+    }
+
+    // Media viewer
+    function openMediaViewer(url, type, filename) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.click();
+    }
+
+    function downloadFile(url, filename) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Add media click listeners
+    function addMediaClickListeners() {
+        document.querySelectorAll('.message-media img').forEach(img => {
+            img.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openMediaViewer(this.src, 'image', this.alt);
+            });
+        });
+
+        document.querySelectorAll('.message-media video').forEach(video => {
+            video.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (this.paused) {
+                    this.play();
+                } else {
+                    this.pause();
+                }
+            });
+        });
+    }
+
+    // Navigation
+    function closeChatOnMobile() {
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('hidden');
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+            document.getElementById('chatInterface').classList.add('hidden');
+            currentChatUser = null;
+
+            // Clear active contact
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+    }
+
+    function logout() {
+        if (confirm('Log out of WhatsApp Web?')) {
+            sendUserOfflineStatus();
+
+            // Clear all data
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('authToken');
+
+            // Disconnect WebSocket
+            if (stompClient) {
+                stompClient.disconnect();
+            }
+
+            // Clear timers
+            stopHeartbeat();
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+            }
+
+            // Redirect to login
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Additional features (placeholders for future implementation)
+    function makeCall() {
+        showNotification('Voice calls feature coming soon!', 'info');
+    }
+
+    function makeVideoCall() {
+        showNotification('Video calls feature coming soon!', 'info');
+    }
+
+    function showChatMenu() {
+        showNotification('Chat menu coming soon!', 'info');
+    }
+
+    function toggleEmojiPicker() {
+        showNotification('Emoji picker coming soon!', 'info');
+    }
+
+    // Hide all modals
+    function hideAllModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('show');
+        });
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        document.querySelectorAll('.notification').forEach(n => n.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
+    }
+
+    // Resize handler
+    window.addEventListener('resize', function() {
+        // Close chat on mobile when resizing to mobile view
+        if (window.innerWidth <= 768 && currentChatUser) {
+            // Keep chat open on mobile
+        } else if (window.innerWidth > 768) {
+            // Show sidebar on desktop
+            document.getElementById('sidebar').classList.remove('hidden');
+        }
+    });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

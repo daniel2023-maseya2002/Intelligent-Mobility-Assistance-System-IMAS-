@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Statistics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0;
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0;
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Inventory Statistics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="#">
+                <i class="bi bi-grid-1x2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-calendar-check"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-calendar-week"></i>
+                <span class="menu-text">Scheduling</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-check2-square"></i>
+                <span class="menu-text">Task Tracking</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-clipboard-check"></i>
+                <span class="menu-text">Work Order</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-gear"></i>
+                <span class="menu-text">Equipment & Assets</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-clock-history"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-chat-dots"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-box-seam"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="#">
+                <i class="bi bi-shield-check"></i>
+                <span class="menu-text">Compliance & Safety</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="active">
+                <i class="bi bi-graph-up"></i>
+                <span class="menu-text">Data Analytics & Reporting</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<main class="main-content">
+    <div class="container-fluid">
+        <!-- Stats Cards -->
+        <div class="row stats-grid g-3 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card high-priority">
+                    <div class="stats-icon">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                    <div class="stats-label">Total Inventory Items</div>
+                    <div class="stats-number" id="totalItems">0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stats-label">Total Value</div>
+                    <div class="stats-number" id="totalValue">$0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card low-priority">
+                    <div class="stats-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stats-label">Low Stock Items</div>
+                    <div class="stats-number" id="lowStockItems">0</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon">
+                        <i class="bi bi-arrow-up-circle"></i>
+                    </div>
+                    <div class="stats-label">Overstock Items</div>
+                    <div class="stats-number" id="overStockItems">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row charts-grid g-3">
+            <!-- Inventory by Type (Pie Chart) -->
+            <div class="col-lg-6 col-md-12">
+                <div class="chart-container">
+                    <div class="chart-title">Inventory Distribution by Type</div>
+                    <div class="chart-wrapper">
+                        <canvas id="inventoryByTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Levels by Category (Bar Chart) -->
+            <div class="col-lg-6 col-md-12">
+                <div class="chart-container">
+                    <div class="chart-title">Stock Levels by Category</div>
+                    <div class="chart-wrapper">
+                        <canvas id="stockByCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Value by Location (Doughnut Chart) -->
+            <div class="col-lg-6 col-md-12">
+                <div class="chart-container">
+                    <div class="chart-title">Inventory Value by Location</div>
+                    <div class="chart-wrapper">
+                        <canvas id="valueByLocationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Status Distribution (Radar Chart) -->
+            <div class="col-lg-6 col-md-12">
+                <div class="chart-container">
+                    <div class="chart-title">Stock Status Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="statusDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low vs Overstock Items by Type (Stacked Bar Chart) -->
+            <div class="col-12">
+                <div class="chart-container full-width-chart">
+                    <div class="chart-title">Low vs Overstock Items by Type</div>
+                    <div class="chart-wrapper">
+                        <canvas id="lowVsOverstockChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Turnover (Line Chart) -->
+            <div class="col-12">
+                <div class="chart-container full-width-chart">
+                    <div class="chart-title">Inventory Turnover by Month</div>
+                    <div class="chart-wrapper">
+                        <canvas id="turnoverChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="refresh-btn" id="refreshChartsBtn">
+            <i class="bi bi-arrow-clockwise me-2"></i> Refresh Charts
+        </button>
+
+        <!-- Error Message -->
+        <div class="error d-none" id="errorMessage">
+            Failed to load data. Please try again later.
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+<script>
+    class InventoryStatistics {
+        constructor() {
+            this.baseUrl = '/api/inventory';
+            this.charts = {};
+            this.init();
+        }
+
+        init() {
+            this.bindEvents();
+            this.initializeCharts();
+            this.loadData();
+        }
+
+        bindEvents() {
+            document.getElementById('refreshChartsBtn').addEventListener('click', () => this.loadData());
+            document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+            document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
+        }
+
+        toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const themeBtn = document.getElementById('themeToggle');
+            const icon = themeBtn.querySelector('i');
+            const text = themeBtn.querySelector('.btn-text');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.replace('bi-sun', 'bi-moon');
+                text.textContent = 'Dark';
+            } else {
+                icon.classList.replace('bi-moon', 'bi-sun');
+                text.textContent = 'Light';
+            }
+            this.updateCharts();
+        }
+
+        toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('hidden');
+            mainContent.classList.toggle('expanded');
+        }
+
+        initializeCharts() {
+            const ctx1 = document.getElementById('inventoryByTypeChart').getContext('2d');
+            const ctx2 = document.getElementById('stockByCategoryChart').getContext('2d');
+            const ctx3 = document.getElementById('valueByLocationChart').getContext('2d');
+            const ctx4 = document.getElementById('statusDistributionChart').getContext('2d');
+            const ctx5 = document.getElementById('lowVsOverstockChart').getContext('2d');
+            const ctx6 = document.getElementById('turnoverChart').getContext('2d');
+
+            this.charts.inventoryByType = new Chart(ctx1, {
+                type: 'pie',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        title: { display: false }
+                    }
+                }
+            });
+
+            this.charts.stockByCategory = new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Total Quantity', data: [], backgroundColor: '#0d6efd' }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantity' } }
+                    }
+                }
+            });
+
+            this.charts.valueByLocation = new Chart(ctx3, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        title: { display: false }
+                    }
+                }
+            });
+
+            this.charts.statusDistribution = new Chart(ctx4, {
+                type: 'radar',
+                data: { labels: [], datasets: [{ label: 'Items', data: [], backgroundColor: 'rgba(13, 110, 253, 0.2)', borderColor: '#0d6efd' }] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: { beginAtZero: true }
+                    }
+                }
+            });
+
+            this.charts.lowVsOverstock = new Chart(ctx5, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Low Stock', data: [], backgroundColor: '#ff9f43' },
+                        { label: 'Overstock', data: [], backgroundColor: '#28c76f' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Number of Items' } }
+                    }
+                }
+            });
+
+            this.charts.turnoverChart = new Chart(ctx6, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{ label: 'Turnover Rate', data: [], borderColor: '#0d6efd', fill: false }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Turnover Rate (%)' } }
+                    }
+                }
+            });
+        }
+
+        async loadData() {
+            try {
+                const [inventoryResponse, totalValueResponse, lowStockResponse, overStockResponse] = await Promise.all([
+                    fetch(this.baseUrl),
+                    fetch(`${this.baseUrl}/total-value`),
+                    fetch(`${this.baseUrl}/low-stock`),
+                    fetch(`${this.baseUrl}/overstock`)
+                ]);
+
+                if (inventoryResponse.ok && totalValueResponse.ok && lowStockResponse.ok && overStockResponse.ok) {
+                    const inventoryData = await inventoryResponse.json();
+                    const totalValue = await totalValueResponse.json();
+                    const lowStockItems = await lowStockResponse.json();
+                    const overStockItems = await overStockResponse.json();
+
+                    // Update stats
+                    document.getElementById('totalItems').textContent = inventoryData.length;
+                    document.getElementById('totalValue').textContent = `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                    document.getElementById('lowStockItems').textContent = lowStockItems.length;
+                    document.getElementById('overStockItems').textContent = overStockItems.length;
+
+                    // Update charts
+                    this.updateInventoryByTypeChart(inventoryData);
+                    this.updateStockByCategoryChart(inventoryData);
+                    this.updateValueByLocationChart(inventoryData);
+                    this.updateStatusDistributionChart(inventoryData);
+                    this.updateLowVsOverstockChart(inventoryData, lowStockItems, overStockItems);
+                    this.updateTurnoverChart(inventoryData);
+
+                    document.getElementById('errorMessage').classList.add('d-none');
+                } else {
+                    this.showError();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                this.showError();
+            }
+        }
+
+        updateInventoryByTypeChart(data) {
+            const typeCounts = data.reduce((acc, item) => {
+                acc[item.itemType] = (acc[item.itemType] || 0) + 1;
+                return acc;
+            }, {});
+
+            this.charts.inventoryByType.data.labels = Object.keys(typeCounts);
+            this.charts.inventoryByType.data.datasets[0].data = Object.values(typeCounts);
+            this.charts.inventoryByType.data.datasets[0].backgroundColor = [
+                '#0d6efd', '#28c76f', '#ff9f43', '#ea5455', '#7367f0'
+            ];
+            this.charts.inventoryByType.update();
+        }
+
+        updateStockByCategoryChart(data) {
+            const categories = [...new Set(data.map(item => item.category || 'Uncategorized'))];
+            const quantities = categories.map(category =>
+                data.filter(item => (item.category || 'Uncategorized') === category)
+                    .reduce((sum, item) => sum + item.totalQuantity, 0)
+            );
+
+            this.charts.stockByCategory.data.labels = categories;
+            this.charts.stockByCategory.data.datasets[0].data = quantities;
+            this.charts.stockByCategory.update();
+        }
+
+        updateValueByLocationChart(data) {
+            const locations = [...new Set(data.map(item => item.location || 'Unknown'))];
+            const values = locations.map(location =>
+                data.filter(item => (item.location || 'Unknown') === location)
+                    .reduce((sum, item) => sum + (item.totalValue || 0), 0)
+            );
+
+            this.charts.valueByLocation.data.labels = locations;
+            this.charts.valueByLocation.data.datasets[0].data = values;
+            this.charts.valueByLocation.data.datasets[0].backgroundColor = [
+                '#0d6efd', '#28c76f', '#ff9f43', '#ea5455', '#7367f0'
+            ];
+            this.charts.valueByLocation.update();
+        }
+
+        updateStatusDistributionChart(data) {
+            const statusCounts = data.reduce((acc, item) => {
+                acc[item.status] = (acc[item.status] || 0) + 1;
+                return acc;
+            }, {});
+
+            this.charts.statusDistribution.data.labels = Object.keys(statusCounts);
+            this.charts.statusDistribution.data.datasets[0].data = Object.values(statusCounts);
+            this.charts.statusDistribution.update();
+        }
+
+        updateLowVsOverstockChart(data, lowStockItems, overStockItems) {
+            const types = ['EQUIPMENT', 'SPARE_PART', 'CONSUMABLE', 'TOOL', 'ACCESSORY'];
+            const lowStockCounts = types.map(type =>
+                lowStockItems.filter(item => item.itemType === type).length
+            );
+            const overStockCounts = types.map(type =>
+                overStockItems.filter(item => item.itemType === type).length
+            );
+
+            this.charts.lowVsOverstock.data.labels = types.map(t => t.replace('_', ' '));
+            this.charts.lowVsOverstock.data.datasets[0].data = lowStockCounts;
+            this.charts.lowVsOverstock.data.datasets[1].data = overStockCounts;
+            this.charts.lowVsOverstock.update();
+        }
+
+        updateTurnoverChart(data) {
+            // Simulated turnover rate by month (since transaction data isn't directly available)
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const turnoverRates = months.map(() => Math.random() * 50); // Placeholder data
+
+            this.charts.turnoverChart.data.labels = months;
+            this.charts.turnoverChart.data.datasets[0].data = turnoverRates;
+            this.charts.turnoverChart.update();
+        }
+
+        updateCharts() {
+            Object.values(this.charts).forEach(chart => chart.update());
+        }
+
+        showError() {
+            document.getElementById('errorMessage').classList.remove('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        new InventoryStatistics();
+    });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

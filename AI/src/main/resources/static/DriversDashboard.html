@@ -1,0 +1,4026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAS - Driver Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header.expanded {
+            left: 80px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .bus-status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 25px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active { background: var(--green); }
+        .status-dot.stopped { background: var(--gold); }
+        .status-dot.accident { background: var(--secondary-red); }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .notifications-btn {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .notifications-btn:hover {
+            background: var(--gray-light);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--secondary-red);
+            color: white;
+            border-radius: 50%;
+            min-width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.collapsed {
+            width: 80px;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .logo-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .driver-badge {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu .menu-text {
+            transition: var(--transition);
+        }
+
+        .sidebar.collapsed .menu-text {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1rem;
+            color: var(--secondary-red);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            width: 100%;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(220,38,38,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            transition: var(--transition);
+        }
+
+        .main-content.expanded {
+            margin-left: 80px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .stat-icon.trips {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .stat-icon.passengers {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+        }
+
+        .stat-icon.hours {
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+        }
+
+        .stat-icon.rating {
+            background: linear-gradient(135deg, var(--secondary-red), var(--light-red));
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* Bus Selection Panel */
+        .bus-selection-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 2000;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: none;
+            flex-direction: column;
+        }
+
+        .bus-selection-panel.active {
+            display: flex;
+        }
+
+        .bus-selection-header {
+            padding: 2rem 2rem 1rem;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bus-selection-content {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .bus-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .bus-item:hover {
+            border-color: var(--primary-blue);
+            background: rgba(30,64,175,0.05);
+        }
+
+        .bus-item.selected {
+            border-color: var(--primary-blue);
+            background: rgba(30,64,175,0.1);
+        }
+
+        .bus-info {
+            flex: 1;
+        }
+
+        .bus-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--gray-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .bus-details {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+
+        .bus-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .bus-status.active {
+            background: rgba(16,185,129,0.2);
+            color: var(--green);
+        }
+
+        .bus-status.stopped {
+            background: rgba(245,158,11,0.2);
+            color: var(--gold);
+        }
+
+        .route-timeline {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 30px;
+            width: 2px;
+            height: 100%;
+            background: var(--gray-light);
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .timeline-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+            z-index: 1;
+            position: relative;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: var(--gray-light);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        /* Live Map */
+        .map-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .trip-progress {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--gray-light);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green), #22C55E);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn:disabled {
+            background: var(--gray-medium);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-control[readonly] {
+            background: var(--gray-light);
+            cursor: not-allowed;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-medium);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--gray-medium);
+        }
+
+        .loading i {
+            margin-right: 0.5rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error States */
+        .error-message {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        /* Success States */
+        .success-message {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Notifications */
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .notification-popup.success {
+            background: var(--green);
+        }
+
+        .notification-popup.error {
+            background: var(--secondary-red);
+        }
+
+        .notification-popup.warning {
+            background: var(--gold);
+        }
+
+        .notification-popup.info {
+            background: var(--primary-blue);
+        }
+
+        /* Guide Book Styles */
+        .guide-book {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .guide-book-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .guide-book-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: var(--white);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .guide-book-content {
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .guide-page {
+            display: none;
+        }
+
+        .guide-page.active {
+            display: block;
+            animation: fadeInPage 0.5s ease-in-out;
+        }
+
+        @keyframes fadeInPage {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .guide-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-top: 1px solid var(--gray-light);
+            background: var(--gray-light);
+        }
+
+        .page-indicator {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .page-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--gray-medium);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .page-dot.active {
+            background: var(--primary-blue);
+            transform: scale(1.2);
+        }
+
+        .bus-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .info-item {
+            background: var(--gray-light);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-item i {
+            font-size: 2rem;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .schedule-table th {
+            background: var(--gray-light);
+            font-weight: 600;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar .menu-text,
+            .sidebar .logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+
+            .header {
+                left: 80px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .map-controls {
+                flex-direction: column;
+            }
+        }
+
+        /* Custom leaflet styles */
+        .bus-marker {
+            background: transparent;
+            border: none;
+        }
+
+        .leaflet-popup-content {
+            margin: 8px 12px;
+            line-height: 1.4;
+        }
+
+        /* Notification panel */
+        .notifications-panel {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            max-height: 400px;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            z-index: 1000;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .notifications-panel.active {
+            display: block;
+        }
+
+        .notification-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .notification-item:hover {
+            background: var(--gray-light);
+        }
+
+        .notification-item.unread {
+            background: rgba(30,64,175,0.05);
+            border-left: 3px solid var(--primary-blue);
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-message {
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+            margin-bottom: 0.25rem;
+        }
+
+        .notification-time {
+            font-size: 0.8rem;
+            color: var(--gray-medium);
+        }
+    </style>
+</head>
+<body data-theme="light">
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-bus"></i>
+        </div>
+        <div>
+            <span class="logo-text">IMAS</span>
+            <div class="driver-badge">DRIVER</div>
+        </div>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="#" class="active" onclick="showSection('dashboard', event)">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('realmap', event)">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="menu-text">Live Tracking</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('guide', event)">
+                    <i class="fas fa-route"></i>
+                    <span class="menu-text">Route Guide</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('simulation', event)">
+                    <i class="fas fa-gamepad"></i>
+                    <span class="menu-text">3D Simulation</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('reports', event)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="menu-text">Emergency</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('profile', event)">
+                    <i class="fas fa-user"></i>
+                    <span class="menu-text">Profile</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="menu-text">Logout</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title" id="dynamicGreeting">Driver Dashboard</h1>
+        <div class="bus-status-indicator" id="busStatus">
+            <div class="status-dot stopped" id="statusDot"></div>
+            <span id="statusText">No Active Bus</span>
+        </div>
+    </div>
+    <div class="header-right">
+        <div style="position: relative;">
+            <button class="notifications-btn" id="notificationsBtn">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge" id="notificationBadge">0</span>
+            </button>
+            <div class="notifications-panel" id="notificationsPanel">
+                <div id="notificationsList">
+                    <div class="loading">
+                        <i class="fas fa-spinner"></i>
+                        Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">D</div>
+            <span id="userName">Driver</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Personal Performance Dashboard</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon trips">
+                    <i class="fas fa-road"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalTrips">0</h3>
+                    <p>Total Trips</p>
+                    <span class="stat-change" id="tripChange">Loading...</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon passengers">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalPassengers">0</h3>
+                    <p>Passengers Transported</p>
+                    <span class="stat-change" id="passengerChange">Loading...</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon hours">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalHours">0</h3>
+                    <p>Driving Hours</p>
+                    <span class="stat-change">This month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon rating">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="driverRating">0.0</h3>
+                    <p>Driver Rating</p>
+                    <span class="stat-change" id="ratingChange">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Replace charts with Kinshasa Map -->
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-map-marked-alt" style="color: var(--primary-blue);"></i>
+                Kinshasa Bus Network Map
+                <span style="font-size: 0.9rem; color: var(--gray-medium); font-weight: normal;">Bus Stops & Routes</span>
+            </h3>
+            <div id="dashboardMap" style="height: 500px; border-radius: var(--border-radius);"></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Assigned Buses Information</h3>
+            <div id="assignedBusesInfo">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    Loading bus information...
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Tracking Section -->
+    <section id="realmap-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark);">Live Tracking Map</h1>
+            <div class="map-controls">
+                <button class="btn" id="selectBusBtn" onclick="openBusSelection()">
+                    <i class="fas fa-bus"></i>
+                    Select Bus
+                </button>
+                <button class="btn" id="myBusesBtn" onclick="showMyBuses()">
+                    <i class="fas fa-list"></i>
+                    My Buses
+                </button>
+                <button class="btn btn-success" id="startTripBtn" onclick="startTrip()" disabled>
+                    <i class="fas fa-play"></i>
+                    Start Trip
+                </button>
+                <button class="btn btn-warning" id="pauseTripBtn" onclick="pauseTrip()" disabled>
+                    <i class="fas fa-pause"></i>
+                    Pause Trip
+                </button>
+                <button class="btn btn-danger" id="endTripBtn" onclick="endTrip()" disabled>
+                    <i class="fas fa-stop"></i>
+                    End Trip
+                </button>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 0; height: 600px;">
+            <div id="realMap" style="height: 100%; border-radius: var(--border-radius);"></div>
+        </div>
+
+        <div class="trip-progress">
+            <h3 style="margin-bottom: 1rem;">Trip Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="tripProgressFill"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div>
+                    <strong>Progress:</strong> <span id="tripProgressText">0%</span>
+                </div>
+                <div>
+                    <strong>Distance Covered:</strong> <span id="distanceCovered">0 km</span>
+                </div>
+                <div>
+                    <strong>Time Remaining:</strong> <span id="estimatedTime">-</span>
+                </div>
+                <div>
+                    <strong>Current Passengers:</strong> <span id="currentPassengers">0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Driver's Guide Section -->
+    <section id="guide-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Driver's Route Guide Book</h1>
+
+        <div class="guide-book">
+            <div class="guide-book-header">
+                <h2><i class="fas fa-book-open"></i> IMAS Driver Guide</h2>
+                <p>Your Complete Journey Manual</p>
+            </div>
+
+            <div class="guide-book-content">
+                <!-- Page 1: Bus Information -->
+                <div class="guide-page active" id="guidePage1">
+                    <h3><i class="fas fa-bus"></i> Your Assigned Buses</h3>
+                    <div id="guideBookBusInfo">
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            Loading bus information...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page 2: Route Information -->
+                <div class="guide-page" id="guidePage2">
+                    <h3><i class="fas fa-route"></i> Route Overview</h3>
+                    <div id="guideBookRoute">
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            Loading route information...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page 3: Schedule & Timing -->
+                <div class="guide-page" id="guidePage3">
+                    <h3><i class="fas fa-clock"></i> Schedule & Timing</h3>
+                    <div id="guideBookSchedule">
+                        <table class="schedule-table">
+                            <thead>
+                            <tr>
+                                <th>Bus</th>
+                                <th>Route</th>
+                                <th>Departure</th>
+                                <th>Arrival</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--gray-medium);">
+                                    <div class="loading">
+                                        <i class="fas fa-spinner"></i>
+                                        Loading schedule...
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Page 4: Safety Guidelines -->
+                <div class="guide-page" id="guidePage4">
+                    <h3><i class="fas fa-shield-alt"></i> Safety Guidelines</h3>
+                    <div>
+                        <div style="background: var(--gray-light); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <h4><i class="fas fa-exclamation-triangle" style="color: var(--gold);"></i> Before Starting</h4>
+                            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                                <li>Check bus condition and safety equipment</li>
+                                <li>Verify passenger capacity limits</li>
+                                <li>Ensure communication devices are working</li>
+                                <li>Review weather and traffic conditions</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: var(--gray-light); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                            <h4><i class="fas fa-users" style="color: var(--green);"></i> During Journey</h4>
+                            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                                <li>Maintain safe following distance</li>
+                                <li>Monitor passenger behavior</li>
+                                <li>Follow speed limits strictly</li>
+                                <li>Report any incidents immediately</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: var(--gray-light); padding: 1.5rem; border-radius: 8px;">
+                            <h4><i class="fas fa-phone" style="color: var(--secondary-red);"></i> Emergency Contacts</h4>
+                            <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                                <li>Control Center: +243 999 123 456</li>
+                                <li>Emergency Services: 911</li>
+                                <li>Medical Emergency: +243 999 654 321</li>
+                                <li>Technical Support: +243 999 789 012</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-navigation">
+                <button class="btn btn-secondary" id="prevPageBtn" onclick="previousGuidePage()" disabled>
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+
+                <div class="page-indicator">
+                    <div class="page-dot active" onclick="goToGuidePage(1)"></div>
+                    <div class="page-dot" onclick="goToGuidePage(2)"></div>
+                    <div class="page-dot" onclick="goToGuidePage(3)"></div>
+                    <div class="page-dot" onclick="goToGuidePage(4)"></div>
+                </div>
+
+                <button class="btn" id="nextPageBtn" onclick="nextGuidePage()">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bus Simulation Section -->
+    <section id="simulation-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">3D Bus Driving Simulation</h1>
+
+        <div id="simulationValidationMessage" class="card" style="background: var(--gold); color: white; text-align: center; display: none;">
+            <h3><i class="fas fa-exclamation-triangle"></i> Simulation Not Available</h3>
+            <p>You must select an assigned bus to use the 3D simulation.</p>
+        </div>
+
+        <div class="card" id="simulationContainer">
+            <div style="position: relative; height: 500px; border-radius: var(--border-radius); overflow: hidden; background: linear-gradient(135deg, #87CEEB, #E0F6FF);">
+                <canvas id="bus3DCanvas" style="width: 100%; height: 100%; border-radius: var(--border-radius);"></canvas>
+
+                <!-- Simulation Overlay -->
+                <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: white; padding: 1rem; border-radius: var(--border-radius); backdrop-filter: blur(10px);">
+                    <div><strong>Speed:</strong> <span id="simSpeed">0</span> km/h</div>
+                    <div><strong>Passengers:</strong> <span id="simPassengers">0</span></div>
+                    <div><strong>Next Stop:</strong> <span id="simNextStop">-</span></div>
+                    <div><strong>Distance:</strong> <span id="simDistance">0</span> km</div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="position: absolute; top: 20px; right: 20px; width: 200px; background: rgba(0,0,0,0.7); color: white; padding: 1rem; border-radius: var(--border-radius); backdrop-filter: blur(10px);">
+                    <div><strong>Trip Progress</strong></div>
+                    <div class="progress-bar" style="margin: 0.5rem 0;">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div><span id="progressPercent">0</span>% Complete</div>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 1rem; background: rgba(0,0,0,0.7); padding: 1rem; border-radius: 25px; backdrop-filter: blur(10px);">
+                    <button class="btn btn-success" onclick="startSimulation()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="btn btn-warning" onclick="pauseSimulation()">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="btn btn-danger" onclick="stopSimulation()">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                    <button class="btn" onclick="resetSimulation()">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Emergency Reports Section -->
+    <section id="reports-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Emergency & Incident Reports</h1>
+
+        <div style="background: linear-gradient(135deg, var(--secondary-red), var(--light-red)); color: white; padding: 2rem; border-radius: var(--border-radius); text-align: center; margin-bottom: 2rem;">
+            <h2 style="margin-bottom: 1rem;">
+                <i class="fas fa-exclamation-triangle"></i>
+                Emergency Alert System
+            </h2>
+            <p style="margin-bottom: 2rem;">Report accidents, breakdowns, or other emergencies immediately</p>
+            <button class="btn" style="background: white; color: var(--secondary-red);" onclick="openEmergencyReport()">
+                <i class="fas fa-plus"></i>
+                Report Emergency
+            </button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Your Recent Reports</h3>
+            <div id="recentReports">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    Loading recent reports...
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Section -->
+    <section id="profile-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Driver Profile</h1>
+
+        <div class="card">
+            <div style="display: grid; grid-template-columns: 150px 1fr; gap: 2rem; align-items: start;">
+                <div style="text-align: center;">
+                    <div id="profileAvatar" style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red)); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; margin: 0 auto 1rem;">
+                        D
+                    </div>
+                    <button class="btn" onclick="uploadPhoto()">
+                        <i class="fas fa-camera"></i>
+                        Change Photo
+                    </button>
+                </div>
+                <div>
+                    <form id="profileForm">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>First Name</label>
+                                <input type="text" class="form-control" id="profileFirstName" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Last Name</label>
+                                <input type="text" class="form-control" id="profileLastName" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" class="form-control" id="profileEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" class="form-control" id="profilePhone" readonly>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>License Number</label>
+                                <input type="text" class="form-control" id="profileLicense" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Experience (years)</label>
+                                <input type="number" class="form-control" id="profileExperience" readonly>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                            <button type="button" class="btn" id="editProfileBtn" onclick="editProfile()">
+                                <i class="fas fa-edit"></i>
+                                Edit Profile
+                            </button>
+                            <button type="submit" class="btn btn-success hidden" id="saveProfileBtn">
+                                <i class="fas fa-save"></i>
+                                Save Changes
+                            </button>
+                            <button type="button" class="btn btn-secondary hidden" id="cancelProfileBtn" onclick="cancelProfileEdit()">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Bus Selection Panel -->
+<div class="bus-selection-panel" id="busSelectionPanel">
+    <div class="bus-selection-header">
+        <h3><i class="fas fa-bus"></i> Select Your Bus</h3>
+        <button class="close-btn" onclick="closeBusSelection()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="bus-selection-content">
+        <div id="busSelectionList">
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                Loading your assigned buses...
+            </div>
+        </div>
+        <div style="margin-top: 2rem; text-align: right;">
+            <button class="btn" onclick="confirmBusSelection()" id="confirmBusBtn" disabled>
+                <i class="fas fa-check"></i>
+                Select Bus
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- My Buses Panel -->
+<div class="bus-selection-panel" id="myBusesPanel">
+    <div class="bus-selection-header">
+        <h3><i class="fas fa-list"></i> My Assigned Buses</h3>
+        <button class="close-btn" onclick="closeMyBuses()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="bus-selection-content">
+        <div id="myBusesList">
+            <div class="loading">
+                <i class="fas fa-spinner"></i>
+                Loading your buses...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Report Modal -->
+<div id="emergencyModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">
+                <i class="fas fa-exclamation-triangle" style="color: var(--secondary-red);"></i>
+                Emergency Report
+            </h2>
+            <button class="close-btn" onclick="closeModal('emergencyModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="emergencyForm">
+            <div class="form-group">
+                <label>Emergency Type</label>
+                <select class="form-control" id="emergencyType" required>
+                    <option value="">Select emergency type</option>
+                    <option value="ACCIDENT">Traffic Accident</option>
+                    <option value="BREAKDOWN">Bus Breakdown</option>
+                    <option value="MEDICAL">Medical Emergency</option>
+                    <option value="FIRE">Fire</option>
+                    <option value="SECURITY">Security Issue</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" class="form-control" id="emergencyLocation" placeholder="Describe the location" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" id="emergencyDescription" rows="4" placeholder="Describe what happened in detail" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Severity Level</label>
+                <select class="form-control" id="emergencySeverity" required>
+                    <option value="">Select severity</option>
+                    <option value="LOW">Low - Minor issue</option>
+                    <option value="MEDIUM">Medium - Significant issue</option>
+                    <option value="HIGH">High - Major emergency</option>
+                    <option value="CRITICAL">Critical - Life threatening</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('emergencyModal')">Cancel</button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Send Emergency Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let currentDriver = null;
+    let assignedBuses = [];
+    let selectedBus = null;
+    let realMap = null;
+    let dashboardMap = null;
+    let tripInProgress = false;
+    let busMarker = null;
+    let routeLine = null;
+    let routeProgress = 0;
+    let moveInterval = null;
+    let tripStartTime = null;
+    let totalTripDistance = 0;
+    let currentRouteIndex = 0;
+    let routeCoordinates = [];
+    let busPosition = { lat: 0, lng: 0 };
+    let originalProfileData = {};
+    let currentGuidePage = 1;
+    let totalGuidePages = 4;
+    let scene, camera, renderer, bus3D;
+    let simulationRunning = false;
+    let simulationProgress = 0;
+    let notificationCheckInterval = null;
+    let tickets = [];
+    let tripDestinationReached = false;
+
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Real-time notifications system
+    function startNotificationSystem() {
+        if (currentDriver && !notificationCheckInterval) {
+            checkForNewNotifications();
+            notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
+        }
+    }
+
+
+
+
+    // Modifiez la fonction checkForNewNotifications
+    async function checkForNewNotifications() {
+        if (!currentDriver || isLoadingNotifications) return;
+
+        try {
+            isLoadingNotifications = true;
+            const currentTime = Date.now();
+
+            // Récupérer seulement les notifications depuis la dernière vérification
+            const url = lastNotificationCheck > 0
+                ? `/notifications/driver/${currentDriver.id}/new?since=${lastNotificationCheck}`
+                : `/notifications/driver/${currentDriver.id}/new`;
+
+            const notifications = await fetchData(url);
+
+            // Filtrer les notifications déjà traitées
+            const newNotifications = notifications.filter(notification =>
+                !processedNotifications.has(notification.id)
+            );
+
+            if (newNotifications.length > 0) {
+                // Marquer les notifications comme traitées
+                newNotifications.forEach(notification => {
+                    processedNotifications.add(notification.id);
+
+                    // Afficher le popup seulement pour les vraiment nouvelles notifications
+                    showNotificationPopup(notification.message, 'info');
+                });
+
+                // Mettre à jour le badge avec le total des notifications non lues
+                const unreadCount = await getUnreadNotificationsCount();
+                updateNotificationBadge(unreadCount);
+            }
+
+            lastNotificationCheck = currentTime;
+
+        } catch (error) {
+            console.error('Error checking notifications:', error);
+        } finally {
+            isLoadingNotifications = false;
+        }
+    }
+
+
+
+
+
+
+    // Ajoutez ces variables globales au début de votre script
+    let processedNotifications = new Set(); // Pour tracker les notifications déjà traitées
+    let lastNotificationCheck = 0; // Timestamp de la dernière vérification
+    let isLoadingNotifications = false; // Flag pour éviter les appels simultanés
+
+    // Modifiez la fonction startNotificationSystem
+    function startNotificationSystem() {
+        if (currentDriver && !notificationCheckInterval) {
+            checkForNewNotifications();
+            notificationCheckInterval = setInterval(checkForNewNotifications, 30000);
+        }
+    }
+
+    // Modifiez la fonction checkForNewNotifications
+    async function checkForNewNotifications() {
+        if (!currentDriver || isLoadingNotifications) return;
+
+        try {
+            isLoadingNotifications = true;
+            const currentTime = Date.now();
+
+            // Récupérer seulement les notifications depuis la dernière vérification
+            const url = lastNotificationCheck > 0
+                ? `/notifications/driver/${currentDriver.id}/new?since=${lastNotificationCheck}`
+                : `/notifications/driver/${currentDriver.id}/new`;
+
+            const notifications = await fetchData(url);
+
+            // Filtrer les notifications déjà traitées
+            const newNotifications = notifications.filter(notification =>
+                !processedNotifications.has(notification.id)
+            );
+
+            if (newNotifications.length > 0) {
+                // Marquer les notifications comme traitées
+                newNotifications.forEach(notification => {
+                    processedNotifications.add(notification.id);
+
+                    // Afficher le popup seulement pour les vraiment nouvelles notifications
+                    showNotificationPopup(notification.message, 'info');
+                });
+
+                // Mettre à jour le badge avec le total des notifications non lues
+                const unreadCount = await getUnreadNotificationsCount();
+                updateNotificationBadge(unreadCount);
+            }
+
+            lastNotificationCheck = currentTime;
+
+        } catch (error) {
+            console.error('Error checking notifications:', error);
+        } finally {
+            isLoadingNotifications = false;
+        }
+    }
+
+    // Nouvelle fonction pour obtenir le nombre de notifications non lues
+    async function getUnreadNotificationsCount() {
+        try {
+            const response = await fetchData(`/notifications/driver/${currentDriver.id}/unread-count`);
+            return response.count || 0;
+        } catch (error) {
+            console.error('Error getting unread count:', error);
+            return 0;
+        }
+    }
+
+    // Modifiez la fonction loadNotifications
+    async function loadNotifications() {
+        if (!currentDriver || isLoadingNotifications) return;
+
+        try {
+            isLoadingNotifications = true;
+            const notifications = await fetchData(`/notifications/driver/${currentDriver.id}`);
+
+            // Ajouter toutes les notifications chargées au Set pour éviter les doublons
+            notifications.forEach(notification => {
+                processedNotifications.add(notification.id);
+            });
+
+            updateNotificationsPanel(notifications);
+
+            const unreadCount = notifications.filter(n => !n.read).length;
+            updateNotificationBadge(unreadCount);
+
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+            updateNotificationBadge(0);
+        } finally {
+            isLoadingNotifications = false;
+        }
+    }
+
+
+
+
+    // Modifiez la fonction updateNotificationsPanel pour inclure un bouton "Marquer tout comme lu"
+    function updateNotificationsPanel(notifications) {
+        const notificationsList = document.getElementById('notificationsList');
+
+        if (notifications.length === 0) {
+            notificationsList.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--gray-medium);">No notifications</div>';
+            return;
+        }
+
+        const unreadCount = notifications.filter(n => !n.read).length;
+        const markAllButton = unreadCount > 0 ?
+            `<div class="notification-header">
+            <button class="mark-all-read-btn" onclick="markAllNotificationsAsRead()">
+                Mark all as read (${unreadCount})
+            </button>
+        </div>` : '';
+
+        notificationsList.innerHTML = markAllButton + notifications.map(notification => `
+        <div class="notification-item ${!notification.read ? 'unread' : ''}" onclick="markNotificationAsRead(${notification.id})">
+            <div class="notification-title">${notification.type}</div>
+            <div class="notification-message">${notification.message}</div>
+            <div class="notification-time">${formatDate(notification.timestamp)}</div>
+            ${!notification.read ? '<div class="unread-indicator"></div>' : ''}
+        </div>
+    `).join('');
+    }
+
+
+
+
+    // Modifiez la fonction markNotificationAsRead
+    async function markNotificationAsRead(notificationId) {
+        try {
+            await putData(`/notifications/${notificationId}/read`);
+
+            // Mettre à jour le compteur immédiatement
+            const currentBadgeCount = parseInt(document.getElementById('notificationBadge').textContent) || 0;
+            if (currentBadgeCount > 0) {
+                updateNotificationBadge(currentBadgeCount - 1);
+            }
+
+            // Recharger les notifications pour mettre à jour l'affichage
+            loadNotifications();
+
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    }
+
+    // Nouvelle fonction pour marquer toutes les notifications comme lues
+    async function markAllNotificationsAsRead() {
+        try {
+            await putData(`/notifications/driver/${currentDriver.id}/read-all`);
+            updateNotificationBadge(0);
+            loadNotifications();
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    }
+
+
+
+    // Modifiez la fonction updateNotificationBadge
+    function updateNotificationBadge(count) {
+        const badge = document.getElementById('notificationBadge');
+        const numCount = Math.max(0, parseInt(count) || 0); // S'assurer que c'est un nombre positif
+
+        badge.textContent = numCount;
+        badge.style.display = numCount > 0 ? 'flex' : 'none';
+    }
+
+    // Modifiez la fonction toggleNotificationsPanel
+    function toggleNotificationsPanel() {
+        const panel = document.getElementById('notificationsPanel');
+        const isActive = panel.classList.contains('active');
+
+        if (!isActive) {
+            panel.classList.add('active');
+            loadNotifications();
+        } else {
+            panel.classList.remove('active');
+        }
+    }
+
+
+
+    // Initialize application on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkDriverAuth();
+        initializeEventListeners();
+        setInterval(updateRealTimeData, 30000);
+    });
+
+    // Fonction pour nettoyer les notifications traitées (optionnelle, pour éviter la surcharge mémoire)
+    function cleanupProcessedNotifications() {
+        // Garder seulement les 1000 dernières notifications traitées
+        if (processedNotifications.size > 1000) {
+            const notificationsArray = Array.from(processedNotifications);
+            processedNotifications.clear();
+            // Garder les 500 plus récentes
+            notificationsArray.slice(-500).forEach(id => processedNotifications.add(id));
+        }
+    }
+
+    // Appelez cette fonction périodiquement (par exemple, toutes les heures)
+    setInterval(cleanupProcessedNotifications, 3600000); // 1 heure
+
+    // Modifiez la fonction checkDriverAuth pour initialiser les notifications
+    async function checkDriverAuth() {
+        const userSession = localStorage.getItem('userSession');
+        const authToken = localStorage.getItem('authToken');
+
+        if (!userSession || !authToken) {
+            showNotificationPopup('Please login to access the dashboard', 'error');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 2000);
+            return;
+        }
+
+        try {
+            const user = JSON.parse(userSession);
+            if (user.role.toUpperCase() !== 'DRIVER') {
+                showNotificationPopup('Access denied. Driver role required.', 'error');
+                setTimeout(() => {
+                    localStorage.removeItem('userSession');
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            currentDriver = user;
+
+            // Réinitialiser les variables de notification pour ce conducteur
+            processedNotifications.clear();
+            lastNotificationCheck = 0;
+
+            updateUserInterface();
+            await loadDriverData();
+            startNotificationSystem();
+
+        } catch (error) {
+            console.error('Authentication error:', error);
+            showNotificationPopup('Authentication error. Please login again.', 'error');
+            setTimeout(() => {
+                localStorage.removeItem('userSession');
+                localStorage.removeItem('authToken');
+                window.location.href = '/login.html';
+            }, 2000);
+        }
+    }
+
+    // Ajoutez un event listener pour fermer le panneau de notifications quand on clique ailleurs
+    document.addEventListener('click', function(event) {
+        const panel = document.getElementById('notificationsPanel');
+        const button = document.getElementById('notificationsBtn');
+
+        if (panel && button && !panel.contains(event.target) && !button.contains(event.target)) {
+            panel.classList.remove('active');
+        }
+    });
+
+    // Update user interface with driver info
+    function updateUserInterface() {
+        if (currentDriver) {
+            document.getElementById('userName').textContent = `${currentDriver.firstName} ${currentDriver.lastName}`;
+            document.getElementById('userAvatar').textContent = currentDriver.firstName.charAt(0);
+            document.getElementById('profileAvatar').textContent = currentDriver.firstName.charAt(0);
+            updateGreetingAndDriverName();
+            startGreetingUpdater();
+        }
+    }
+
+
+
+
+    async function loadDriverData() {
+        try {
+            await Promise.all([
+                loadAssignedBuses(),
+                loadDriverProfile(),
+                loadAllTickets(),
+                loadDriverStats(),
+                loadRecentReports()
+            ]);
+
+            loadDriverGuideBook();
+
+            // Initialiser la carte après le chargement des données
+            setTimeout(initializeDashboardMap, 100);
+
+        } catch (error) {
+            console.error('Error loading driver data:', error);
+            showNotificationPopup('Error loading data. Please refresh the page.', 'error');
+        }
+    }
+
+
+
+
+
+    // Load all tickets for analysis
+    async function loadAllTickets() {
+        try {
+            tickets = await fetchData('/tickets');
+        } catch (error) {
+            console.error('Error loading tickets:', error);
+            tickets = [];
+        }
+    }
+
+    // Load buses assigned to the current driver
+    async function loadAssignedBuses() {
+        try {
+            const allBuses = await fetchData('/buses');
+            assignedBuses = allBuses.filter(bus =>
+                bus.driver && bus.driver.id === currentDriver.id
+            );
+
+            updateAssignedBusesDisplay();
+            updateBusStatus();
+
+        } catch (error) {
+            console.error('Error loading assigned buses:', error);
+            showNotificationPopup('Error loading bus assignments', 'error');
+            assignedBuses = [];
+        }
+    }
+
+    // Update assigned buses display
+    function updateAssignedBusesDisplay() {
+        const container = document.getElementById('assignedBusesInfo');
+
+        if (assignedBuses.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--gray-medium);">
+                    <i class="fas fa-bus" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>No Buses Assigned</h3>
+                    <p>Please contact your supervisor to get bus assignments.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+                ${assignedBuses.map(bus => `
+                    <div class="bus-item" style="border: 2px solid var(--gray-light); border-radius: var(--border-radius); padding: 1rem;">
+                        <div class="bus-info">
+                            <div class="bus-name">${bus.name}</div>
+                            <div class="bus-details">
+                                Line: ${bus.busLine || 'N/A'}<br>
+                                Route: ${bus.route ? bus.route.routeName : 'Not assigned'}<br>
+                                Capacity: ${bus.capacity} passengers<br>
+                                Current: ${bus.passengers || 0}/${bus.capacity}
+                            </div>
+                        </div>
+                        <div class="bus-status ${bus.isStopped ? 'stopped' : 'active'}">
+                            ${bus.isStopped ? 'Stopped' : 'Active'}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // Load driver statistics from real data
+    async function loadDriverStats() {
+        try {
+            let totalPassengers = 0;
+            let totalTrips = 0;
+            let totalHours = 0;
+            let currentPassengers = 0;
+
+            for (const bus of assignedBuses) {
+                const busTickets = tickets.filter(ticket =>
+                    ticket.bus && ticket.bus.id === bus.id
+                );
+                totalPassengers += busTickets.length;
+                currentPassengers += bus.passengers || 0;
+
+                if (bus.progress >= 100) {
+                    totalTrips += 1;
+                } else if (bus.progress > 0) {
+                    totalTrips += Math.floor(bus.progress / 100);
+                }
+
+                if (bus.departureTime && bus.arrivalTime) {
+                    const departure = new Date(bus.departureTime);
+                    const arrival = new Date(bus.arrivalTime);
+                    const duration = (arrival - departure) / (1000 * 60 * 60);
+                    if (duration > 0) {
+                        totalHours += duration;
+                    }
+                }
+            }
+
+            if (assignedBuses.length > 0) {
+                totalTrips = Math.max(totalTrips, assignedBuses.length);
+                totalHours = Math.max(totalHours, totalTrips * 2);
+            }
+
+            const baseRating = 4.2;
+            const performanceBonus = Math.min(0.8, totalTrips * 0.02);
+            const driverRating = baseRating + performanceBonus;
+
+            document.getElementById('totalTrips').textContent = totalTrips;
+            document.getElementById('totalPassengers').textContent = totalPassengers;
+            document.getElementById('totalHours').textContent = Math.round(totalHours);
+            document.getElementById('driverRating').textContent = driverRating.toFixed(1);
+
+            const weeklyTrips = Math.ceil(totalTrips * 0.2);
+            const monthlyPassengers = Math.ceil(totalPassengers * 0.3);
+
+            document.getElementById('tripChange').textContent = `+${weeklyTrips} this week`;
+            document.getElementById('passengerChange').textContent = `+${monthlyPassengers} this month`;
+            document.getElementById('ratingChange').textContent = `+${performanceBonus.toFixed(1)} improvement`;
+
+        } catch (error) {
+            console.error('Error loading driver stats:', error);
+            ['totalTrips', 'totalPassengers', 'totalHours'].forEach(id => {
+                document.getElementById(id).textContent = '0';
+            });
+            document.getElementById('driverRating').textContent = '0.0';
+        }
+    }
+
+
+
+
+
+
+    // Initialize dashboard map with Kinshasa bus stops
+    function initializeDashboardMap() {
+        // Vérifier si Leaflet est chargé, sinon attendre
+        if (typeof L === 'undefined') {
+            console.log('Leaflet not loaded yet, waiting...');
+            setTimeout(initializeDashboardMap, 100);
+            return;
+        }
+
+        if (dashboardMap) {
+            dashboardMap.remove();
+            dashboardMap = null;
+        }
+
+        const kinshasaCenter = [-4.3276, 15.3136];
+        dashboardMap = L.map('dashboardMap').setView(kinshasaCenter, 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(dashboardMap);
+
+
+
+
+        // Add major bus stops in Kinshasa
+        const busStops = [
+            { name: 'Gombe Central', lat: -4.3146, lng: 15.3119, type: 'major' },
+            { name: 'Place de la Poste', lat: -4.3200, lng: 15.3089, type: 'major' },
+            { name: 'Marché Central', lat: -4.3189, lng: 15.3167, type: 'major' },
+            { name: 'Université de Kinshasa', lat: -4.4056, lng: 15.2833, type: 'university' },
+            { name: 'Aéroport de Ndjili', lat: -4.3856, lng: 15.4444, type: 'airport' },
+            { name: 'Bandalungwa', lat: -4.3789, lng: 15.2928, type: 'residential' },
+            { name: 'Kintambo', lat: -4.3456, lng: 15.2889, type: 'residential' },
+            { name: 'Ngaliema', lat: -4.3889, lng: 15.2456, type: 'residential' },
+            { name: 'Lemba', lat: -4.4123, lng: 15.3278, type: 'residential' },
+            { name: 'Limete', lat: -4.3567, lng: 15.3445, type: 'commercial' },
+            { name: 'Matete', lat: -4.3234, lng: 15.3789, type: 'commercial' },
+            { name: 'Masina', lat: -4.3678, lng: 15.3912, type: 'residential' },
+            { name: 'Kinshasa Est', lat: -4.3123, lng: 15.3578, type: 'commercial' },
+            { name: 'Kalamu', lat: -4.3345, lng: 15.3012, type: 'residential' },
+            { name: 'Barumbu', lat: -4.3267, lng: 15.3234, type: 'residential' }
+        ];
+
+        // Color coding for different stop types
+        const stopColors = {
+            major: '#DC2626',      // Red for major stops
+            university: '#7C3AED', // Purple for university
+            airport: '#059669',    // Green for airport
+            commercial: '#F59E0B', // Gold for commercial
+            residential: '#1E40AF'  // Blue for residential
+        };
+
+        // Add bus stop markers
+        busStops.forEach(stop => {
+            const color = stopColors[stop.type] || stopColors.residential;
+
+            L.circleMarker([stop.lat, stop.lng], {
+                radius: stop.type === 'major' ? 10 : 6,
+                fillColor: color,
+                color: '#ffffff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            })
+                .addTo(dashboardMap)
+                .bindPopup(`
+                <div style="text-align: center; padding: 0.5rem;">
+                    <strong>${stop.name}</strong><br>
+                    <small style="color: ${color};">${stop.type.charAt(0).toUpperCase() + stop.type.slice(1)} Stop</small><br>
+                    <small>Lat: ${stop.lat.toFixed(4)}, Lng: ${stop.lng.toFixed(4)}</small>
+                </div>
+            `);
+        });
+
+        // Add routes connecting major stops
+        const majorRoutes = [
+            // Route 1: Gombe - Airport
+            [
+                [-4.3146, 15.3119], // Gombe
+                [-4.3234, 15.3789], // Matete
+                [-4.3856, 15.4444]  // Airport
+            ],
+            // Route 2: University - City Center
+            [
+                [-4.4056, 15.2833], // University
+                [-4.3789, 15.2928], // Bandalungwa
+                [-4.3200, 15.3089]  // Place de la Poste
+            ],
+            // Route 3: Residential Circuit
+            [
+                [-4.3456, 15.2889], // Kintambo
+                [-4.3889, 15.2456], // Ngaliema
+                [-4.4123, 15.3278], // Lemba
+                [-4.3678, 15.3912]  // Masina
+            ]
+        ];
+
+        const routeColors = ['#1E40AF', '#10B981', '#F59E0B'];
+
+        majorRoutes.forEach((route, index) => {
+            L.polyline(route, {
+                color: routeColors[index],
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 5'
+            }).addTo(dashboardMap);
+        });
+
+        // Add legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            div.innerHTML = `
+                <div style="background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #1F2937;">Bus Stop Types</h4>
+                    <div style="font-size: 0.9rem;">
+                        <div style="margin: 0.25rem 0;"><span style="color: ${stopColors.major};">●</span> Major Stops</div>
+                        <div style="margin: 0.25rem 0;"><span style="color: ${stopColors.commercial};">●</span> Commercial</div>
+                        <div style="margin: 0.25rem 0;"><span style="color: ${stopColors.residential};">●</span> Residential</div>
+                        <div style="margin: 0.25rem 0;"><span style="color: ${stopColors.university};">●</span> University</div>
+                        <div style="margin: 0.25rem 0;"><span style="color: ${stopColors.airport};">●</span> Airport</div>
+                    </div>
+                </div>
+            `;
+            return div;
+        };
+        legend.addTo(dashboardMap);
+    }
+
+    // Update bus status in header
+    function updateBusStatus() {
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        if (assignedBuses.length === 0) {
+            statusDot.className = 'status-dot stopped';
+            statusText.textContent = 'No Assigned Bus';
+        } else if (selectedBus) {
+            if (selectedBus.hasAccident) {
+                statusDot.className = 'status-dot accident';
+                statusText.textContent = 'Emergency - ' + selectedBus.name;
+            } else if (selectedBus.isStopped || !tripInProgress) {
+                statusDot.className = 'status-dot stopped';
+                statusText.textContent = 'Stopped - ' + selectedBus.name;
+            } else {
+                statusDot.className = 'status-dot active';
+                statusText.textContent = 'Active - ' + selectedBus.name;
+            }
+        } else {
+            const activeBuses = assignedBuses.filter(bus => !bus.isStopped);
+            if (activeBuses.length > 0) {
+                statusDot.className = 'status-dot active';
+                statusText.textContent = `${activeBuses.length} Active Bus${activeBuses.length > 1 ? 'es' : ''}`;
+            } else {
+                statusDot.className = 'status-dot stopped';
+                statusText.textContent = `${assignedBuses.length} Assigned Bus${assignedBuses.length > 1 ? 'es' : ''}`;
+            }
+        }
+    }
+
+    // Bus selection functions
+    function openBusSelection() {
+        if (assignedBuses.length === 0) {
+            showNotificationPopup('No buses assigned to you', 'warning');
+            return;
+        }
+
+        const panel = document.getElementById('busSelectionPanel');
+        const listContainer = document.getElementById('busSelectionList');
+
+        listContainer.innerHTML = assignedBuses.map(bus => `
+            <div class="bus-item" data-bus-id="${bus.id}" onclick="selectBusForTrip(${bus.id})">
+                <div class="bus-info">
+                    <div class="bus-name">${bus.name}</div>
+                    <div class="bus-details">
+                        Line: ${bus.busLine || 'N/A'} |
+                        Route: ${bus.route ? bus.route.routeName : 'Not assigned'} |
+                        Passengers: ${bus.passengers || 0}/${bus.capacity}
+                    </div>
+                </div>
+                <div class="bus-status ${bus.isStopped ? 'stopped' : 'active'}">
+                    ${bus.isStopped ? 'Stopped' : 'Active'}
+                </div>
+            </div>
+        `).join('');
+
+        panel.classList.add('active');
+    }
+
+    function closeBusSelection() {
+        document.getElementById('busSelectionPanel').classList.remove('active');
+    }
+
+    function selectBusForTrip(busId) {
+        document.querySelectorAll('#busSelectionPanel .bus-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+
+        const busItem = document.querySelector(`#busSelectionPanel [data-bus-id="${busId}"]`);
+        if (busItem) {
+            busItem.classList.add('selected');
+            selectedBus = assignedBuses.find(bus => bus.id === busId);
+            document.getElementById('confirmBusBtn').disabled = false;
+        }
+    }
+
+    function confirmBusSelection() {
+        if (!selectedBus) {
+            showNotificationPopup('Please select a bus', 'warning');
+            return;
+        }
+
+        closeBusSelection();
+        document.getElementById('startTripBtn').disabled = false;
+        tripDestinationReached = false;
+
+        setTimeout(() => {
+            initializeRealMap();
+        }, 100);
+
+        updateBusStatus();
+        showNotificationPopup(`Bus "${selectedBus.name}" selected for tracking`, 'success');
+    }
+
+    function showMyBuses() {
+        if (assignedBuses.length === 0) {
+            showNotificationPopup('No buses assigned to you', 'warning');
+            return;
+        }
+
+        const panel = document.getElementById('myBusesPanel');
+        const listContainer = document.getElementById('myBusesList');
+
+        listContainer.innerHTML = assignedBuses.map(bus => `
+            <div class="bus-item">
+                <div class="bus-info">
+                    <div class="bus-name">${bus.name}</div>
+                    <div class="bus-details">
+                        Line: ${bus.busLine || 'N/A'}<br>
+                        Route: ${bus.route ? bus.route.routeName : 'Not assigned'}<br>
+                        Capacity: ${bus.capacity} passengers<br>
+                        Current: ${bus.passengers || 0}/${bus.capacity}<br>
+                        Progress: ${bus.progress || 0}%<br>
+                        Status: ${bus.isStopped ? 'Stopped' : 'Active'}
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="bus-status ${bus.isStopped ? 'stopped' : 'active'}">
+                        ${bus.isStopped ? 'Stopped' : 'Active'}
+                    </div>
+                    <button class="btn btn-success" style="font-size: 0.8rem; padding: 0.5rem;" onclick="selectAndStartBus(${bus.id})">
+                        <i class="fas fa-play"></i> Select & Drive
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        panel.classList.add('active');
+    }
+
+    function closeMyBuses() {
+        document.getElementById('myBusesPanel').classList.remove('active');
+    }
+
+    async function selectAndStartBus(busId) {
+        selectedBus = assignedBuses.find(bus => bus.id === busId);
+        if (!selectedBus) {
+            showNotificationPopup('Bus not found', 'error');
+            return;
+        }
+
+        closeMyBuses();
+        showSection('realmap');
+
+        document.getElementById('startTripBtn').disabled = false;
+        tripDestinationReached = false;
+
+        setTimeout(() => {
+            initializeRealMap();
+        }, 100);
+
+        updateBusStatus();
+        showNotificationPopup(`Bus "${selectedBus.name}" selected. You can now start tracking.`, 'success');
+    }
+
+    // Initialize real-time map
+    function initializeRealMap() {
+        if (realMap) {
+            realMap.remove();
+            realMap = null;
+        }
+
+        if (!window.L) {
+            showNotificationPopup('Map library not loaded', 'error');
+            return;
+        }
+
+        const defaultCenter = [-4.3276, 15.3136];
+        realMap = L.map('realMap').setView(defaultCenter, 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(realMap);
+
+        addKinshasaNeighborhoods();
+
+        if (selectedBus && selectedBus.route) {
+            setupBusRoute();
+        } else if (selectedBus) {
+            busPosition = {
+                lat: selectedBus.currentLat || selectedBus.startLat || -4.3276,
+                lng: selectedBus.currentLng || selectedBus.startLng || 15.3136
+            };
+            updateBusLocationOnMap();
+        }
+    }
+
+    // Add Kinshasa neighborhood markers
+    function addKinshasaNeighborhoods() {
+        const neighborhoods = [
+            { name: 'Gombe', lat: -4.3146, lng: 15.3119 },
+            { name: 'Kinshasa', lat: -4.3276, lng: 15.3136 },
+            { name: 'Bandalungwa', lat: -4.3789, lng: 15.2928 },
+            { name: 'Kintambo', lat: -4.3456, lng: 15.2889 },
+            { name: 'Ngaliema', lat: -4.3889, lng: 15.2456 },
+            { name: 'Lemba', lat: -4.4123, lng: 15.3278 },
+            { name: 'Limete', lat: -4.3567, lng: 15.3445 },
+            { name: 'Matete', lat: -4.3234, lng: 15.3789 },
+            { name: 'Ndjili', lat: -4.3789, lng: 15.4123 },
+            { name: 'Masina', lat: -4.3678, lng: 15.3912 }
+        ];
+
+        neighborhoods.forEach(neighborhood => {
+            L.marker([neighborhood.lat, neighborhood.lng])
+                .addTo(realMap)
+                .bindPopup(`<strong>${neighborhood.name}</strong><br>Kinshasa Neighborhood`)
+                .on('click', function() {
+                    if (selectedBus && !tripDestinationReached) {
+                        setDestination(neighborhood);
+                    }
+                });
+        });
+    }
+
+    function setDestination(destination) {
+        if (!selectedBus) {
+            showNotificationPopup('Please select a bus first', 'warning');
+            return;
+        }
+
+        if (tripDestinationReached) {
+            showNotificationPopup('Trip already completed. Start a new trip to set destination.', 'info');
+            return;
+        }
+
+        const startLat = busPosition.lat || selectedBus.currentLat || selectedBus.startLat || -4.3276;
+        const startLng = busPosition.lng || selectedBus.currentLng || selectedBus.startLng || 15.3136;
+
+        routeCoordinates = [
+            { lat: startLat, lng: startLng, name: 'Current Location' },
+            { lat: destination.lat, lng: destination.lng, name: destination.name }
+        ];
+
+        drawRouteOnMap();
+        totalTripDistance = calculateTotalDistance(routeCoordinates);
+        currentRouteIndex = 0;
+        routeProgress = 0;
+
+        showNotificationPopup(`Route set to ${destination.name}`, 'success');
+    }
+
+    // Setup bus route on map
+    function setupBusRoute() {
+        if (!selectedBus || !selectedBus.route || !selectedBus.route.stops) {
+            busPosition = {
+                lat: selectedBus.currentLat || selectedBus.startLat || -4.3276,
+                lng: selectedBus.currentLng || selectedBus.startLng || 15.3136
+            };
+            updateBusLocationOnMap();
+            showNotificationPopup('No route configured. Click on a neighborhood to set destination.', 'info');
+            return;
+        }
+
+        const stops = selectedBus.route.stops;
+        if (stops.length === 0) {
+            showNotificationPopup('No stops configured for this route', 'warning');
+            return;
+        }
+
+        routeCoordinates = stops.map((stop, index) => ({
+            lat: stop.latitude || -4.3276,
+            lng: stop.longitude || 15.3136,
+            name: stop.stopName,
+            passengers: Math.floor(Math.random() * 20) + 5
+        }));
+
+        drawRouteOnMap();
+
+        busPosition = {
+            lat: routeCoordinates[0].lat,
+            lng: routeCoordinates[0].lng
+        };
+
+        updateBusLocationOnMap();
+        totalTripDistance = calculateTotalDistance(routeCoordinates);
+    }
+
+    // Draw route on map
+    function drawRouteOnMap() {
+        if (!realMap || routeCoordinates.length === 0) return;
+
+        if (routeLine) {
+            realMap.removeLayer(routeLine);
+        }
+
+        const routeLatLngs = routeCoordinates.map(coord => [coord.lat, coord.lng]);
+        routeLine = L.polyline(routeLatLngs, {
+            color: '#1E40AF',
+            weight: 4,
+            opacity: 0.8
+        }).addTo(realMap);
+
+        routeCoordinates.forEach((stop, index) => {
+            const marker = L.marker([stop.lat, stop.lng])
+                .addTo(realMap)
+                .bindPopup(`
+                    <div style="text-align: center;">
+                        <strong>${stop.name}</strong><br>
+                        Stop ${index + 1}<br>
+                        ${stop.passengers ? `Expected passengers: ${stop.passengers}` : ''}
+                    </div>
+                `);
+        });
+
+        if (routeLine) {
+            realMap.fitBounds(routeLine.getBounds());
+        }
+    }
+
+    // Update bus location on map
+    function updateBusLocationOnMap() {
+        if (!realMap || !window.L) return;
+
+        if (busMarker) {
+            realMap.removeLayer(busMarker);
+        }
+
+        if (busPosition.lat && busPosition.lng) {
+            busMarker = L.marker([busPosition.lat, busPosition.lng], {
+                icon: L.divIcon({
+                    className: 'bus-marker',
+                    html: '<i class="fas fa-bus" style="color: #1E40AF; font-size: 20px;"></i>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(realMap);
+
+            busMarker.bindPopup(`
+                <div style="text-align: center;">
+                    <strong>${selectedBus?.name || 'Bus'}</strong><br>
+                    Line: ${selectedBus?.busLine || 'N/A'}<br>
+                    Passengers: ${selectedBus?.passengers || 0}<br>
+                    Status: ${tripInProgress ? 'In Transit' : 'Stopped'}
+                </div>
+            `);
+        }
+    }
+
+    // Trip control functions
+    async function startTrip() {
+        if (!selectedBus) {
+            showNotificationPopup('Please select a bus first', 'error');
+            return;
+        }
+
+        if (tripInProgress) {
+            showNotificationPopup('Trip is already in progress', 'warning');
+            return;
+        }
+
+        if (tripDestinationReached) {
+            showNotificationPopup('Previous trip completed. Please set a new destination.', 'info');
+            return;
+        }
+
+        if (routeCoordinates.length === 0) {
+            const defaultDestination = { lat: -4.3789, lng: 15.2928, name: 'Default Destination' };
+            setDestination(defaultDestination);
+        }
+
+        try {
+            tripInProgress = true;
+            tripStartTime = new Date();
+            routeProgress = 0;
+            currentRouteIndex = 0;
+
+            // Reset to start position
+            if (routeCoordinates.length > 0) {
+                busPosition = {
+                    lat: routeCoordinates[0].lat,
+                    lng: routeCoordinates[0].lng
+                };
+            }
+
+            // Update bus in database
+            await updateBusProgress(0);
+            await updateBusLocation(busPosition.lat, busPosition.lng);
+
+            document.getElementById('startTripBtn').disabled = true;
+            document.getElementById('pauseTripBtn').disabled = false;
+            document.getElementById('endTripBtn').disabled = false;
+
+            selectedBus.isStopped = false;
+            updateBusStatus();
+            updateBusLocationOnMap();
+            startBusMovement();
+
+            showNotificationPopup('Trip started successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error starting trip:', error);
+            showNotificationPopup('Error starting trip', 'error');
+        }
+    }
+
+    async function pauseTrip() {
+        if (!tripInProgress) {
+            showNotificationPopup('No trip in progress', 'warning');
+            return;
+        }
+
+        try {
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+
+            document.getElementById('startTripBtn').disabled = false;
+            document.getElementById('pauseTripBtn').disabled = true;
+
+            selectedBus.isStopped = true;
+            updateBusStatus();
+
+            showNotificationPopup('Trip paused', 'info');
+
+        } catch (error) {
+            console.error('Error pausing trip:', error);
+            showNotificationPopup('Error pausing trip', 'error');
+        }
+    }
+
+    async function endTrip() {
+        if (!tripInProgress) {
+            showNotificationPopup('No trip in progress', 'warning');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to end this trip?')) {
+            return;
+        }
+
+        try {
+            if (moveInterval) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+
+            tripInProgress = false;
+            tripDestinationReached = false;
+            routeProgress = 0;
+            currentRouteIndex = 0;
+            tripStartTime = null;
+
+            // Update bus in database
+            await updateBusProgress(0);
+
+            document.getElementById('startTripBtn').disabled = false;
+            document.getElementById('pauseTripBtn').disabled = true;
+            document.getElementById('endTripBtn').disabled = true;
+            document.getElementById('tripProgressFill').style.width = '0%';
+            document.getElementById('tripProgressText').textContent = '0%';
+            document.getElementById('distanceCovered').textContent = '0 km';
+            document.getElementById('estimatedTime').textContent = '-';
+
+            if (routeCoordinates.length > 0) {
+                busPosition = {
+                    lat: routeCoordinates[0].lat,
+                    lng: routeCoordinates[0].lng
+                };
+                await updateBusLocation(busPosition.lat, busPosition.lng);
+                updateBusLocationOnMap();
+            }
+
+            selectedBus.isStopped = true;
+            updateBusStatus();
+
+            showNotificationPopup('Trip ended successfully!', 'success');
+            await loadDriverStats();
+
+        } catch (error) {
+            console.error('Error ending trip:', error);
+            showNotificationPopup('Error ending trip', 'error');
+        }
+    }
+
+    // Bus movement simulation
+    function startBusMovement() {
+        if (routeCoordinates.length === 0 || currentRouteIndex >= routeCoordinates.length - 1) {
+            return;
+        }
+
+        moveInterval = setInterval(async () => {
+            if (!tripInProgress || currentRouteIndex >= routeCoordinates.length - 1) {
+                clearInterval(moveInterval);
+                moveInterval = null;
+
+                if (currentRouteIndex >= routeCoordinates.length - 1 && !tripDestinationReached) {
+                    // Trip completed - reached destination
+                    tripInProgress = false;
+                    tripDestinationReached = true;
+                    showNotificationPopup('Destination reached! Trip completed.', 'success');
+
+                    // Update progress to 100% in database
+                    await updateBusProgress(100);
+
+                    document.getElementById('tripProgressFill').style.width = '100%';
+                    document.getElementById('tripProgressText').textContent = '100%';
+                    document.getElementById('estimatedTime').textContent = 'Arrived';
+
+                    document.getElementById('startTripBtn').disabled = true;
+                    document.getElementById('pauseTripBtn').disabled = true;
+                    document.getElementById('endTripBtn').disabled = true;
+
+                    selectedBus.isStopped = true;
+                    updateBusStatus();
+                }
+                return;
+            }
+
+            const currentStop = routeCoordinates[currentRouteIndex];
+            const nextStop = routeCoordinates[currentRouteIndex + 1];
+
+            if (!nextStop) return;
+
+            routeProgress += 0.02;
+
+            if (routeProgress >= 1) {
+                routeProgress = 0;
+                currentRouteIndex++;
+
+                if (currentRouteIndex < routeCoordinates.length) {
+                    const stop = routeCoordinates[currentRouteIndex];
+                    simulatePassengerChanges(stop);
+                }
+            }
+
+            const lat = currentStop.lat + (nextStop.lat - currentStop.lat) * routeProgress;
+            const lng = currentStop.lng + (nextStop.lng - currentStop.lng) * routeProgress;
+
+            busPosition = { lat, lng };
+
+            // Update location in database
+            await updateBusLocation(lat, lng);
+
+            // Update progress in database
+            const totalStops = routeCoordinates.length - 1;
+            const completedStops = currentRouteIndex;
+            const currentStopProgress = routeProgress;
+            const overallProgress = (completedStops + currentStopProgress) / totalStops * 100;
+            await updateBusProgress(overallProgress);
+
+            updateBusLocationOnMap();
+            updateTripProgress();
+
+        }, 1000);
+    }
+
+    // Update trip progress indicators
+    function updateTripProgress() {
+        if (!tripInProgress || routeCoordinates.length === 0) return;
+
+        const totalStops = routeCoordinates.length - 1;
+        const completedStops = currentRouteIndex;
+        const currentStopProgress = routeProgress;
+        const overallProgress = (completedStops + currentStopProgress) / totalStops;
+
+        const progressPercent = Math.min(100, overallProgress * 100);
+        document.getElementById('tripProgressFill').style.width = progressPercent + '%';
+        document.getElementById('tripProgressText').textContent = Math.round(progressPercent) + '%';
+
+        const distanceCovered = totalTripDistance * overallProgress;
+        document.getElementById('distanceCovered').textContent = distanceCovered.toFixed(1) + ' km';
+
+        document.getElementById('currentPassengers').textContent = selectedBus?.passengers || 0;
+
+        if (tripStartTime && overallProgress > 0) {
+            const elapsedTime = (new Date() - tripStartTime) / 1000 / 60;
+            const estimatedTotalTime = elapsedTime / overallProgress;
+            const remainingTime = estimatedTotalTime - elapsedTime;
+
+            if (remainingTime > 0) {
+                const hours = Math.floor(remainingTime / 60);
+                const minutes = Math.round(remainingTime % 60);
+                document.getElementById('estimatedTime').textContent =
+                    hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            } else {
+                document.getElementById('estimatedTime').textContent = 'Arriving';
+            }
+        }
+    }
+
+    // Update bus progress in database
+    async function updateBusProgress(progress) {
+        if (!selectedBus) return;
+
+        try {
+            const progressData = { progress: Math.round(progress) };
+            await putData(`/buses/${selectedBus.id}/progress`, progressData);
+            selectedBus.progress = progress;
+        } catch (error) {
+            console.error('Error updating bus progress:', error);
+        }
+    }
+
+    // Update bus location in database
+    async function updateBusLocation(lat, lng) {
+        if (!selectedBus) return;
+
+        try {
+            const locationData = { currentLat: lat, currentLng: lng };
+            await putData(`/buses/${selectedBus.id}/location`, locationData);
+            selectedBus.currentLat = lat;
+            selectedBus.currentLng = lng;
+        } catch (error) {
+            console.error('Error updating bus location:', error);
+        }
+    }
+
+    // Simulate passenger changes at stops
+    function simulatePassengerChanges(stop) {
+        if (!selectedBus) return;
+
+        const passengersOff = Math.min(
+            Math.floor(Math.random() * 6),
+            selectedBus.passengers || 0
+        );
+
+        const passengersOn = Math.min(
+            stop.passengers || Math.floor(Math.random() * 10),
+            selectedBus.capacity - ((selectedBus.passengers || 0) - passengersOff)
+        );
+
+        selectedBus.passengers = (selectedBus.passengers || 0) - passengersOff + passengersOn;
+
+        if (passengersOff > 0 || passengersOn > 0) {
+            showNotificationPopup(
+                `${stop.name}: ${passengersOff} got off, ${passengersOn} got on`,
+                'info'
+            );
+        }
+    }
+
+    // Calculate total distance between stops
+    function calculateTotalDistance(stops) {
+        let distance = 0;
+        for (let i = 0; i < stops.length - 1; i++) {
+            distance += calculateDistance(stops[i], stops[i + 1]);
+        }
+        return distance;
+    }
+
+    // Calculate distance between two points (Haversine formula)
+    function calculateDistance(point1, point2) {
+        const R = 6371;
+        const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+        const dLng = (point2.lng - point1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(point1.lat * Math.PI / 180) * Math.cos(point2.lat * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // Load driver guide book content
+    async function loadDriverGuideBook() {
+        await loadBusInfoForGuide();
+        await loadRouteInfoForGuide();
+        await loadScheduleForGuide();
+    }
+
+    async function loadBusInfoForGuide() {
+        const container = document.getElementById('guideBookBusInfo');
+
+        if (assignedBuses.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--gray-medium);">
+                    <i class="fas fa-bus" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>No Buses Assigned</h3>
+                    <p>Please contact your supervisor to get bus assignments.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="bus-info-grid">
+                ${assignedBuses.map(bus => `
+                    <div class="info-item">
+                        <i class="fas fa-bus"></i>
+                        <h4>${bus.name}</h4>
+                        <p>${bus.busLine || 'Line N/A'}</p>
+                        <small>Capacity: ${bus.capacity} passengers</small>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="background: var(--gray-light); padding: 1.5rem; border-radius: 8px; margin-top: 1rem;">
+                <h4><i class="fas fa-info-circle" style="color: var(--primary-blue);"></i> Total Fleet Summary</h4>
+                <div style="margin-top: 1rem;">
+                    <p><strong>Total Assigned Buses:</strong> ${assignedBuses.length}</p>
+                    <p><strong>Total Capacity:</strong> ${assignedBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0)} passengers</p>
+                    <p><strong>Active Buses:</strong> ${assignedBuses.filter(bus => !bus.isStopped).length}</p>
+                    <p><strong>Current Passengers:</strong> ${assignedBuses.reduce((sum, bus) => sum + (bus.passengers || 0), 0)}</p>
+                    <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadRouteInfoForGuide() {
+        const container = document.getElementById('guideBookRoute');
+
+        const busesWithRoutes = assignedBuses.filter(bus => bus.route);
+
+        if (busesWithRoutes.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--gray-medium);">
+                    <i class="fas fa-route" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>No Routes Assigned</h3>
+                    <p>Your buses don't have routes assigned yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = busesWithRoutes.map(bus => `
+            <div style="background: var(--gray-light); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h4><i class="fas fa-bus" style="color: var(--primary-blue);"></i> ${bus.name}</h4>
+                <div style="margin-top: 1rem;">
+                    <p><strong>Route:</strong> ${bus.route.routeName}</p>
+                    <p><strong>Line:</strong> ${bus.busLine || 'N/A'}</p>
+                    <p><strong>Capacity:</strong> ${bus.capacity} passengers</p>
+                    <p><strong>Current Passengers:</strong> ${bus.passengers || 0}</p>
+                    <p><strong>Progress:</strong> ${bus.progress || 0}%</p>
+                    <p><strong>Status:</strong>
+                        <span style="color: ${bus.isStopped ? 'var(--gold)' : 'var(--green)'};">
+                            ${bus.isStopped ? 'Stopped' : 'Active'}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadScheduleForGuide() {
+        const tbody = document.getElementById('scheduleTableBody');
+
+        if (assignedBuses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray-medium);">No buses assigned</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = assignedBuses.map(bus => `
+            <tr>
+                <td><strong>${bus.name}</strong></td>
+                <td>${bus.route ? bus.route.routeName : 'Not assigned'}</td>
+                <td>${bus.departureTime ? formatDate(bus.departureTime) : 'TBD'}</td>
+                <td>${bus.arrivalTime ? formatDate(bus.arrivalTime) : 'TBD'}</td>
+                <td>
+                    <span style="color: ${bus.isStopped ? 'var(--gold)' : 'var(--green)'};">
+                        ${bus.isStopped ? 'Stopped' : 'Active'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Guide book navigation
+    function nextGuidePage() {
+        if (currentGuidePage < totalGuidePages) {
+            currentGuidePage++;
+            updateGuidePage();
+        }
+    }
+
+    function previousGuidePage() {
+        if (currentGuidePage > 1) {
+            currentGuidePage--;
+            updateGuidePage();
+        }
+    }
+
+    function goToGuidePage(pageNumber) {
+        if (pageNumber >= 1 && pageNumber <= totalGuidePages) {
+            currentGuidePage = pageNumber;
+            updateGuidePage();
+        }
+    }
+
+    function updateGuidePage() {
+        for (let i = 1; i <= totalGuidePages; i++) {
+            const page = document.getElementById(`guidePage${i}`);
+            if (page) {
+                page.classList.remove('active');
+            }
+        }
+
+        const currentPageElement = document.getElementById(`guidePage${currentGuidePage}`);
+        if (currentPageElement) {
+            currentPageElement.classList.add('active');
+        }
+
+        document.querySelectorAll('.page-dot').forEach((dot, index) => {
+            dot.classList.toggle('active', index + 1 === currentGuidePage);
+        });
+
+        document.getElementById('prevPageBtn').disabled = currentGuidePage === 1;
+        document.getElementById('nextPageBtn').disabled = currentGuidePage === totalGuidePages;
+
+        if (currentGuidePage === totalGuidePages) {
+            document.getElementById('nextPageBtn').innerHTML = '<i class="fas fa-check"></i> Complete';
+        } else {
+            document.getElementById('nextPageBtn').innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+        }
+    }
+
+    // 3D Simulation functions
+    function initialize3DSimulation() {
+        const canvas = document.getElementById('bus3DCanvas');
+        if (!canvas || !window.THREE) return;
+
+        if (!selectedBus) {
+            document.getElementById('simulationValidationMessage').style.display = 'block';
+            document.getElementById('simulationContainer').style.display = 'none';
+            return;
+        } else {
+            document.getElementById('simulationValidationMessage').style.display = 'none';
+            document.getElementById('simulationContainer').style.display = 'block';
+        }
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.setClearColor(0x87CEEB, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 25);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        createKinshasaEnvironment();
+        createRealisticBus();
+
+        camera.position.set(0, 8, 15);
+        camera.lookAt(0, 0, 0);
+
+        animate3D();
+        updateSimulationInfo();
+    }
+
+    function createKinshasaEnvironment() {
+        const groundGeometry = new THREE.PlaneGeometry(200, 200);
+        const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const roadGeometry = new THREE.PlaneGeometry(12, 200);
+        const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+        road.rotation.x = -Math.PI / 2;
+        road.position.y = 0.01;
+        scene.add(road);
+
+        const lineGeometry = new THREE.PlaneGeometry(0.3, 200);
+        const lineMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+        const centerLine = new THREE.Mesh(lineGeometry, lineMaterial);
+        centerLine.rotation.x = -Math.PI / 2;
+        centerLine.position.y = 0.02;
+        scene.add(centerLine);
+
+        for (let i = 0; i < 8; i++) {
+            const buildingGeometry = new THREE.BoxGeometry(
+                5 + Math.random() * 5,
+                10 + Math.random() * 10,
+                5 + Math.random() * 5
+            );
+            const buildingMaterial = new THREE.MeshLambertMaterial({
+                color: new THREE.Color().setHSL(0.1, 0.3, Math.random() * 0.3 + 0.4)
+            });
+            const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+
+            const side = Math.random() > 0.5 ? 1 : -1;
+            building.position.set(
+                side * (15 + Math.random() * 20),
+                building.geometry.parameters.height / 2,
+                (Math.random() - 0.5) * 150
+            );
+            building.castShadow = true;
+            scene.add(building);
+        }
+    }
+
+    function createRealisticBus() {
+        const busGroup = new THREE.Group();
+
+        const bodyGeometry = new THREE.BoxGeometry(2.5, 3, 12);
+        const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x1E40AF });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.y = 2;
+        body.castShadow = true;
+        busGroup.add(body);
+
+        const roofGeometry = new THREE.BoxGeometry(2.3, 0.3, 11.5);
+        const roofMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+        roof.position.y = 3.65;
+        roof.castShadow = true;
+        busGroup.add(roof);
+
+        const wheelGeometry = new THREE.CylinderGeometry(0.6, 0.6, 0.4, 16);
+        const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
+        const wheelPositions = [
+            { x: -1.5, z: -4 }, { x: 1.5, z: -4 },
+            { x: -1.5, z: 4 }, { x: 1.5, z: 4 }
+        ];
+
+        wheelPositions.forEach(wheelPos => {
+            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheel.position.set(wheelPos.x, 0.6, wheelPos.z);
+            wheel.rotation.z = Math.PI / 2;
+            wheel.castShadow = true;
+            busGroup.add(wheel);
+        });
+
+        const windowGeometry = new THREE.PlaneGeometry(2.3, 0.8);
+        const windowMaterial = new THREE.MeshLambertMaterial({
+            color: 0x87CEEB,
+            transparent: true,
+            opacity: 0.7
+        });
+
+        const frontWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+        frontWindow.position.set(0, 2.5, 6);
+        busGroup.add(frontWindow);
+
+        for (let i = 0; i < 4; i++) {
+            const sideWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+            sideWindow.position.set(1.26, 2.5, -3 + i * 2);
+            sideWindow.rotation.y = Math.PI / 2;
+            busGroup.add(sideWindow);
+
+            const otherSideWindow = new THREE.Mesh(windowGeometry, windowMaterial);
+            otherSideWindow.position.set(-1.26, 2.5, -3 + i * 2);
+            otherSideWindow.rotation.y = -Math.PI / 2;
+            busGroup.add(otherSideWindow);
+        }
+
+        const headlightGeometry = new THREE.SphereGeometry(0.2);
+        const headlightMaterial = new THREE.MeshLambertMaterial({
+            color: 0xFFFF88,
+            emissive: 0x444400
+        });
+
+        [-0.8, 0.8].forEach(x => {
+            const headlight = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            headlight.position.set(x, 1.5, 6);
+            busGroup.add(headlight);
+        });
+
+        bus3D = busGroup;
+        scene.add(bus3D);
+    }
+
+    function updateSimulationInfo() {
+        if (!selectedBus) {
+            document.getElementById('simNextStop').textContent = 'No bus selected';
+            document.getElementById('simPassengers').textContent = '0';
+            document.getElementById('simDistance').textContent = '0';
+            return;
+        }
+
+        document.getElementById('simPassengers').textContent = selectedBus.passengers || 0;
+
+        if (routeCoordinates.length > 0) {
+            const currentStop = routeCoordinates[currentRouteIndex] || routeCoordinates[0];
+            document.getElementById('simNextStop').textContent = currentStop.name;
+            document.getElementById('simDistance').textContent =
+                (simulationProgress * totalTripDistance / 100).toFixed(1);
+        } else {
+            document.getElementById('simNextStop').textContent = 'No route assigned';
+            document.getElementById('simDistance').textContent = '0';
+        }
+    }
+
+    function animate3D() {
+        if (!window.THREE || !renderer) return;
+
+        requestAnimationFrame(animate3D);
+
+        if (simulationRunning && bus3D) {
+            const speed = 0.2;
+            bus3D.position.z += speed;
+
+            simulationProgress = Math.min(100, simulationProgress + 0.1);
+
+            // Update progress in database during simulation
+            if (selectedBus && simulationProgress % 5 === 0) { // Update every 5% to avoid too many calls
+                updateBusProgress(simulationProgress);
+            }
+
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+            if (progressFill && progressPercent) {
+                progressFill.style.width = simulationProgress + '%';
+                progressPercent.textContent = Math.round(simulationProgress);
+            }
+
+            if (simulationProgress >= 100) {
+                simulationRunning = false;
+                showNotificationPopup('3D simulation completed!', 'success');
+                // Final update to database
+                if (selectedBus) {
+                    updateBusProgress(100);
+                }
+            }
+
+            if (bus3D.position.z > 80 && simulationProgress < 100) {
+                bus3D.position.z = -80;
+            }
+
+            camera.position.z = bus3D.position.z + 15;
+            camera.lookAt(bus3D.position);
+
+            const speed_kmh = simulationRunning ? 45 + Math.sin(Date.now() * 0.001) * 10 : 0;
+            document.getElementById('simSpeed').textContent = Math.round(speed_kmh);
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // Simulation controls
+    function startSimulation() {
+        if (!selectedBus) {
+            showNotificationPopup('Please select a bus first', 'error');
+            return;
+        }
+        simulationRunning = true;
+        showNotificationPopup('3D simulation started', 'success');
+    }
+
+    function pauseSimulation() {
+        simulationRunning = false;
+        showNotificationPopup('3D simulation paused', 'info');
+    }
+
+    function stopSimulation() {
+        simulationRunning = false;
+        simulationProgress = 0;
+        if (bus3D) {
+            bus3D.position.z = 0;
+        }
+        if (selectedBus) {
+            updateBusProgress(0);
+        }
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        if (progressFill && progressPercent) {
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0';
+        }
+        showNotificationPopup('3D simulation stopped', 'info');
+    }
+
+    function resetSimulation() {
+        simulationRunning = false;
+        simulationProgress = 0;
+        if (bus3D) {
+            bus3D.position.set(0, 0, 0);
+        }
+        if (camera) {
+            camera.position.set(0, 8, 15);
+            camera.lookAt(0, 0, 0);
+        }
+        if (selectedBus) {
+            updateBusProgress(0);
+        }
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        if (progressFill && progressPercent) {
+            progressFill.style.width = '0%';
+            progressPercent.textContent = '0';
+        }
+        showNotificationPopup('3D simulation reset', 'info');
+    }
+
+    // Load driver profile from database
+    async function loadDriverProfile() {
+        try {
+            const driver = await fetchData(`/staff?role=DRIVER`);
+            const currentDriverData = driver.find(d => d.id === currentDriver.id);
+
+            if (currentDriverData) {
+                originalProfileData = {
+                    firstName: currentDriverData.firstName || currentDriver.firstName,
+                    lastName: currentDriverData.lastName || currentDriver.lastName,
+                    email: currentDriverData.email || currentDriver.email,
+                    phoneNumber: currentDriverData.phoneNumber || '',
+                    licenseNumber: currentDriverData.licenseNumber || '',
+                    experience: currentDriverData.experience || ''
+                };
+            } else {
+                originalProfileData = {
+                    firstName: currentDriver.firstName,
+                    lastName: currentDriver.lastName,
+                    email: currentDriver.email,
+                    phoneNumber: '',
+                    licenseNumber: '',
+                    experience: ''
+                };
+            }
+
+            document.getElementById('profileFirstName').value = originalProfileData.firstName;
+            document.getElementById('profileLastName').value = originalProfileData.lastName;
+            document.getElementById('profileEmail').value = originalProfileData.email;
+            document.getElementById('profilePhone').value = originalProfileData.phoneNumber;
+            document.getElementById('profileLicense').value = originalProfileData.licenseNumber;
+            document.getElementById('profileExperience').value = originalProfileData.experience;
+
+        } catch (error) {
+            console.error('Error loading driver profile:', error);
+            originalProfileData = {
+                firstName: currentDriver.firstName,
+                lastName: currentDriver.lastName,
+                email: currentDriver.email,
+                phoneNumber: '',
+                licenseNumber: '',
+                experience: ''
+            };
+
+            document.getElementById('profileFirstName').value = originalProfileData.firstName;
+            document.getElementById('profileLastName').value = originalProfileData.lastName;
+            document.getElementById('profileEmail').value = originalProfileData.email;
+            document.getElementById('profilePhone').value = originalProfileData.phoneNumber;
+            document.getElementById('profileLicense').value = originalProfileData.licenseNumber;
+            document.getElementById('profileExperience').value = originalProfileData.experience;
+        }
+    }
+
+    // Profile management functions
+    function editProfile() {
+        const editableInputs = ['profilePhone', 'profileLicense', 'profileExperience'];
+        editableInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            input.removeAttribute('readonly');
+        });
+
+        document.getElementById('editProfileBtn').classList.add('hidden');
+        document.getElementById('saveProfileBtn').classList.remove('hidden');
+        document.getElementById('cancelProfileBtn').classList.remove('hidden');
+    }
+
+    function cancelProfileEdit() {
+        document.getElementById('profilePhone').value = originalProfileData.phoneNumber;
+        document.getElementById('profileLicense').value = originalProfileData.licenseNumber;
+        document.getElementById('profileExperience').value = originalProfileData.experience;
+
+        const editableInputs = ['profilePhone', 'profileLicense', 'profileExperience'];
+        editableInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            input.setAttribute('readonly', true);
+        });
+
+        document.getElementById('editProfileBtn').classList.remove('hidden');
+        document.getElementById('saveProfileBtn').classList.add('hidden');
+        document.getElementById('cancelProfileBtn').classList.add('hidden');
+    }
+
+    async function handleProfileUpdate(e) {
+        e.preventDefault();
+
+        const profileData = {
+            phoneNumber: document.getElementById('profilePhone').value,
+            licenseNumber: document.getElementById('profileLicense').value,
+            experience: parseInt(document.getElementById('profileExperience').value) || 0
+        };
+
+        try {
+            const formData = new FormData();
+            formData.append('firstName', originalProfileData.firstName);
+            formData.append('lastName', originalProfileData.lastName);
+            formData.append('email', originalProfileData.email);
+            formData.append('phoneNumber', profileData.phoneNumber);
+            formData.append('role', 'DRIVER');
+            formData.append('active', 'true');
+
+            const response = await fetch(`${API_BASE}/staff/${currentDriver.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            originalProfileData.phoneNumber = profileData.phoneNumber;
+            originalProfileData.licenseNumber = profileData.licenseNumber;
+            originalProfileData.experience = profileData.experience;
+
+            showNotificationPopup('Profile updated successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showNotificationPopup('Error updating profile. Please try again.', 'error');
+        }
+
+        const editableInputs = ['profilePhone', 'profileLicense', 'profileExperience'];
+        editableInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            input.setAttribute('readonly', true);
+        });
+
+        document.getElementById('editProfileBtn').classList.remove('hidden');
+        document.getElementById('saveProfileBtn').classList.add('hidden');
+        document.getElementById('cancelProfileBtn').classList.add('hidden');
+    }
+
+    // Load recent emergency reports from database
+    async function loadRecentReports() {
+        const container = document.getElementById('recentReports');
+
+        try {
+            const reports = await fetchData(`/emergency-reports/driver/${currentDriver.id}`);
+
+            if (reports.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--gray-medium);">
+                        <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>No Recent Reports</h3>
+                        <p>You haven't filed any emergency reports recently.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="display: grid; gap: 1rem;">
+                    ${reports.slice(0, 10).map(report => `
+                        <div class="card" style="padding: 1.5rem; margin: 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                                <h4 style="margin: 0; color: var(--gray-dark);">
+                                    <i class="fas fa-exclamation-triangle" style="color: ${getSeverityColor(report.severity)}; margin-right: 0.5rem;"></i>
+                                    ${report.type}
+                                </h4>
+                                <span style="background: ${getSeverityColor(report.severity)}; color: white; padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600;">
+                                    ${report.severity}
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <p style="margin: 0.5rem 0;"><strong>Location:</strong> ${report.location}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Description:</strong> ${report.description}</p>
+                                <p style="margin: 0.5rem 0;"><strong>Bus:</strong> ${report.bus ? report.bus.name : 'Not specified'}</p>
+                            </div>
+                            <div style="display: flex; justify-content: between; align-items: center; font-size: 0.9rem; color: var(--gray-medium);">
+                                <span><i class="fas fa-calendar"></i> ${formatDate(report.timestamp)}</span>
+                                <span style="margin-left: auto;">
+                                    Status: <span style="color: ${getStatusColor(report.status)}; font-weight: 600;">${report.status || 'PENDING'}</span>
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+        } catch (error) {
+            console.error('Error loading reports:', error);
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--secondary-red);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>Error Loading Reports</h3>
+                    <p>Unable to load emergency reports. Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+
+    function getSeverityColor(severity) {
+        const colors = {
+            LOW: '#10B981',
+            MEDIUM: '#F59E0B',
+            HIGH: '#EF4444',
+            CRITICAL: '#DC2626'
+        };
+        return colors[severity] || '#6B7280';
+    }
+
+    function getStatusColor(status) {
+        const colors = {
+            PENDING: '#F59E0B',
+            RESOLVED: '#10B981',
+            IN_PROGRESS: '#3B82F6'
+        };
+        return colors[status] || '#F59E0B';
+    }
+
+    // Emergency report handling
+    async function handleEmergencyReport(e) {
+        e.preventDefault();
+
+        const reportData = {
+            driverId: currentDriver.id,
+            busId: selectedBus ? selectedBus.id : null,
+            type: document.getElementById('emergencyType').value,
+            location: document.getElementById('emergencyLocation').value,
+            description: document.getElementById('emergencyDescription').value,
+            severity: document.getElementById('emergencySeverity').value
+        };
+
+        // Add coordinates if available
+        if (busPosition.lat && busPosition.lng) {
+            reportData.coordinates = busPosition;
+        }
+
+        try {
+            const response = await postData('/emergency-reports', reportData);
+
+            showNotificationPopup('Emergency report sent successfully!', 'success');
+
+            // Update bus status if accident
+            if (reportData.type === 'ACCIDENT' && selectedBus) {
+                selectedBus.hasAccident = true;
+                updateBusStatus();
+            }
+
+            closeModal('emergencyModal');
+            document.getElementById('emergencyForm').reset();
+
+            // Reload recent reports to show the new one
+            await loadRecentReports();
+
+        } catch (error) {
+            console.error('Error sending emergency report:', error);
+            showNotificationPopup('Error sending emergency report. Please try again.', 'error');
+        }
+    }
+
+    // Update real-time data periodically
+    async function updateRealTimeData() {
+        try {
+            await loadAssignedBuses();
+
+            if (selectedBus) {
+                const updatedBus = assignedBuses.find(bus => bus.id === selectedBus.id);
+                if (updatedBus) {
+                    if (updatedBus.passengers !== selectedBus.passengers) {
+                        selectedBus.passengers = updatedBus.passengers;
+                    }
+
+                    if (updatedBus.isStopped !== selectedBus.isStopped) {
+                        selectedBus.isStopped = updatedBus.isStopped;
+                        updateBusStatus();
+                    }
+                }
+            }
+
+            await loadDriverStats();
+
+        } catch (error) {
+            console.error('Error updating real-time data:', error);
+        }
+    }
+
+
+
+    // Fonction pour initialiser les event listeners (modifiée)
+    function initializeEventListeners() {
+        // Event listener pour le bouton de notifications
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        if (notificationsBtn) {
+            notificationsBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleNotificationsPanel();
+            });
+        }
+
+        // Autres event listeners...
+    }
+    // Event listeners initialization
+    function initializeEventListeners() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('emergencyForm').addEventListener('submit', handleEmergencyReport);
+        document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+        document.getElementById('notificationsBtn').addEventListener('click', toggleNotificationsPanel);
+
+        document.addEventListener('click', function(event) {
+            const notificationsBtn = document.getElementById('notificationsBtn');
+            const notificationsPanel = document.getElementById('notificationsPanel');
+
+            if (!notificationsBtn.contains(event.target) && !notificationsPanel.contains(event.target)) {
+                notificationsPanel.classList.remove('active');
+            }
+        });
+    }
+
+    // Navigation functions
+    function showSection(sectionName, event) {
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        if (event) {
+            const clickedLink = event.target.closest('a');
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        }
+
+        switch(sectionName) {
+            case 'dashboard':
+                setTimeout(initializeDashboardMap, 100);
+                break;
+            case 'realmap':
+                setTimeout(initializeRealMap, 100);
+                break;
+            case 'guide':
+                setTimeout(() => {
+                    loadDriverGuideBook();
+                    updateGuidePage();
+                }, 100);
+                break;
+            case 'simulation':
+                setTimeout(initialize3DSimulation, 100);
+                break;
+            case 'reports':
+                loadRecentReports();
+                break;
+        }
+    }
+
+    // Utility functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const header = document.getElementById('header');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        header.classList.toggle('expanded');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function openEmergencyReport() {
+        openModal('emergencyModal');
+    }
+
+    function uploadPhoto() {
+        showNotificationPopup('Photo upload feature coming soon!', 'info');
+    }
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            if (notificationCheckInterval) {
+                clearInterval(notificationCheckInterval);
+            }
+
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('authToken');
+            window.location.href = '/login.html';
+        }
+    }
+
+    // Greeting functions
+    function getTimeBasedGreeting() {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good morning';
+        if (hour < 18) return 'Good afternoon';
+        return 'Good evening';
+    }
+
+    function updateGreetingAndDriverName() {
+        const greeting = getTimeBasedGreeting();
+        const driverName = currentDriver ?
+            `${currentDriver.firstName} ${currentDriver.lastName}` : 'Driver';
+
+        const headerTitle = document.getElementById('dynamicGreeting');
+        if (headerTitle) {
+            headerTitle.textContent = `${greeting}, ${driverName}`;
+        }
+    }
+
+    function startGreetingUpdater() {
+        updateGreetingAndDriverName();
+        setInterval(updateGreetingAndDriverName, 3600000);
+    }
+
+    // Notification system
+    function showNotificationPopup(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification-popup');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification-popup ${type}`;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        notification.innerHTML = `${icons[type] || icons.info} ${message}`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+
+    // Utility functions
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleString();
+    }
+
+    // API functions
+    async function fetchData(endpoint) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, { headers });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(`Fetch error for ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
+    async function postData(endpoint, data) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error in postData:', error);
+            throw error;
+        }
+    }
+
+    async function putData(endpoint, data = {}) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error in putData:', error);
+            throw error;
+        }
+    }
+
+    // Make functions globally available
+    window.showSection = showSection;
+    window.logout = logout;
+    window.openBusSelection = openBusSelection;
+    window.closeBusSelection = closeBusSelection;
+    window.selectBusForTrip = selectBusForTrip;
+    window.confirmBusSelection = confirmBusSelection;
+    window.showMyBuses = showMyBuses;
+    window.closeMyBuses = closeMyBuses;
+    window.selectAndStartBus = selectAndStartBus;
+    window.startTrip = startTrip;
+    window.pauseTrip = pauseTrip;
+    window.endTrip = endTrip;
+    window.startSimulation = startSimulation;
+    window.pauseSimulation = pauseSimulation;
+    window.stopSimulation = stopSimulation;
+    window.resetSimulation = resetSimulation;
+    window.openEmergencyReport = openEmergencyReport;
+    window.closeModal = closeModal;
+    window.editProfile = editProfile;
+    window.cancelProfileEdit = cancelProfileEdit;
+    window.uploadPhoto = uploadPhoto;
+    window.nextGuidePage = nextGuidePage;
+    window.previousGuidePage = previousGuidePage;
+    window.goToGuidePage = goToGuidePage;
+    window.toggleNotificationsPanel = toggleNotificationsPanel;
+    window.markNotificationAsRead = markNotificationAsRead;
+
+    console.log('IMAS Driver Dashboard loaded successfully - Real data integration active');
+</script>
+</body>
+
+</html>

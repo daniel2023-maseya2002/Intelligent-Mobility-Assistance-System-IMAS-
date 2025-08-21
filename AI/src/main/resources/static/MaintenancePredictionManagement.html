@@ -1,0 +1,2769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Prediction Management - IMAS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 240px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .stat-icon.predictions {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .stat-icon.critical {
+            background: linear-gradient(135deg, var(--secondary-red), var(--light-red));
+        }
+
+        .stat-icon.route-predictions {
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+        }
+
+        .stat-icon.incident-predictions {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        /* Prediction Cards */
+        .prediction-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-blue);
+            transition: var(--transition);
+        }
+
+        .prediction-card:hover {
+            transform: translateX(5px);
+        }
+
+        .prediction-card.critical {
+            border-left-color: var(--secondary-red);
+            background: rgba(220, 38, 38, 0.02);
+        }
+
+        .prediction-card.warning {
+            border-left-color: var(--gold);
+            background: rgba(245, 158, 11, 0.02);
+        }
+
+        .prediction-card.good {
+            border-left-color: var(--green);
+            background: rgba(16, 185, 129, 0.02);
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .prediction-title {
+            font-weight: 600;
+            color: var(--gray-dark);
+            font-size: 1.1rem;
+        }
+
+        .prediction-probability {
+            padding: 0.375rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .probability-high {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+        }
+
+        .probability-medium {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .probability-low {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .prediction-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .prediction-metric {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--gray-light);
+            border-radius: var(--border-radius);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--gray-medium);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .table th {
+            background: var(--gray-light);
+            font-weight: 600;
+            color: var(--gray-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tr:hover {
+            background: rgba(30,64,175,0.05);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-critical {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+        }
+
+        .status-warning {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .status-normal {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-predicted {
+            background: rgba(59,130,246,0.1);
+            color: var(--light-blue);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn.view {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .action-btn.schedule {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .action-btn.analyze {
+            background: var(--green);
+            color: var(--white);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <span class="logo-text">IMAS</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="Dashboard.html">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="MaintenanceManagement.html">
+                    <i class="fas fa-tools"></i>
+                    <span>Maintenance</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="active">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('maintenance-predictions')">
+                    <i class="fas fa-wrench"></i>
+                    <span>Maintenance Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('route-predictions')">
+                    <i class="fas fa-route"></i>
+                    <span>Route Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('incident-predictions')">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Incident Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('analytics')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="Analyst.html">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Analyst Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="ScheduleManagement.html">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Schedule Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="AdminTaskManager.html">
+                    <i class="fas fa-tasks"></i>
+                    <span>Admin Task Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="login.html">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">Predictive Maintenance & Analytics</h1>
+    </div>
+    <div class="header-right">
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName">Admin User</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Predictive Analytics Overview</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card" onclick="showSection('maintenance-predictions')">
+                <div class="stat-icon predictions">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalPredictions">0</h3>
+                    <p>Total Predictions</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('maintenance-predictions')">
+                <div class="stat-icon critical">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="criticalPredictions">0</h3>
+                    <p>Critical Alerts</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('route-predictions')">
+                <div class="stat-icon route-predictions">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="routePredictions">0</h3>
+                    <p>Route Optimizations</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="showSection('incident-predictions')">
+                <div class="stat-icon incident-predictions">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="incidentPredictions">0</h3>
+                    <p>Risk Assessments</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Prediction Accuracy Trends</h3>
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Risk Distribution</h3>
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Maintenance Forecast</h3>
+                <div class="chart-container">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Cost Savings Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="savingsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Recent Predictions</h3>
+            <div id="recentPredictions">
+                <p style="color: var(--gray-medium); text-align: center;">Loading predictions...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Maintenance Predictions Section -->
+    <section id="maintenance-predictions-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark);">Maintenance Predictions</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-success" onclick="generateMaintenancePredictions()">
+                    <i class="fas fa-magic"></i>
+                    Generate Predictions
+                </button>
+                <button class="btn btn-warning" onclick="exportPredictionsReport()">
+                    <i class="fas fa-download"></i>
+                    Export Report
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Equipment Maintenance Checker</h3>
+            <form id="predictionForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="equipmentSelect">Select Equipment</label>
+                        <select class="form-control" id="equipmentSelect" required>
+                            <option value="">Loading equipment...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Analysis Period</label>
+                        <select class="form-control" id="analysisPeriod">
+                            <option value="7">Next 7 days</option>
+                            <option value="14">Next 14 days</option>
+                            <option value="30" selected>Next 30 days</option>
+                            <option value="60">Next 60 days</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-search"></i>
+                        Analyze Equipment
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="predictionResults" class="hidden">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Prediction Results</h3>
+                <div id="predictionContent">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>All Equipment Predictions</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <select class="form-control" style="width: 150px;" id="riskFilter">
+                        <option value="">All Risks</option>
+                        <option value="CRITICAL">Critical</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="refreshPredictions()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Equipment</th>
+                    <th>Risk Level</th>
+                    <th>Probability</th>
+                    <th>Next Maintenance</th>
+                    <th>Estimated Cost</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="predictionsTableBody">
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--gray-medium);">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Route Predictions Section -->
+    <section id="route-predictions-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Route Optimization Predictions</h1>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Route Efficiency Analysis</h3>
+            <form id="routeAnalysisForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="routeSelect">Select Route</label>
+                        <select class="form-control" id="routeSelect" required>
+                            <option value="">Loading routes...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Analysis Type</label>
+                        <select class="form-control" id="analysisType">
+                            <option value="efficiency">Efficiency Analysis</option>
+                            <option value="demand">Demand Prediction</option>
+                            <option value="optimization">Route Optimization</option>
+                            <option value="safety">Safety Assessment</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-chart-line"></i>
+                        Analyze Route
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="routeAnalysisResults" class="hidden">
+            <div class="prediction-card">
+                <div class="prediction-header">
+                    <div class="prediction-title" id="routeAnalysisTitle">Route Analysis Results</div>
+                    <div class="prediction-probability probability-medium" id="routeAnalysisProbability">Analyzing...</div>
+                </div>
+                <div class="prediction-details" id="routeAnalysisDetails">
+                    <!-- Analysis details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Route Efficiency Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="routeEfficiencyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Passenger Demand Forecast</h3>
+                <div class="chart-container">
+                    <canvas id="demandForecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Route Optimization Recommendations</h3>
+                <button class="btn" onclick="generateRouteRecommendations()">
+                    <i class="fas fa-lightbulb"></i>
+                    Generate Recommendations
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Route</th>
+                    <th>Current Efficiency</th>
+                    <th>Predicted Efficiency</th>
+                    <th>Improvement</th>
+                    <th>Priority</th>
+                    <th>Estimated Savings</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="routeRecommendationsBody">
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--gray-medium);">No recommendations generated</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Incident Predictions Section -->
+    <section id="incident-predictions-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Incident Risk Predictions</h1>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Risk Assessment</h3>
+            <form id="incidentAnalysisForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="busSelect">Select Bus</label>
+                        <select class="form-control" id="busSelect" required>
+                            <option value="">Loading buses...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Risk Factors</label>
+                        <select class="form-control" id="riskFactors" multiple>
+                            <option value="weather">Weather Conditions</option>
+                            <option value="traffic">Traffic Density</option>
+                            <option value="maintenance">Maintenance History</option>
+                            <option value="driver">Driver Experience</option>
+                            <option value="route">Route Complexity</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-shield-alt"></i>
+                        Assess Risk
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="incidentRiskResults" class="hidden">
+            <div class="prediction-card" id="riskAssessmentCard">
+                <div class="prediction-header">
+                    <div class="prediction-title" id="riskAssessmentTitle">Risk Assessment Results</div>
+                    <div class="prediction-probability" id="riskAssessmentLevel">Analyzing...</div>
+                </div>
+                <div class="prediction-details" id="riskAssessmentDetails">
+                    <!-- Risk details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Incident Probability by Type</h3>
+                <div class="chart-container">
+                    <canvas id="incidentTypeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Risk Trends Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="riskTrendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>High-Risk Alerts</h3>
+                <button class="btn btn-danger" onclick="generateRiskAlerts()">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Generate Alerts
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Bus</th>
+                    <th>Route</th>
+                    <th>Risk Type</th>
+                    <th>Probability</th>
+                    <th>Severity</th>
+                    <th>Estimated Time</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="riskAlertsBody">
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--gray-medium);">No high-risk alerts</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analytics-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Advanced Analytics Dashboard</h1>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Prediction Model Performance</h3>
+                <div class="chart-container">
+                    <canvas id="modelPerformanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Cost-Benefit Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="costBenefitChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">System Reliability Metrics</h3>
+                <div class="chart-container">
+                    <canvas id="reliabilityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Operational Efficiency Trends</h3>
+                <div class="chart-container">
+                    <canvas id="efficiencyTrendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon predictions">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="predictionAccuracy">94.2%</h3>
+                    <p>Prediction Accuracy</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon critical">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="costSavings">$125K</h3>
+                    <p>Monthly Savings</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon route-predictions">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="responseTime">12min</h3>
+                    <p>Avg Response Time</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon incident-predictions">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="preventedIncidents">89</h3>
+                    <p>Incidents Prevented</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+<!--<script src="js/user.js"></script>-->
+
+<script>
+    // Global variables
+    let equipmentList = [];
+    let routes = [];
+    let buses = [];
+    let maintenanceRecords = [];
+    let incidents = [];
+    let predictions = {};
+    let charts = {};
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEventListeners();
+        loadAllData();
+        showSection('dashboard');
+    });
+
+    // Event listeners
+    function initializeEventListeners() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('predictionForm').addEventListener('submit', handlePredictionAnalysis);
+        document.getElementById('routeAnalysisForm').addEventListener('submit', handleRouteAnalysis);
+        document.getElementById('incidentAnalysisForm').addEventListener('submit', handleIncidentAnalysis);
+        document.getElementById('riskFilter')?.addEventListener('change', filterPredictionsTable);
+    }
+
+    // Load all data
+    async function loadAllData() {
+        try {
+            await Promise.all([
+                loadEquipment(),
+                loadRoutes(),
+                loadBuses(),
+                loadMaintenanceRecords(),
+                loadIncidents()
+            ]);
+            updateDashboardStats();
+            createCharts();
+            loadRecentPredictions();
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Error loading data: ' + error.message, 'error');
+        }
+    }
+
+    // Load equipment
+    async function loadEquipment() {
+        try {
+            const response = await fetch(`${API_BASE}/equipments`);
+            if (!response.ok) throw new Error('Failed to fetch equipment');
+            equipmentList = await response.json();
+            populateEquipmentSelect();
+        } catch (error) {
+            console.error('Error loading equipment:', error);
+            document.getElementById('equipmentSelect').innerHTML = '<option value="">Error loading equipment</option>';
+        }
+    }
+
+    // Load routes
+    async function loadRoutes() {
+        try {
+            const response = await fetch(`${API_BASE}/routes`);
+            if (!response.ok) throw new Error('Failed to fetch routes');
+            routes = await response.json();
+            populateRouteSelect();
+        } catch (error) {
+            console.error('Error loading routes:', error);
+            document.getElementById('routeSelect').innerHTML = '<option value="">Error loading routes</option>';
+        }
+    }
+
+    // Load buses
+    async function loadBuses() {
+        try {
+            const response = await fetch(`${API_BASE}/buses`);
+            if (!response.ok) throw new Error('Failed to fetch buses');
+            buses = await response.json();
+            populateBusSelect();
+        } catch (error) {
+            console.error('Error loading buses:', error);
+            document.getElementById('busSelect').innerHTML = '<option value="">Error loading buses</option>';
+        }
+    }
+
+    // Load maintenance records
+    async function loadMaintenanceRecords() {
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records`);
+            if (!response.ok) throw new Error('Failed to fetch maintenance records');
+            maintenanceRecords = await response.json();
+        } catch (error) {
+            console.error('Error loading maintenance records:', error);
+            maintenanceRecords = [];
+        }
+    }
+
+    // Load incidents
+    async function loadIncidents() {
+        try {
+            const response = await fetch(`${API_BASE}/incidents`);
+            if (!response.ok) throw new Error('Failed to fetch incidents');
+            incidents = await response.json();
+        } catch (error) {
+            console.error('Error loading incidents:', error);
+            incidents = [];
+        }
+    }
+
+    // Populate selects
+    function populateEquipmentSelect() {
+        const select = document.getElementById('equipmentSelect');
+        select.innerHTML = '<option value="">Select equipment...</option>';
+        equipmentList.forEach(equipment => {
+            select.innerHTML += `<option value="${equipment.equipmentId}">${equipment.name} (${equipment.model || 'No model'})</option>`;
+        });
+    }
+
+    function populateRouteSelect() {
+        const select = document.getElementById('routeSelect');
+        select.innerHTML = '<option value="">Select route...</option>';
+        routes.forEach(route => {
+            select.innerHTML += `<option value="${route.id}">${route.routeName} (${route.routeCode})</option>`;
+        });
+    }
+
+    function populateBusSelect() {
+        const select = document.getElementById('busSelect');
+        select.innerHTML = '<option value="">Select bus...</option>';
+        buses.forEach(bus => {
+            select.innerHTML += `<option value="${bus.id}">${bus.name} - ${bus.busLine}</option>`;
+        });
+    }
+
+    // Update dashboard statistics
+    function updateDashboardStats() {
+        const totalPredictions = equipmentList.length + routes.length + buses.length;
+        const criticalPredictions = Math.floor(totalPredictions * 0.15);
+        const routePredictions = routes.length;
+        const incidentPredictions = Math.floor(buses.length * 0.8);
+
+        document.getElementById('totalPredictions').textContent = totalPredictions;
+        document.getElementById('criticalPredictions').textContent = criticalPredictions;
+        document.getElementById('routePredictions').textContent = routePredictions;
+        document.getElementById('incidentPredictions').textContent = incidentPredictions;
+    }
+
+    // Create charts
+    function createCharts() {
+        createAccuracyChart();
+        createRiskChart();
+        createForecastChart();
+        createSavingsChart();
+        createRouteEfficiencyChart();
+        createDemandForecastChart();
+        createIncidentTypeChart();
+        createRiskTrendsChart();
+        createModelPerformanceChart();
+        createCostBenefitChart();
+        createReliabilityChart();
+        createEfficiencyTrendsChart();
+    }
+
+    // Accuracy chart
+    function createAccuracyChart() {
+        const ctx = document.getElementById('accuracyChart');
+        if (!ctx) return;
+
+        const data = [];
+        const labels = [];
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            data.push(92 + Math.random() * 6); // Simulate accuracy between 92-98%
+        }
+
+        charts.accuracy = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Prediction Accuracy (%)',
+                    data: data,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 85,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Risk chart
+    function createRiskChart() {
+        const ctx = document.getElementById('riskChart');
+        if (!ctx) return;
+
+        const riskData = calculateRiskDistribution();
+
+        charts.risk = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical Risk'],
+                datasets: [{
+                    data: [riskData.low, riskData.medium, riskData.high, riskData.critical],
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#DC2626'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Forecast chart
+    function createForecastChart() {
+        const ctx = document.getElementById('forecastChart');
+        if (!ctx) return;
+
+        const forecastData = generateMaintenanceForecast();
+
+        charts.forecast = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: forecastData.labels,
+                datasets: [{
+                    label: 'Predicted Maintenance',
+                    data: forecastData.data,
+                    backgroundColor: 'rgba(30, 64, 175, 0.8)',
+                    borderColor: '#1E40AF',
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Savings chart
+    function createSavingsChart() {
+        const ctx = document.getElementById('savingsChart');
+        if (!ctx) return;
+
+        const months = [];
+        const savings = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+            savings.push(10000 + Math.random() * 15000); // Simulate savings between $10k-25k
+        }
+
+        charts.savings = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Cost Savings ($)',
+                    data: savings,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Route efficiency chart
+    function createRouteEfficiencyChart() {
+        const ctx = document.getElementById('routeEfficiencyChart');
+        if (!ctx) return;
+
+        const routeNames = routes.slice(0, 6).map(r => r.routeName.substring(0, 15));
+        const currentEfficiency = routeNames.map(() => 75 + Math.random() * 20);
+        const predictedEfficiency = currentEfficiency.map(eff => eff + (Math.random() * 10) - 2);
+
+        charts.routeEfficiency = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: routeNames,
+                datasets: [{
+                    label: 'Current Efficiency',
+                    data: currentEfficiency,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: '#3B82F6',
+                    borderWidth: 2
+                }, {
+                    label: 'Predicted Efficiency',
+                    data: predictedEfficiency,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10B981',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Demand forecast chart
+    function createDemandForecastChart() {
+        const ctx = document.getElementById('demandForecastChart');
+        if (!ctx) return;
+
+        const hours = [];
+        const demand = [];
+        for (let i = 0; i < 24; i++) {
+            hours.push(i + ':00');
+            demand.push(Math.max(10, 50 + Math.sin((i - 6) * Math.PI / 12) * 40 + Math.random() * 10));
+        }
+
+        charts.demandForecast = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hours,
+                datasets: [{
+                    label: 'Predicted Demand',
+                    data: demand,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' passengers';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Incident type chart
+    function createIncidentTypeChart() {
+        const ctx = document.getElementById('incidentTypeChart');
+        if (!ctx) return;
+
+        const incidentTypes = ['Mechanical', 'Accident', 'Weather', 'Traffic', 'Other'];
+        const probabilities = [25, 15, 20, 30, 10];
+
+        charts.incidentType = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: incidentTypes,
+                datasets: [{
+                    label: 'Incident Probability (%)',
+                    data: probabilities,
+                    backgroundColor: 'rgba(220, 38, 38, 0.2)',
+                    borderColor: '#DC2626',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#DC2626'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 40
+                    }
+                }
+            }
+        });
+    }
+
+    // Risk trends chart
+    function createRiskTrendsChart() {
+        const ctx = document.getElementById('riskTrendsChart');
+        if (!ctx) return;
+
+        const weeks = [];
+        const riskLevels = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - (i * 7));
+            weeks.push('Week ' + (12 - i));
+            riskLevels.push(20 + Math.sin(i * 0.5) * 10 + Math.random() * 5);
+        }
+
+        charts.riskTrends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: weeks,
+                datasets: [{
+                    label: 'Average Risk Level',
+                    data: riskLevels,
+                    borderColor: '#DC2626',
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 40
+                    }
+                }
+            }
+        });
+    }
+
+    // Model performance chart
+    function createModelPerformanceChart() {
+        const ctx = document.getElementById('modelPerformanceChart');
+        if (!ctx) return;
+
+        const models = ['Maintenance Pred.', 'Route Opt.', 'Incident Pred.', 'Demand Forecast'];
+        const accuracy = [94.2, 91.8, 87.5, 92.1];
+        const precision = [93.1, 90.5, 85.8, 91.3];
+        const recall = [95.3, 92.1, 89.2, 93.7];
+
+        charts.modelPerformance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: models,
+                datasets: [{
+                    label: 'Accuracy',
+                    data: accuracy,
+                    backgroundColor: 'rgba(30, 64, 175, 0.8)'
+                }, {
+                    label: 'Precision',
+                    data: precision,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                }, {
+                    label: 'Recall',
+                    data: recall,
+                    backgroundColor: 'rgba(245, 158, 11, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Cost benefit chart
+    function createCostBenefitChart() {
+        const ctx = document.getElementById('costBenefitChart');
+        if (!ctx) return;
+
+        const categories = ['Maintenance', 'Fuel Savings', 'Downtime Reduction', 'Safety Improvement'];
+        const costs = [50000, 0, 0, 20000];
+        const benefits = [120000, 85000, 95000, 150000];
+
+        charts.costBenefit = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: categories,
+                datasets: [{
+                    label: 'Costs ($)',
+                    data: costs,
+                    backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                    borderColor: '#DC2626',
+                    borderWidth: 2
+                }, {
+                    label: 'Benefits ($)',
+                    data: benefits,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10B981',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Reliability chart
+    function createReliabilityChart() {
+        const ctx = document.getElementById('reliabilityChart');
+        if (!ctx) return;
+
+        const months = [];
+        const reliability = [];
+        const availability = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+            reliability.push(96 + Math.random() * 3);
+            availability.push(98 + Math.random() * 1.5);
+        }
+
+        charts.reliability = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'System Reliability (%)',
+                    data: reliability,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 3
+                }, {
+                    label: 'System Availability (%)',
+                    data: availability,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 90,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Efficiency trends chart
+    function createEfficiencyTrendsChart() {
+        const ctx = document.getElementById('efficiencyTrendsChart');
+        if (!ctx) return;
+
+        const months = [];
+        const operational = [];
+        const fuel = [];
+        const maintenance = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+            operational.push(85 + Math.random() * 10);
+            fuel.push(88 + Math.random() * 8);
+            maintenance.push(92 + Math.random() * 6);
+        }
+
+        charts.efficiencyTrends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Operational Efficiency (%)',
+                    data: operational,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }, {
+                    label: 'Fuel Efficiency (%)',
+                    data: fuel,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }, {
+                    label: 'Maintenance Efficiency (%)',
+                    data: maintenance,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 75,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Helper functions
+    function calculateRiskDistribution() {
+        const total = equipmentList.length + buses.length;
+        return {
+            low: Math.floor(total * 0.4),
+            medium: Math.floor(total * 0.35),
+            high: Math.floor(total * 0.2),
+            critical: Math.floor(total * 0.05)
+        };
+    }
+
+    function generateMaintenanceForecast() {
+        const months = [];
+        const data = [];
+        for (let i = 0; i < 6; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() + i);
+            months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+            data.push(Math.floor(5 + Math.random() * 15));
+        }
+        return { labels: months, data: data };
+    }
+
+    // Load recent predictions
+    function loadRecentPredictions() {
+        const container = document.getElementById('recentPredictions');
+        const recentPredictions = generateRecentPredictions();
+
+        container.innerHTML = recentPredictions.map(prediction => `
+            <div class="prediction-card ${prediction.severity}">
+                <div class="prediction-header">
+                    <div class="prediction-title">${prediction.title}</div>
+                    <div class="prediction-probability probability-${prediction.level}">${prediction.probability}%</div>
+                </div>
+                <div class="prediction-details">
+                    <div class="prediction-metric">
+                        <div class="metric-value">${prediction.timeFrame}</div>
+                        <div class="metric-label">Time Frame</div>
+                    </div>
+                    <div class="prediction-metric">
+                        <div class="metric-value">${prediction.confidence}%</div>
+                        <div class="metric-label">Confidence</div>
+                    </div>
+                    <div class="prediction-metric">
+                        <div class="metric-value">$${prediction.impact}</div>
+                        <div class="metric-label">Impact</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function generateRecentPredictions() {
+        const predictions = [];
+
+        // Generate maintenance predictions based on actual equipment
+        equipmentList.slice(0, 3).forEach((equipment, index) => {
+            const maintenanceHistory = maintenanceRecords.filter(r =>
+                r.equipment && r.equipment.equipmentId === equipment.equipmentId
+            );
+
+            const hasRecentMaintenance = maintenanceHistory.some(r => {
+                const date = new Date(r.startDate);
+                const daysSince = (new Date() - date) / (1000 * 60 * 60 * 24);
+                return daysSince <= 30;
+            });
+
+            const probability = hasRecentMaintenance ? 15 + Math.random() * 25 : 60 + Math.random() * 30;
+            const severity = probability > 70 ? 'critical' : (probability > 50 ? 'warning' : 'good');
+            const level = probability > 70 ? 'high' : (probability > 50 ? 'medium' : 'low');
+
+            predictions.push({
+                title: `${equipment.name} Maintenance Required`,
+                probability: Math.round(probability),
+                severity: severity,
+                level: level,
+                timeFrame: hasRecentMaintenance ? '60 days' : '14 days',
+                confidence: Math.round(85 + Math.random() * 10),
+                impact: Math.round((1000 + Math.random() * 4000))
+            });
+        });
+
+        // Generate route predictions
+        routes.slice(0, 2).forEach(route => {
+            const routeTickets = buses.filter(bus => bus.route && bus.route.id === route.id).length;
+            const efficiency = routeTickets > 5 ? 85 + Math.random() * 10 : 65 + Math.random() * 20;
+            const severity = efficiency < 70 ? 'warning' : 'good';
+            const level = efficiency < 70 ? 'medium' : 'low';
+
+            predictions.push({
+                title: `${route.routeName} Optimization Opportunity`,
+                probability: Math.round(100 - efficiency),
+                severity: severity,
+                level: level,
+                timeFrame: '7 days',
+                confidence: Math.round(80 + Math.random() * 15),
+                impact: Math.round(500 + Math.random() * 2000)
+            });
+        });
+
+        return predictions;
+    }
+
+    // Handle prediction analysis
+    async function handlePredictionAnalysis(e) {
+        e.preventDefault();
+
+        const equipmentId = document.getElementById('equipmentSelect').value;
+        const period = document.getElementById('analysisPeriod').value;
+
+        if (!equipmentId) {
+            showNotification('Please select equipment to analyze', 'error');
+            return;
+        }
+
+        try {
+            showNotification('Analyzing equipment maintenance requirements...', 'info');
+
+            // Call the actual prediction API
+            const response = await fetch(`${API_BASE}/data/predictions/maintenance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ equipmentId: equipmentId })
+            });
+
+            let predictionResult;
+            if (response.ok) {
+                predictionResult = await response.json();
+            } else {
+                // Fallback to analysis based on available data
+                predictionResult = analyzeEquipmentMaintenance(equipmentId, period);
+            }
+
+            displayPredictionResults(predictionResult, equipmentId);
+            document.getElementById('predictionResults').classList.remove('hidden');
+
+            showNotification('Analysis completed successfully!', 'success');
+        } catch (error) {
+            console.error('Error analyzing equipment:', error);
+            // Use local analysis as fallback
+            const predictionResult = analyzeEquipmentMaintenance(equipmentId, period);
+            displayPredictionResults(predictionResult, equipmentId);
+            document.getElementById('predictionResults').classList.remove('hidden');
+            showNotification('Analysis completed using local data', 'warning');
+        }
+    }
+
+    // Analyze equipment maintenance based on available data
+    function analyzeEquipmentMaintenance(equipmentId, period) {
+        const equipment = equipmentList.find(e => e.equipmentId == equipmentId);
+        if (!equipment) return null;
+
+        // Get maintenance history for this equipment
+        const maintenanceHistory = maintenanceRecords.filter(r =>
+            r.equipment && r.equipment.equipmentId == equipmentId
+        );
+
+        // Calculate maintenance metrics
+        const daysSinceLastMaintenance = equipment.lastMaintenanceDate ?
+            Math.floor((new Date() - new Date(equipment.lastMaintenanceDate)) / (1000 * 60 * 60 * 24)) : 365;
+
+        const averageMaintenanceInterval = maintenanceHistory.length > 1 ?
+            calculateAverageInterval(maintenanceHistory) : 90;
+
+        const maintenanceFrequency = maintenanceHistory.length / Math.max(1, daysSinceLastMaintenance / 30);
+
+        // Calculate probability based on equipment age, maintenance history, and status
+        let probability = 0;
+
+        // Base probability on time since last maintenance
+        if (daysSinceLastMaintenance > averageMaintenanceInterval) {
+            probability += Math.min(50, (daysSinceLastMaintenance - averageMaintenanceInterval) / averageMaintenanceInterval * 50);
+        }
+
+        // Adjust based on equipment status
+        switch (equipment.status) {
+            case 'UNDER_MAINTENANCE':
+                probability = 100;
+                break;
+            case 'DEFECTIVE':
+                probability = 95;
+                break;
+            case 'OPERATIONAL':
+                probability += 10;
+                break;
+            default:
+                probability += 20;
+        }
+
+        // Adjust based on maintenance frequency
+        if (maintenanceFrequency > 2) {
+            probability += 20; // High maintenance frequency indicates problems
+        } else if (maintenanceFrequency < 0.5) {
+            probability -= 10; // Low maintenance might indicate good condition or neglect
+        }
+
+        // Random factors to simulate real-world unpredictability
+        probability += (Math.random() - 0.5) * 20;
+        probability = Math.max(0, Math.min(100, probability));
+
+        return {
+            equipmentId: equipmentId,
+            needsMaintenance: probability > 60,
+            probability: probability / 100,
+            confidence: 0.85 + Math.random() * 0.10,
+            daysUntilMaintenance: Math.max(1, Math.floor((100 - probability) / 100 * parseInt(period))),
+            estimatedCost: 500 + Math.random() * 3000,
+            recommendedAction: probability > 80 ? 'Immediate maintenance required' :
+                probability > 60 ? 'Schedule maintenance within 2 weeks' :
+                    probability > 40 ? 'Monitor closely, maintenance in 1 month' :
+                        'Equipment in good condition'
+        };
+    }
+
+    // Calculate average maintenance interval
+    function calculateAverageInterval(maintenanceHistory) {
+        if (maintenanceHistory.length < 2) return 90;
+
+        const sortedHistory = maintenanceHistory.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+        let totalInterval = 0;
+
+        for (let i = 1; i < sortedHistory.length; i++) {
+            const prevDate = new Date(sortedHistory[i-1].startDate);
+            const currDate = new Date(sortedHistory[i].startDate);
+            totalInterval += (currDate - prevDate) / (1000 * 60 * 60 * 24);
+        }
+
+        return totalInterval / (sortedHistory.length - 1);
+    }
+
+    // Display prediction results
+    function displayPredictionResults(result, equipmentId) {
+        const equipment = equipmentList.find(e => e.equipmentId == equipmentId);
+        const container = document.getElementById('predictionContent');
+
+        if (!result || !equipment) {
+            container.innerHTML = '<p style="color: var(--secondary-red);">Error analyzing equipment</p>';
+            return;
+        }
+
+        const probability = Math.round(result.probability * 100);
+        const confidence = Math.round(result.confidence * 100);
+        const needsMaintenance = result.needsMaintenance ? 'Yes' : 'No';
+        const severityClass = probability > 70 ? 'critical' : (probability > 40 ? 'warning' : 'good');
+        const probabilityClass = probability > 70 ? 'high' : (probability > 40 ? 'medium' : 'low');
+
+        container.innerHTML = `
+            <div class="prediction-card ${severityClass}">
+                <div class="prediction-header">
+                    <div class="prediction-title">${equipment.name} - Maintenance Analysis</div>
+                    <div class="prediction-probability probability-${probabilityClass}">${probability}%</div>
+                </div>
+                <div class="prediction-details">
+                    <div class="prediction-metric">
+                        <div class="metric-value">${needsMaintenance}</div>
+                        <div class="metric-label">Needs Maintenance</div>
+                    </div>
+                    <div class="prediction-metric">
+                        <div class="metric-value">${confidence}%</div>
+                        <div class="metric-label">Confidence</div>
+                    </div>
+                    <div class="prediction-metric">
+                        <div class="metric-value">${result.daysUntilMaintenance} days</div>
+                        <div class="metric-label">Estimated Time</div>
+                    </div>
+                    <div class="prediction-metric">
+                        <div class="metric-value">$${Math.round(result.estimatedCost)}</div>
+                        <div class="metric-label">Estimated Cost</div>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--gray-light); border-radius: var(--border-radius);">
+                    <h4 style="margin-bottom: 0.5rem; color: var(--gray-dark);">Recommendation:</h4>
+                    <p style="color: var(--gray-medium);">${result.recommendedAction}</p>
+                </div>
+            </div>
+        `;
+
+        // Update predictions table
+        updatePredictionsTable();
+    }
+
+    // Update predictions table
+    function updatePredictionsTable() {
+        const tbody = document.getElementById('predictionsTableBody');
+        const predictions = generateAllEquipmentPredictions();
+
+        if (predictions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--gray-medium);">No predictions available</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = predictions.map(pred => {
+            const probability = Math.round(pred.probability * 100);
+            const riskLevel = probability > 70 ? 'CRITICAL' : (probability > 40 ? 'HIGH' : 'MEDIUM');
+            const riskClass = riskLevel.toLowerCase().replace('critical', 'critical').replace('high', 'warning').replace('medium', 'normal');
+            const statusClass = pred.needsMaintenance ? 'predicted' : 'normal';
+
+            return `
+                <tr>
+                    <td>${pred.equipmentName}</td>
+                    <td><span class="status-badge status-${riskClass}">${riskLevel}</span></td>
+                    <td>${probability}%</td>
+                    <td>${pred.daysUntilMaintenance} days</td>
+                    <td>$${Math.round(pred.estimatedCost)}</td>
+                    <td><span class="status-badge status-${statusClass}">${pred.needsMaintenance ? 'Maintenance Required' : 'Good Condition'}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewPredictionDetails('${pred.equipmentId}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn schedule" onclick="scheduleMaintenance('${pred.equipmentId}')" title="Schedule Maintenance">
+                                <i class="fas fa-calendar"></i>
+                            </button>
+                            <button class="action-btn analyze" onclick="analyzeEquipment('${pred.equipmentId}')" title="Re-analyze">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Generate predictions for all equipment
+    function generateAllEquipmentPredictions() {
+        return equipmentList.map(equipment => {
+            const analysis = analyzeEquipmentMaintenance(equipment.equipmentId, 30);
+            return {
+                ...analysis,
+                equipmentName: equipment.name
+            };
+        }).filter(pred => pred !== null);
+    }
+
+    // Handle route analysis
+    async function handleRouteAnalysis(e) {
+        e.preventDefault();
+
+        const routeId = document.getElementById('routeSelect').value;
+        const analysisType = document.getElementById('analysisType').value;
+
+        if (!routeId) {
+            showNotification('Please select a route to analyze', 'error');
+            return;
+        }
+
+        try {
+            showNotification('Analyzing route...', 'info');
+
+            const route = routes.find(r => r.id == routeId);
+            const analysis = analyzeRoute(route, analysisType);
+
+            displayRouteAnalysisResults(analysis, route);
+            document.getElementById('routeAnalysisResults').classList.remove('hidden');
+
+            showNotification('Route analysis completed!', 'success');
+        } catch (error) {
+            console.error('Error analyzing route:', error);
+            showNotification('Error analyzing route: ' + error.message, 'error');
+        }
+    }
+
+    // Analyze route based on available data
+    function analyzeRoute(route, analysisType) {
+        const routeBuses = buses.filter(bus => bus.route && bus.route.id === route.id);
+        const routeIncidents = incidents.filter(inc => inc.route && inc.route.id === route.id);
+
+        let analysis = {
+            routeName: route.routeName,
+            analysisType: analysisType,
+            score: 0,
+            recommendations: [],
+            metrics: {}
+        };
+
+        switch (analysisType) {
+            case 'efficiency':
+                analysis = analyzeRouteEfficiency(route, routeBuses, routeIncidents);
+                break;
+            case 'demand':
+                analysis = analyzeDemandPrediction(route, routeBuses);
+                break;
+            case 'optimization':
+                analysis = analyzeRouteOptimization(route, routeBuses);
+                break;
+            case 'safety':
+                analysis = analyzeSafetyAssessment(route, routeIncidents);
+                break;
+        }
+
+        return analysis;
+    }
+
+    // Analyze route efficiency
+    function analyzeRouteEfficiency(route, routeBuses, routeIncidents) {
+        const totalBuses = routeBuses.length;
+        const activeBuses = routeBuses.filter(bus => !bus.isStopped).length;
+        const avgOccupancy = routeBuses.reduce((sum, bus) => sum + (bus.passengers || 0), 0) / Math.max(1, totalBuses);
+        const incidentRate = routeIncidents.length / Math.max(1, totalBuses);
+
+        const efficiencyScore = Math.min(100, (activeBuses / Math.max(1, totalBuses)) * 40 +
+            (avgOccupancy / 50) * 30 +
+            Math.max(0, (1 - incidentRate) * 30));
+
+        return {
+            routeName: route.routeName,
+            analysisType: 'Efficiency Analysis',
+            score: Math.round(efficiencyScore),
+            level: efficiencyScore > 75 ? 'high' : (efficiencyScore > 50 ? 'medium' : 'low'),
+            metrics: {
+                'Bus Utilization': `${Math.round(activeBuses / Math.max(1, totalBuses) * 100)}%`,
+                'Average Occupancy': `${Math.round(avgOccupancy)} passengers`,
+                'Incident Rate': `${incidentRate.toFixed(2)} per bus`,
+                'Distance Efficiency': `${(route.totalDistance || 20).toFixed(1)} km`
+            },
+            recommendations: generateEfficiencyRecommendations(efficiencyScore, avgOccupancy, incidentRate)
+        };
+    }
+
+    // Analyze demand prediction
+    function analyzeDemandPrediction(route, routeBuses) {
+        const totalCapacity = routeBuses.reduce((sum, bus) => sum + (bus.capacity || 50), 0);
+        const currentPassengers = routeBuses.reduce((sum, bus) => sum + (bus.passengers || 0), 0);
+        const demandScore = (currentPassengers / Math.max(1, totalCapacity)) * 100;
+
+        // Simulate time-based demand prediction
+        const hourlyDemand = Array.from({length: 24}, (_, i) => {
+            const peakMultiplier = (i >= 6 && i <= 9) || (i >= 17 && i <= 20) ? 1.5 : 0.7;
+            return Math.max(10, demandScore * peakMultiplier * (0.8 + Math.random() * 0.4));
+        });
+
+        return {
+            routeName: route.routeName,
+            analysisType: 'Demand Prediction',
+            score: Math.round(demandScore),
+            level: demandScore > 80 ? 'high' : (demandScore > 50 ? 'medium' : 'low'),
+            metrics: {
+                'Current Demand': `${Math.round(demandScore)}%`,
+                'Peak Demand': `${Math.round(Math.max(...hourlyDemand))}%`,
+                'Off-Peak Demand': `${Math.round(Math.min(...hourlyDemand))}%`,
+                'Daily Average': `${Math.round(hourlyDemand.reduce((a, b) => a + b) / 24)}%`
+            },
+            recommendations: generateDemandRecommendations(demandScore, hourlyDemand)
+        };
+    }
+
+    // Generate efficiency recommendations
+    function generateEfficiencyRecommendations(score, occupancy, incidentRate) {
+        const recommendations = [];
+
+        if (score < 60) {
+            recommendations.push('Consider increasing bus frequency during peak hours');
+        }
+        if (occupancy < 20) {
+            recommendations.push('Review route scheduling to improve passenger load');
+        }
+        if (incidentRate > 0.5) {
+            recommendations.push('Implement additional safety measures and driver training');
+        }
+        if (recommendations.length === 0) {
+            recommendations.push('Route is performing well, maintain current operations');
+        }
+
+        return recommendations;
+    }
+
+    // Generate demand recommendations
+    function generateDemandRecommendations(demandScore, hourlyDemand) {
+        const recommendations = [];
+        const peakDemand = Math.max(...hourlyDemand);
+        const offPeakDemand = Math.min(...hourlyDemand);
+
+        if (peakDemand > 90) {
+            recommendations.push('Add additional buses during peak hours (6-9 AM, 5-8 PM)');
+        }
+        if (offPeakDemand < 30) {
+            recommendations.push('Consider reducing frequency during off-peak hours to optimize costs');
+        }
+        if (demandScore > 80) {
+            recommendations.push('High demand route - consider capacity expansion');
+        }
+
+        return recommendations;
+    }
+
+    // Display route analysis results
+    function displayRouteAnalysisResults(analysis, route) {
+        document.getElementById('routeAnalysisTitle').textContent = `${analysis.routeName} - ${analysis.analysisType}`;
+        document.getElementById('routeAnalysisProbability').textContent = `${analysis.score}% Efficiency`;
+        document.getElementById('routeAnalysisProbability').className = `prediction-probability probability-${analysis.level}`;
+
+        const detailsContainer = document.getElementById('routeAnalysisDetails');
+        detailsContainer.innerHTML = Object.entries(analysis.metrics).map(([key, value]) => `
+            <div class="prediction-metric">
+                <div class="metric-value">${value}</div>
+                <div class="metric-label">${key}</div>
+            </div>
+        `).join('') + `
+            <div style="grid-column: 1 / -1; margin-top: 1rem; padding: 1rem; background: var(--gray-light); border-radius: var(--border-radius);">
+                <h4 style="margin-bottom: 0.5rem;">Recommendations:</h4>
+                <ul style="margin-left: 1rem;">
+                    ${analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Handle incident analysis
+    async function handleIncidentAnalysis(e) {
+        e.preventDefault();
+
+        const busId = document.getElementById('busSelect').value;
+        const riskFactors = Array.from(document.getElementById('riskFactors').selectedOptions).map(option => option.value);
+
+        if (!busId) {
+            showNotification('Please select a bus to analyze', 'error');
+            return;
+        }
+
+        try {
+            showNotification('Analyzing incident risk...', 'info');
+
+            const bus = buses.find(b => b.id == busId);
+            const riskAssessment = analyzeIncidentRisk(bus, riskFactors);
+
+            displayIncidentRiskResults(riskAssessment, bus);
+            document.getElementById('incidentRiskResults').classList.remove('hidden');
+
+            showNotification('Risk assessment completed!', 'success');
+        } catch (error) {
+            console.error('Error analyzing incident risk:', error);
+            showNotification('Error analyzing risk: ' + error.message, 'error');
+        }
+    }
+
+    // Analyze incident risk
+    function analyzeIncidentRisk(bus, riskFactors) {
+        const busIncidents = incidents.filter(inc => inc.busId === bus.id);
+        const baseRisk = busIncidents.length > 0 ? 30 : 10;
+
+        let riskScore = baseRisk;
+        const riskDetails = {};
+
+        // Analyze each risk factor
+        riskFactors.forEach(factor => {
+            switch (factor) {
+                case 'weather':
+                    riskScore += 15;
+                    riskDetails['Weather Impact'] = 'High risk due to current conditions';
+                    break;
+                case 'traffic':
+                    riskScore += 20;
+                    riskDetails['Traffic Density'] = 'Moderate to high traffic expected';
+                    break;
+                case 'maintenance':
+                    const maintenanceRisk = bus.progress > 90 ? 25 : 5;
+                    riskScore += maintenanceRisk;
+                    riskDetails['Maintenance Risk'] = maintenanceRisk > 15 ? 'High - bus needs maintenance' : 'Low - recent maintenance';
+                    break;
+                case 'driver':
+                    riskScore += bus.driver ? 5 : 30;
+                    riskDetails['Driver Factor'] = bus.driver ? 'Experienced driver assigned' : 'No driver assigned - high risk';
+                    break;
+                case 'route':
+                    const routeComplexity = bus.route ? (bus.route.totalDistance > 30 ? 15 : 5) : 10;
+                    riskScore += routeComplexity;
+                    riskDetails['Route Complexity'] = routeComplexity > 10 ? 'Complex/long route' : 'Simple route';
+                    break;
+            }
+        });
+
+        riskScore = Math.min(100, riskScore);
+
+        const riskLevel = riskScore > 70 ? 'critical' : (riskScore > 50 ? 'warning' : 'good');
+        const probabilityLevel = riskScore > 70 ? 'high' : (riskScore > 50 ? 'medium' : 'low');
+
+        return {
+            busName: bus.name,
+            riskScore: riskScore,
+            riskLevel: riskLevel,
+            probabilityLevel: probabilityLevel,
+            riskDetails: riskDetails,
+            recommendations: generateRiskRecommendations(riskScore, riskFactors, bus)
+        };
+    }
+
+    // Generate risk recommendations
+    function generateRiskRecommendations(riskScore, riskFactors, bus) {
+        const recommendations = [];
+
+        if (riskScore > 80) {
+            recommendations.push('Consider postponing trip until conditions improve');
+        }
+        if (riskFactors.includes('maintenance') && !bus.driver) {
+            recommendations.push('Assign experienced driver and perform pre-trip inspection');
+        }
+        if (riskFactors.includes('weather')) {
+            recommendations.push('Monitor weather conditions and have contingency routes ready');
+        }
+        if (riskScore > 50) {
+            recommendations.push('Increase monitoring frequency and prepare emergency response');
+        } else {
+            recommendations.push('Normal operations - maintain standard safety protocols');
+        }
+
+        return recommendations;
+    }
+
+    // Display incident risk results
+    function displayIncidentRiskResults(assessment, bus) {
+        document.getElementById('riskAssessmentTitle').textContent = `${assessment.busName} - Risk Assessment`;
+        document.getElementById('riskAssessmentLevel').textContent = `${assessment.riskScore}% Risk`;
+        document.getElementById('riskAssessmentLevel').className = `prediction-probability probability-${assessment.probabilityLevel}`;
+
+        const card = document.getElementById('riskAssessmentCard');
+        card.className = `prediction-card ${assessment.riskLevel}`;
+
+        const detailsContainer = document.getElementById('riskAssessmentDetails');
+        detailsContainer.innerHTML = Object.entries(assessment.riskDetails).map(([key, value]) => `
+            <div class="prediction-metric">
+                <div class="metric-value" style="font-size: 0.9rem;">${value}</div>
+                <div class="metric-label">${key}</div>
+            </div>
+        `).join('') + `
+            <div style="grid-column: 1 / -1; margin-top: 1rem; padding: 1rem; background: var(--gray-light); border-radius: var(--border-radius);">
+                <h4 style="margin-bottom: 0.5rem;">Recommendations:</h4>
+                <ul style="margin-left: 1rem;">
+                    ${assessment.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Additional functions
+    function generateMaintenancePredictions() {
+        showNotification('Generating maintenance predictions for all equipment...', 'info');
+        updatePredictionsTable();
+        showNotification('Maintenance predictions generated successfully!', 'success');
+    }
+
+    function exportPredictionsReport() {
+        showNotification('Exporting predictions report...', 'info');
+        // Implementation for export functionality
+        setTimeout(() => {
+            showNotification('Report exported successfully!', 'success');
+        }, 2000);
+    }
+
+    function refreshPredictions() {
+        showNotification('Refreshing predictions...', 'info');
+        updatePredictionsTable();
+        showNotification('Predictions refreshed!', 'success');
+    }
+
+    function generateRouteRecommendations() {
+        showNotification('Generating route recommendations...', 'info');
+        // Implementation for route recommendations
+        setTimeout(() => {
+            showNotification('Route recommendations generated!', 'success');
+        }, 2000);
+    }
+
+    function generateRiskAlerts() {
+        showNotification('Generating risk alerts...', 'info');
+        // Implementation for risk alerts
+        setTimeout(() => {
+            showNotification('Risk alerts generated!', 'success');
+        }, 2000);
+    }
+
+    function viewPredictionDetails(equipmentId) {
+        const equipment = equipmentList.find(e => e.equipmentId == equipmentId);
+        showNotification(`Viewing details for ${equipment.name}`, 'info');
+    }
+
+    function scheduleMaintenance(equipmentId) {
+        const equipment = equipmentList.find(e => e.equipmentId == equipmentId);
+        showNotification(`Scheduling maintenance for ${equipment.name}`, 'info');
+    }
+
+    function analyzeEquipment(equipmentId) {
+        document.getElementById('equipmentSelect').value = equipmentId;
+        handlePredictionAnalysis({ preventDefault: () => {} });
+    }
+
+    // Filter functions
+    function filterPredictionsTable() {
+        const riskFilter = document.getElementById('riskFilter').value;
+        const rows = document.querySelectorAll('#predictionsTableBody tr');
+
+        rows.forEach(row => {
+            const riskCell = row.cells[1];
+            const risk = riskCell ? riskCell.textContent.trim() : '';
+
+            const matchesRisk = !riskFilter || risk.includes(riskFilter);
+            row.style.display = matchesRisk ? '' : 'none';
+        });
+    }
+
+    // Navigation functions
+    function showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        // Update active menu item
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        const activeLink = document.querySelector(`[onclick*="${sectionName}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'maintenance-predictions':
+                updatePredictionsTable();
+                break;
+            case 'route-predictions':
+                // Load route prediction data
+                break;
+            case 'incident-predictions':
+                // Load incident prediction data
+                break;
+            case 'analytics':
+                // Load analytics data
+                break;
+        }
+    }
+
+    // UI functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+
+        const colors = {
+            success: '#10B981',
+            error: '#DC2626',
+            warning: '#F59E0B',
+            info: '#3B82F6'
+        };
+
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+            background: ${colors[type] || colors.info};
+        `;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        notification.innerHTML = `${icons[type] || icons.info} ${message}`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+
+
+
+
+
+</script>
+
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

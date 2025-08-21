@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* Main content styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333; /* Added for light mode */
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        /* Chart container */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-feed {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .activity-feed {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dark-mode .activity-item {
+            border-bottom: 1px solid #555;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .activity-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .activity-time {
+            color: #666;
+        }
+
+        .dark-mode .activity-time {
+            color: #ccc;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container, .activity-feed {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Staff Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="Staffanalyse.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudMaintenancePlan.html">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="InventoryReport.html">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="menu-text">Inventory Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="Planning.html" class="active">
+                <i class="bi bi-calendar-event"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudEquipment.html">
+                <i class="bi bi-cpu"></i>
+                <span class="menu-text">Equipment</span>
+            </a>
+        </li>
+        <li>
+            <a href="TaskManager.html">
+                <i class="bi bi-list-task"></i>
+                <span class="menu-text">Task</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudStaff.html">
+                <i class="bi bi-people"></i>
+                <span class="menu-text">Staff</span>
+            </a>
+        </li>
+        <li>
+            <a href="Technician.html">
+                <i class="bi bi-person-gear"></i>
+                <span class="menu-text">Technician</span>
+            </a>
+        </li>
+        <li>
+            <a href="EquipmentStatistics.html">
+                <i class="bi bi-pie-chart"></i>
+                <span class="menu-text">Equipment Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="DowntimeEvent.html">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="WhatsApp.html">
+                <i class="bi bi-whatsapp"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="TechnicianStatistics.html">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="menu-text">Technician Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudInventory.html">
+                <i class="bi bi-boxes"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudSparePart.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Spare Part Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="MaintenancePDFReport.html">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Reporting</span>
+            </a>
+        </li>
+        <li>
+            <a href="login.html">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="menu-text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+
+
+
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container-fluid">
+        <!-- Statistics Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">My Performance Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Task Completion Rate -->
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card bg-primary bg-opacity-10 border-primary">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="text-primary mb-0">Completion Rate</h6>
+                                                <h2 class="mb-0" id="completionRate">0%</h2>
+                                                <small class="text-muted">Last 30 days</small>
+                                            </div>
+                                            <div class="bg-primary rounded p-3">
+                                                <i class="bi bi-check-circle-fill fs-2 text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="progress mt-3" style="height: 6px;">
+                                            <div class="progress-bar bg-primary" id="completionRateBar" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Average Completion Time -->
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card bg-success bg-opacity-10 border-success">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="text-success mb-0">Avg. Time</h6>
+                                                <h2 class="mb-0" id="avgCompletionTime">0h</h2>
+                                                <small class="text-muted">Per task</small>
+                                            </div>
+                                            <div class="bg-success rounded p-3">
+                                                <i class="bi bi-clock-fill fs-2 text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <small class="text-muted">Target: <span id="targetTime">4h</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tasks Completed -->
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card bg-info bg-opacity-10 border-info">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="text-info mb-0">Tasks Completed</h6>
+                                                <h2 class="mb-0" id="tasksCompleted">0</h2>
+                                                <small class="text-muted">This month</small>
+                                            </div>
+                                            <div class="bg-info rounded p-3">
+                                                <i class="bi bi-list-check fs-2 text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <small class="text-muted"><span id="tasksTrend">0%</span> vs last month</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Efficiency Score -->
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="card bg-warning bg-opacity-10 border-warning">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="text-warning mb-0">Efficiency Score</h6>
+                                                <h2 class="mb-0" id="efficiencyScore">0</h2>
+                                                <small class="text-muted">Quality & Speed</small>
+                                            </div>
+                                            <div class="bg-warning rounded p-3">
+                                                <i class="bi bi-speedometer2 fs-2 text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="progress mt-3" style="height: 6px;">
+                                            <div class="progress-bar bg-warning" id="efficiencyScoreBar" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Row -->
+                        <div class="row mt-3">
+                            <!-- Monthly Completion Chart -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">Monthly Completion Trend</h6>
+                                        <select class="form-select form-select-sm w-auto" id="timeRangeSelect">
+                                            <option value="30">Last 30 Days</option>
+                                            <option value="90">Last 90 Days</option>
+                                            <option value="365">Last Year</option>
+                                        </select>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="completionChart" height="250"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Task Distribution -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Task Distribution</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="taskDistributionChart" height="250"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Assignment Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">My Tasks</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" id="refreshTasksBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="tasksTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned-tasks" type="button" role="tab">
+                                    Assigned Tasks <span class="badge bg-primary ms-2" id="assignedTasksCount">0</span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tasks" type="button" role="tab">
+                                    Completed Tasks <span class="badge bg-success ms-2" id="completedTasksCount">0</span>
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="tasksTabContent">
+                            <!-- Assigned Tasks Tab -->
+                            <div class="tab-pane fade show active" id="assigned-tasks" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Task ID</th>
+                                            <th>Description</th>
+                                            <th>Status</th>
+                                            <th>Progress</th>
+                                            <th>Due Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="assignedTasksTable">
+                                        <!-- Assigned tasks will be loaded here -->
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2">Loading assigned tasks...</p>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Completed Tasks Tab -->
+                            <div class="tab-pane fade" id="completed-tasks" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>Task ID</th>
+                                            <th>Description</th>
+                                            <th>Completed</th>
+                                            <th>Duration</th>
+                                            <th>Status</th>
+                                            <th>Details</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="completedTasksTable">
+                                        <!-- Completed tasks will be loaded here -->
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2">Loading completed tasks...</p>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Task ID:</label>
+                            <p class="form-control-static" id="detailTaskId"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description:</label>
+                            <p class="form-control-static" id="detailTaskDescription"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Equipment:</label>
+                            <p class="form-control-static" id="detailTaskEquipment"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="form-control-static" id="detailTaskPriority"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="form-control-static" id="detailTaskStatus"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Due Date:</label>
+                            <p class="form-control-static" id="detailTaskDueDate"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Progress:</label>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" id="detailTaskProgressBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted" id="detailTaskProgressText">0%</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Additional Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Required Skills:</label>
+                                    <p class="form-control-static" id="detailTaskSkills"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Required Parts:</label>
+                                    <p class="form-control-static" id="detailTaskParts"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Created:</label>
+                            <p class="form-control-static" id="detailTaskCreated"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Last Updated:</label>
+                            <p class="form-control-static" id="detailTaskUpdated"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3" id="technicianActionsSection">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Task Actions</h6>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-success" id="acceptTaskBtn">
+                                <i class="bi bi-check-circle me-2"></i> Accept Task
+                            </button>
+                            <button class="btn btn-danger" id="rejectTaskBtn">
+                                <i class="bi bi-x-circle me-2"></i> Reject Task
+                            </button>
+                            <button class="btn btn-primary" id="updateProgressBtn">
+                                <i class="bi bi-arrow-up-circle me-2"></i> Update Progress
+                            </button>
+                            <button class="btn btn-warning" id="completeTaskBtn">
+                                <i class="bi bi-flag-fill me-2"></i> Mark as Completed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal fade" id="updateProgressModal" tabindex="-1" aria-labelledby="updateProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateProgressModalLabel">Update Task Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="progressForm">
+                    <input type="hidden" id="progressTaskId">
+                    <div class="mb-3">
+                        <label for="progressPercentage" class="form-label">Progress Percentage *</label>
+                        <input type="range" class="form-range" min="0" max="100" step="5" id="progressPercentage">
+                        <div class="d-flex justify-content-between">
+                            <span>0%</span>
+                            <span id="progressPercentageValue">50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="progressNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="progressNotes" rows="3" placeholder="Add any notes about the progress..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProgressBtn">Save Progress</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <small>Just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Action completed successfully.
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+
+
+
+
+
+
+
+<script>
+    // Main Technician Dashboard Class
+  class TechnicianDashboard {
+      constructor() {
+          try {
+              // Check required dependencies
+              if (typeof UserSessionHandler === 'undefined') {
+                  throw new Error('UserSessionHandler not available');
+              }
+              if (typeof bootstrap === 'undefined') {
+                  throw new Error('Bootstrap not available');
+              }
+              if (typeof Chart === 'undefined') {
+                  throw new Error('Chart.js not available');
+              }
+
+              // Initialize session handler
+              this.sessionHandler = UserSessionHandler.getInstance();
+              this.currentUser = this.getValidatedUser();
+
+              // Initialize properties
+              this.assignedTasks = [];
+              this.completedTasks = [];
+              this.currentTask = null;
+              this.autoRefreshInterval = null;
+              this.idleTimer = null;
+              this.performanceStats = null;
+              this.charts = {
+                  completionChart: null,
+                  taskDistributionChart: null
+              };
+
+              // Initialize interface
+              this.initializeModals();
+              this.init();
+          } catch (error) {
+              console.error('Initialization error:', error);
+              this.showFriendlyError('Initialization Error', 'Please refresh the page');
+              setTimeout(() => {
+                  window.location.href = '/login.html';
+              }, 3000);
+          }
+      }
+
+      getValidatedUser() {
+          const user = this.sessionHandler.getCurrentUser();
+
+          if (!user) {
+              console.error('No logged in user');
+              window.location.href = '/login.html';
+              return null;
+          }
+
+          const userRole = (user.role || '').toUpperCase();
+          if (userRole !== 'TECHNICIAN') {
+              console.error(`Unauthorized role: ${userRole}`);
+              window.location.href = '/unauthorized.html';
+              return null;
+          }
+
+          let technicianId = user.staffId || user.id || user.technicianId || user.userId;
+          if (!technicianId) {
+              console.warn('No technician ID found, creating fallback');
+              technicianId = user.email ? user.email.split('@')[0] : `tech_${Date.now()}`;
+          }
+
+          user.staffId = technicianId;
+          user.id = technicianId;
+          user.technicianId = technicianId;
+
+          console.log('Technician validated with ID:', technicianId);
+          return user;
+      }
+
+      initializeModals() {
+          try {
+              this.taskDetailsModal = new bootstrap.Modal(
+                  document.getElementById('taskDetailsModal')
+              );
+              this.updateProgressModal = new bootstrap.Modal(
+                  document.getElementById('updateProgressModal')
+              );
+              this.toast = new bootstrap.Toast(
+                  document.getElementById('notificationToast')
+              );
+          } catch (error) {
+              console.error('Modal initialization error:', error);
+              this.showFriendlyError('Interface Error', 'Some features may be limited');
+          }
+      }
+
+      init() {
+          if (!this.currentUser) return;
+
+          this.updateUserInfo();
+          this.setupEventListeners();
+          this.loadTechnicianTasks();
+          this.loadTechnicianStats();
+          this.setupAutoRefresh();
+          this.setupIdleTimer();
+      }
+
+      updateUserInfo() {
+          try {
+              document.querySelectorAll('.user-name, .technician-name').forEach(el => {
+                  const fullName = this.currentUser.fullName ||
+                                  (this.currentUser.firstName && this.currentUser.lastName ?
+                                   `${this.currentUser.firstName} ${this.currentUser.lastName}` :
+                                   'Technician');
+                  el.textContent = fullName;
+              });
+
+              document.querySelectorAll('.user-email').forEach(el => {
+                  el.textContent = this.currentUser.email || '';
+              });
+
+              const photoData = this.currentUser.photo || this.currentUser.photoBase64;
+              if (photoData) {
+                  document.querySelectorAll('.user-avatar, .profile-image').forEach(img => {
+                      img.src = photoData.startsWith('data:image') ? photoData : `data:image/jpeg;base64,${photoData}`;
+                      img.onerror = () => {
+                          img.src = '/assets/images/fallback-avatar.png';
+                      };
+                  });
+              } else {
+                  document.querySelectorAll('.user-avatar, .profile-image').forEach(img => {
+                      img.src = '/assets/images/fallback-avatar.png';
+                      img.onerror = () => {
+                          img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#ccc"/><path d="M20 22c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6zm0 2c5.5 0 10 4.5 10 10H10c0-5.5 4.5-10 10-10z" fill="#666"/></svg>';
+                      };
+                  });
+              }
+          } catch (error) {
+              console.error('User info update error:', error);
+          }
+      }
+
+      setupEventListeners() {
+          const refreshBtn = document.getElementById('refreshTasksBtn');
+          if (refreshBtn) {
+              refreshBtn.addEventListener('click', () => this.refreshTechnicianData());
+          }
+
+          const buttons = [
+              { id: 'acceptTaskBtn', handler: () => this.acceptTask() },
+              { id: 'rejectTaskBtn', handler: () => this.rejectTask() },
+              { id: 'updateProgressBtn', handler: () => this.showUpdateProgressModal() },
+              { id: 'completeTaskBtn', handler: () => this.completeTask() },
+              { id: 'saveProgressBtn', handler: () => this.saveTaskProgress() }
+          ];
+
+          buttons.forEach(({ id, handler }) => {
+              const element = document.getElementById(id);
+              if (element) {
+                  element.addEventListener('click', handler);
+              }
+          });
+
+          const progressInput = document.getElementById('progressPercentage');
+          if (progressInput) {
+              progressInput.addEventListener('input', () => {
+                  const value = progressInput.value;
+                  const display = document.getElementById('progressPercentageValue');
+                  if (display) {
+                      display.textContent = `${value}%`;
+                  }
+              });
+          }
+
+          const timeRangeSelect = document.getElementById('timeRangeSelect');
+          if (timeRangeSelect) {
+              timeRangeSelect.addEventListener('change', () => {
+                  this.loadTechnicianStats();
+              });
+          }
+
+          document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+              tab.addEventListener('shown.bs.tab', (event) => {
+                  if (event.target.id === 'assigned-tab') {
+                      this.renderAssignedTasksTable();
+                  } else if (event.target.id === 'completed-tab') {
+                      this.renderCompletedTasksTable();
+                  }
+              });
+          });
+
+          const logoutBtn = document.getElementById('logoutBtn');
+          if (logoutBtn) {
+              logoutBtn.addEventListener('click', () => {
+                  this.sessionHandler.logout();
+              });
+          }
+      }
+
+      async loadTechnicianTasks() {
+          this.showLoadingState();
+
+          try {
+              const technicianId = this.currentUser.id || this.currentUser.staffId || this.currentUser.technicianId;
+
+              if (!technicianId) {
+                  throw new Error('No technician ID available');
+              }
+
+              console.log('Loading tasks for technician ID:', technicianId);
+
+              const response = await fetch(`/api/tasks/by-technician/${technicianId}`, {
+                  method: 'GET',
+                  headers: {
+                      'Authorization': `Bearer ${this.sessionHandler.getAuthToken()}`,
+                      'Content-Type': 'application/json'
+                  }
+              });
+
+              if (!response.ok) {
+                  if (response.status === 404) {
+                      this.assignedTasks = [];
+                      this.completedTasks = [];
+                      this.renderTables();
+                      this.showToast('Info', 'No tasks assigned to you yet', 'info');
+                      return;
+                  }
+                  const errorText = await response.text();
+                  throw new Error(`Loading failed: ${response.status} - ${errorText}`);
+              }
+
+              const tasks = await response.json();
+              this.processTasks(tasks);
+          } catch (error) {
+              console.error('Task loading error:', error);
+              this.handleTaskLoadError(error);
+          }
+      }
+
+      async loadTechnicianStats() {
+          try {
+              const technicianId = this.currentUser.id || this.currentUser.staffId || this.currentUser.technicianId;
+              const timeRange = document.getElementById('timeRangeSelect')?.value || '30';
+
+              console.log('Loading stats for technician:', technicianId, 'time range:', timeRange);
+
+              const response = await fetch(`/api/tasks/by-technician/${technicianId}/stats?days=${timeRange}`, {
+                  method: 'GET',
+                  headers: {
+                      'Authorization': `Bearer ${this.sessionHandler.getAuthToken()}`,
+                      'Content-Type': 'application/json'
+                  }
+              });
+
+              if (!response.ok) {
+                  const error = await response.json().catch(() => ({}));
+                  throw new Error(error.message || 'Failed to load statistics');
+              }
+
+              const stats = await response.json();
+              this.performanceStats = stats;
+              this.updatePerformanceStats(stats);
+              this.renderCharts(stats);
+          } catch (error) {
+              console.error('Error loading technician stats:', error);
+              this.showToast('Error', 'Failed to load performance statistics', 'danger');
+          }
+      }
+
+      updatePerformanceStats(stats) {
+          try {
+              document.getElementById('tasksCompleted').textContent = stats.completedTasks || 0;
+              document.getElementById('assignedTasks').textContent = stats.assignedTasks || 0;
+              document.getElementById('inProgressTasks').textContent = stats.inProgressTasks || 0;
+              document.getElementById('onHoldTasks').textContent = stats.onHoldTasks || 0;
+              document.getElementById('totalTasks').textContent = stats.totalTasks || 0;
+          } catch (error) {
+              console.error('Error updating stats display:', error);
+          }
+      }
+
+      renderCharts(stats) {
+          try {
+              if (this.charts.completionChart) {
+                  this.charts.completionChart.destroy();
+              }
+              if (this.charts.taskDistributionChart) {
+                  this.charts.taskDistributionChart.destroy();
+              }
+
+              const completionCtx = document.getElementById('completionChart')?.getContext('2d');
+              if (completionCtx) {
+                  this.charts.completionChart = new Chart(completionCtx, {
+                      type: 'line',
+                      data: {
+                          labels: ['Assigned', 'In Progress', 'Completed', 'On Hold'],
+                          datasets: [{
+                              label: 'Task Status',
+                              data: [
+                                  stats.assignedTasks || 0,
+                                  stats.inProgressTasks || 0,
+                                  stats.completedTasks || 0,
+                                  stats.onHoldTasks || 0
+                              ],
+                              borderColor: '#4e73df',
+                              backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                              fill: true,
+                              tension: 0.3
+                          }]
+                      },
+                      options: {
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: { display: false },
+                              tooltip: {
+                                  backgroundColor: 'rgb(255,255,255)',
+                                  bodyColor: '#858796',
+                                  titleColor: '#6e707e',
+                                  borderColor: '#dddfeb',
+                                  borderWidth: 1,
+                                  padding: 15,
+                                  displayColors: false,
+                                  mode: 'index'
+                              }
+                          },
+                          scales: {
+                              x: { grid: { display: false } },
+                              y: {
+                                  ticks: { min: 0, maxTicksLimit: 5 },
+                                  grid: { color: 'rgb(234, 236, 244)' }
+                              }
+                          }
+                      }
+                  });
+              }
+
+              const distributionCtx = document.getElementById('taskDistributionChart')?.getContext('2d');
+              if (distributionCtx) {
+                  this.charts.taskDistributionChart = new Chart(distributionCtx, {
+                      type: 'doughnut',
+                      data: {
+                          labels: ['Assigned', 'In Progress', 'Completed', 'On Hold'],
+                          datasets: [{
+                              data: [
+                                  stats.assignedTasks || 0,
+                                  stats.inProgressTasks || 0,
+                                  stats.completedTasks || 0,
+                                  stats.onHoldTasks || 0
+                              ],
+                              backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'],
+                              hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#dda20a'],
+                              hoverBorderColor: 'rgba(234, 236, 244, 1)'
+                          }]
+                      },
+                      options: {
+                          maintainAspectRatio: false,
+                          plugins: {
+                              legend: { position: 'right' },
+                              tooltip: {
+                                  backgroundColor: 'rgb(255,255,255)',
+                                  bodyColor: '#858796',
+                                  borderColor: '#dddfeb',
+                                  borderWidth: 1,
+                                  padding: 15,
+                                  displayColors: false,
+                                  callbacks: {
+                                      label: function(context) {
+                                          const label = context.label || '';
+                                          const value = context.raw || 0;
+                                          const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                          const percentage = total ? Math.round((value / total) * 100) : 0;
+                                          return `${label}: ${value} (${percentage}%)`;
+                                      }
+                                  }
+                              }
+                          },
+                          cutout: '70%'
+                      }
+                  });
+              }
+          } catch (error) {
+              console.error('Error rendering charts:', error);
+          }
+      }
+
+      processTasks(tasks) {
+          try {
+              if (!Array.isArray(tasks)) {
+                  console.warn('Tasks is not an array:', tasks);
+                  this.assignedTasks = [];
+                  this.completedTasks = [];
+                  this.renderTables();
+                  return;
+              }
+
+              this.assignedTasks = tasks.filter(task => {
+                  const status = (task.status || '').toUpperCase();
+                  return ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD'].includes(status);
+              });
+
+              this.completedTasks = tasks.filter(task => {
+                  const status = (task.status || '').toUpperCase();
+                  return status === 'COMPLETED';
+              });
+
+              this.renderTables();
+
+              if (tasks.length === 0) {
+                  this.showToast('Info', 'No tasks have been assigned to you yet', 'info');
+              }
+          } catch (error) {
+              console.error('Task processing error:', error);
+              this.assignedTasks = [];
+              this.completedTasks = [];
+              this.renderTables();
+              this.showToast('Error', 'Error processing tasks', 'danger');
+          }
+      }
+
+      handleTaskLoadError(error) {
+          this.assignedTasks = [];
+          this.completedTasks = [];
+          this.renderTables();
+
+          let errorMessage = 'Loading failed. Please try again.';
+
+          if (error.message.includes('Failed to fetch')) {
+              errorMessage = 'Network error. Check your connection and try again.';
+          } else if (error.message.includes('404')) {
+              errorMessage = 'No tasks found. Tasks assigned to you will appear here.';
+          } else if (error.message.includes('403') || error.message.includes('401')) {
+              errorMessage = 'Authentication error. Please log in again.';
+              setTimeout(() => {
+                  this.sessionHandler.logout();
+              }, 2000);
+          } else if (error.message.includes('not a technician')) {
+              errorMessage = 'Access denied. Only technicians can view this page.';
+              setTimeout(() => {
+                  window.location.href = '/unauthorized.html';
+              }, 2000);
+          }
+
+          this.showToast('Error', errorMessage, 'danger');
+      }
+
+      async refreshTechnicianData() {
+          try {
+              const refreshBtn = document.getElementById('refreshTasksBtn');
+              if (refreshBtn) {
+                  refreshBtn.disabled = true;
+                  refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise spinner-border spinner-border-sm me-1"></i> Refreshing...';
+              }
+
+              await Promise.all([
+                  this.loadTechnicianTasks(),
+                  this.loadTechnicianStats()
+              ]);
+
+              this.showToast('Success', 'Data refreshed successfully', 'success');
+          } catch (error) {
+              console.error('Refresh error:', error);
+              this.showToast('Error', 'Failed to refresh data', 'danger');
+          } finally {
+              const refreshBtn = document.getElementById('refreshTasksBtn');
+              if (refreshBtn) {
+                  refreshBtn.disabled = false;
+                  refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i> Refresh';
+              }
+          }
+      }
+
+      showLoadingState() {
+          const loadingHTML = `
+              <tr>
+                  <td colspan="6" class="text-center py-4">
+                      <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                      </div>
+                      <p class="mt-2 mb-0">Loading tasks...</p>
+                  </td>
+              </tr>`;
+
+          const assignedTable = document.getElementById('assignedTasksTable');
+          const completedTable = document.getElementById('completedTasksTable');
+
+          if (assignedTable) assignedTable.innerHTML = loadingHTML;
+          if (completedTable) completedTable.innerHTML = loadingHTML;
+      }
+
+      renderTables() {
+          this.renderAssignedTasksTable();
+          this.renderCompletedTasksTable();
+          this.updateTaskCounters();
+      }
+
+      updateTaskCounters() {
+          const assignedCount = document.getElementById('assignedTasksCount');
+          const completedCount = document.getElementById('completedTasksCount');
+
+          if (assignedCount) assignedCount.textContent = this.assignedTasks.length;
+          if (completedCount) completedCount.textContent = this.completedTasks.length;
+      }
+
+      renderAssignedTasksTable() {
+          const tbody = document.getElementById('assignedTasksTable');
+          if (!tbody) return;
+
+          if (this.assignedTasks.length === 0) {
+              tbody.innerHTML = `
+                  <tr>
+                      <td colspan="6" class="text-center py-4 text-muted">
+                          <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                          No assigned tasks
+                          <br><small>Tasks assigned to you will appear here</small>
+                      </td>
+                  </tr>`;
+              return;
+          }
+
+          tbody.innerHTML = this.assignedTasks.map(task => {
+              const completionPercentage = task.completionPercentage || 0;
+              return `
+                  <tr>
+                      <td class="fw-medium">${this.escapeHtml(task.taskId || task.id || 'N/A')}</td>
+                      <td>
+                          <div class="task-description" title="${this.escapeHtml(task.description || '')}">
+                              ${this.escapeHtml(this.truncateText(task.description || 'No description', 50))}
+                          </div>
+                      </td>
+                      <td>
+                          <span class="badge ${this.getStatusBadgeClass(task.status)}">
+                              ${this.escapeHtml(task.status || 'Unknown')}
+                          </span>
+                      </td>
+                      <td>
+                          <div class="progress mb-1" style="height: 8px;">
+                              <div class="progress-bar ${this.getProgressBarClass(completionPercentage)}"
+                                   role="progressbar"
+                                   style="width: ${completionPercentage}%"
+                                   aria-valuenow="${completionPercentage}"
+                                   aria-valuemin="0"
+                                   aria-valuemax="100">
+                              </div>
+                          </div>
+                          <small class="text-muted">${completionPercentage}%</small>
+                      </td>
+                      <td>
+                          <small class="text-muted">
+                              ${this.formatDate(task.dueDate)}
+                          </small>
+                      </td>
+                      <td>
+                          <button class="btn btn-sm btn-outline-primary view-task-btn"
+                                  data-task-id="${this.escapeHtml(task.taskId || task.id)}"
+                                  title="View details">
+                              <i class="bi bi-eye"></i> View
+                          </button>
+                      </td>
+                  </tr>`;
+          }).join('');
+
+          this.attachViewButtonListeners();
+      }
+
+      renderCompletedTasksTable() {
+          const tbody = document.getElementById('completedTasksTable');
+          if (!tbody) return;
+
+          if (this.completedTasks.length === 0) {
+              tbody.innerHTML = `
+                  <tr>
+                      <td colspan="6" class="text-center py-4 text-muted">
+                          <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
+                          No completed tasks
+                          <br><small>Tasks you complete will appear here</small>
+                      </td>
+                  </tr>`;
+              return;
+          }
+
+          tbody.innerHTML = this.completedTasks.map(task => {
+              const estimatedHours = task.estimatedDurationMinutes
+                  ? (task.estimatedDurationMinutes / 60).toFixed(1)
+                  : 'N/A';
+              return `
+                  <tr>
+                      <td class="fw-medium">${this.escapeHtml(task.taskId || task.id || 'N/A')}</td>
+                      <td>
+                          <div class="task-description" title="${this.escapeHtml(task.description || '')}">
+                              ${this.escapeHtml(this.truncateText(task.description || 'No description', 50))}
+                          </div>
+                      </td>
+                      <td>
+                          <small class="text-muted">
+                              ${this.formatDate(task.completionDate)}
+                          </small>
+                      </td>
+                      <td>${estimatedHours} hours</td>
+                      <td>
+                          <span class="badge bg-success">
+                              <i class="bi bi-check-circle me-1"></i>Completed
+                          </span>
+                      </td>
+                      <td>
+                          <button class="btn btn-sm btn-outline-primary view-task-btn"
+                                  data-task-id="${this.escapeHtml(task.taskId || task.id)}"
+                                  title="View details">
+                              <i class="bi bi-eye"></i> Details
+                          </button>
+                      </td>
+                  </tr>`;
+          }).join('');
+
+          this.attachViewButtonListeners();
+      }
+
+      attachViewButtonListeners() {
+          document.querySelectorAll('.view-task-btn').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                  e.preventDefault();
+                  const taskId = btn.getAttribute('data-task-id');
+                  if (taskId) {
+                      this.showTaskDetails(taskId);
+                  }
+              });
+          });
+      }
+
+      showTaskDetails(taskId) {
+          const task = this.assignedTasks.find(t => (t.taskId || t.id) === taskId) ||
+                       this.completedTasks.find(t => (t.taskId || t.id) === taskId);
+
+          if (!task) {
+              this.showToast('Error', 'Task not found', 'danger');
+              return;
+          }
+
+          this.currentTask = task;
+          this.populateTaskDetailsModal(task);
+          if (this.taskDetailsModal) {
+              this.taskDetailsModal.show();
+          }
+      }
+
+      populateTaskDetailsModal(task) {
+          this.setElementText('detailTaskId', task.taskId || task.id || 'N/A');
+          this.setElementText('detailTaskDescription', task.description || 'No description');
+          this.setElementText('detailTaskEquipment', this.getEquipmentName(task.relatedEquipment || task.equipmentId));
+          this.setElementText('detailTaskPriority', task.priority || 'Normal');
+          this.setElementText('detailTaskStatus', task.status || 'Unknown');
+          this.setElementText('detailTaskDueDate', this.formatDate(task.dueDate));
+          this.setElementText('detailTaskCreated', this.formatDate(task.creationDate));
+          this.setElementText('detailTaskUpdated', this.formatDate(task.lastUpdated));
+
+          const progressPercentage = task.completionPercentage || 0;
+          const progressBar = document.getElementById('detailTaskProgressBar');
+          const progressText = document.getElementById('detailTaskProgressText');
+
+          if (progressBar) {
+              progressBar.style.width = `${progressPercentage}%`;
+              progressBar.className = `progress-bar ${this.getProgressBarClass(progressPercentage)}`;
+              progressBar.setAttribute('aria-valuenow', progressPercentage);
+          }
+
+          if (progressText) {
+              progressText.textContent = `${progressPercentage}%`;
+          }
+
+          this.setElementText('detailTaskSkills',
+              Array.isArray(task.requiredSkills) ? task.requiredSkills.join(', ') : 'None');
+          this.setElementText('detailTaskParts',
+              Array.isArray(task.requiredParts) ? task.requiredParts.join(', ') : 'None');
+          this.setElementText('detailTaskNotes', task.technicianNotes || 'No notes');
+
+          this.updateModalButtons(task.status);
+      }
+
+      setElementText(elementId, text) {
+          const element = document.getElementById(elementId);
+          if (element) {
+              element.textContent = text;
+          }
+      }
+
+      updateModalButtons(status) {
+          const statusUpper = (status || '').toUpperCase();
+          const buttons = {
+              accept: document.getElementById('acceptTaskBtn'),
+              reject: document.getElementById('rejectTaskBtn'),
+              update: document.getElementById('updateProgressBtn'),
+              complete: document.getElementById('completeTaskBtn')
+          };
+
+          Object.values(buttons).forEach(btn => {
+              if (btn) btn.style.display = 'none';
+          });
+
+          if (statusUpper === 'ASSIGNED') {
+              if (buttons.accept) buttons.accept.style.display = 'inline-block';
+              if (buttons.reject) buttons.reject.style.display = 'inline-block';
+          } else if (statusUpper === 'IN_PROGRESS') {
+              if (buttons.update) buttons.update.style.display = 'inline-block';
+              if (buttons.complete) buttons.complete.style.display = 'inline-block';
+          } else if (statusUpper === 'ON_HOLD') {
+              if (buttons.update) buttons.update.style.display = 'inline-block';
+          }
+      }
+
+      showUpdateProgressModal() {
+          if (!this.currentTask) {
+              this.showToast('Error', 'No task selected', 'danger');
+              return;
+          }
+
+          const taskIdInput = document.getElementById('progressTaskId');
+          const progressInput = document.getElementById('progressPercentage');
+          const progressValue = document.getElementById('progressPercentageValue');
+          const notesInput = document.getElementById('progressNotes');
+
+          if (taskIdInput) taskIdInput.value = this.currentTask.taskId || this.currentTask.id;
+          if (progressInput) progressInput.value = this.currentTask.completionPercentage || 0;
+          if (progressValue) progressValue.textContent = `${this.currentTask.completionPercentage || 0}%`;
+          if (notesInput) notesInput.value = this.currentTask.technicianNotes || '';
+
+          if (this.updateProgressModal) {
+              this.updateProgressModal.show();
+          }
+      }
+
+      async acceptTask() {
+          if (!this.currentTask) {
+              this.showToast('Error', 'No task selected', 'danger');
+              return;
+          }
+
+          try {
+              const technicianId = this.currentUser.id || this.currentUser.staffId || this.currentUser.technicianId;
+              if (!technicianId) {
+                  throw new Error('Technician ID not found');
+              }
+
+              await this.updateTaskStatus(
+                  this.currentTask.taskId || this.currentTask.id,
+                  'IN_PROGRESS',
+                  technicianId
+              );
+
+              if (this.taskDetailsModal) this.taskDetailsModal.hide();
+              this.showToast('Success', 'Task accepted!', 'success');
+              await this.loadTechnicianTasks();
+              await this.loadTechnicianStats();
+          } catch (error) {
+              console.error('Error accepting task:', error);
+              this.showToast('Error', error.message || 'Failed to accept task', 'danger');
+          }
+      }
+
+      async rejectTask() {
+          if (!this.currentTask) {
+              this.showToast('Error', 'No task selected', 'danger');
+              return;
+          }
+
+          if (!confirm('Are you sure you want to reject this task?')) {
+              return;
+          }
+
+          try {
+              const technicianId = this.currentUser.id || this.currentUser.staffId || this.currentUser.technicianId;
+              if (!technicianId) {
+                  throw new Error('Technician ID not found');
+              }
+
+              await this.updateTaskStatus(
+                  this.currentTask.taskId || this.currentTask.id,
+                  'PLANNED',
+                  technicianId
+              );
+
+              if (this.taskDetailsModal) this.taskDetailsModal.hide();
+              this.showToast('Success', 'Task rejected.', 'success');
+              await this.loadTechnicianTasks();
+              await this.loadTechnicianStats();
+          } catch (error) {
+              console.error('Error rejecting task:', error);
+              this.showToast('Error', error.message || 'Failed to reject task', 'danger');
+          }
+      }
+
+      async updateTaskStatus(taskId, status, technicianId) {
+          if (!taskId || !status) {
+              throw new Error('Task ID and status are required');
+          }
+
+          const requestBody = { status };
+          if (technicianId) {
+              requestBody.technicianId = technicianId;
+          }
+
+          const response = await fetch(`/api/tasks/${taskId}/status`, {
+              method: 'PATCH',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.sessionHandler.getAuthToken()}`
+              },
+              body: JSON.stringify(requestBody)
+          });
+
+          if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              throw new Error(error.message || `Failed to update status: ${response.status}`);
+          }
+
+          return await response.json();
+      }
+
+      async completeTask() {
+          if (!this.currentTask) {
+              this.showToast('Error', 'No task selected', 'danger');
+              return;
+          }
+
+          if (!confirm('Are you sure you want to mark this task as completed?')) {
+              return;
+          }
+
+          try {
+              const technicianId = this.currentUser.id || this.currentUser.staffId || this.currentUser.technicianId;
+
+              await this.updateTaskStatus(
+                  this.currentTask.taskId || this.currentTask.id,
+                  'COMPLETED',
+                  technicianId
+              );
+
+              await this.updateTaskCompletion(
+                  this.currentTask.taskId || this.currentTask.id,
+                  100,
+                  'Task completed by technician'
+              );
+
+              if (this.taskDetailsModal) this.taskDetailsModal.hide();
+              this.showToast('Success', 'Task completed!', 'success');
+              await this.loadTechnicianTasks();
+              await this.loadTechnicianStats();
+          } catch (error) {
+              console.error('Error completing task:', error);
+              this.showToast('Error', error.message || 'Failed to complete task', 'danger');
+          }
+      }
+
+      async saveTaskProgress() {
+          try {
+              const taskIdInput = document.getElementById('progressTaskId');
+              const progressInput = document.getElementById('progressPercentage');
+              const notesInput = document.getElementById('progressNotes');
+
+              if (!taskIdInput || !progressInput) {
+                  throw new Error('Required form elements not found');
+              }
+
+              const taskId = taskIdInput.value;
+              const progress = parseInt(progressInput.value) || 0;
+              const notes = notesInput ? notesInput.value : '';
+
+              if (progress < 0 || progress > 100) {
+                  throw new Error('Progress must be between 0 and 100');
+              }
+
+              await this.updateTaskCompletion(taskId, progress, notes);
+
+              if (this.updateProgressModal) this.updateProgressModal.hide();
+              this.showToast('Success', 'Progress updated!', 'success');
+              await this.loadTechnicianTasks();
+          } catch (error) {
+              console.error('Error saving task progress:', error);
+              this.showToast('Error', error.message || 'Failed to update progress', 'danger');
+          }
+      }
+
+      async updateTaskCompletion(taskId, percentage, notes = '') {
+          const technicianId = this.currentUser.staffId || this.currentUser.id || this.currentUser.technicianId;
+
+          const response = await fetch(`/api/tasks/${taskId}/completion`, {
+              method: 'PATCH',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.sessionHandler.getAuthToken()}`
+              },
+              body: JSON.stringify({
+                  completionPercentage: percentage,
+                  notes: notes || undefined,
+                  technicianId: technicianId
+              })
+          });
+
+          if (!response.ok) {
+              const error = await response.json().catch(() => ({}));
+              throw new Error(error.message || `Failed to update progress: ${response.status}`);
+          }
+
+          return await response.json();
+      }
+
+      setupAutoRefresh() {
+          if (this.autoRefreshInterval) {
+              clearInterval(this.autoRefreshInterval);
+          }
+          this.autoRefreshInterval = setInterval(() => {
+              this.loadTechnicianTasks();
+          }, 120000); // Refresh every 2 minutes
+      }
+
+      setupIdleTimer() {
+          const idleTimeout = 30 * 60 * 1000; // 30 minutes
+
+          this.resetIdleTimer = () => {
+              if (this.idleTimer) {
+                  clearTimeout(this.idleTimer);
+              }
+              this.idleTimer = setTimeout(() => {
+                  this.showToast('Session Expired', 'You have been logged out due to inactivity', 'warning');
+                  this.sessionHandler.logout();
+              }, idleTimeout);
+          };
+
+          ['mousemove', 'keypress', 'click', 'scroll'].forEach(event => {
+              document.addEventListener(event, this.resetIdleTimer, { passive: true });
+          });
+
+          this.resetIdleTimer();
+      }
+
+      getStatusBadgeClass(status) {
+          const statusUpper = (status || '').toUpperCase();
+          switch (statusUpper) {
+              case 'ASSIGNED': return 'bg-info';
+              case 'IN_PROGRESS': return 'bg-primary';
+              case 'ON_HOLD': return 'bg-warning text-dark';
+              case 'COMPLETED': return 'bg-success';
+              case 'CANCELLED': return 'bg-danger';
+              default: return 'bg-secondary';
+          }
+      }
+
+      getProgressBarClass(percentage) {
+          if (percentage >= 100) return 'bg-success';
+          if (percentage >= 75) return 'bg-info';
+          if (percentage >= 50) return 'bg-primary';
+          if (percentage >= 25) return 'bg-warning';
+          return 'bg-secondary';
+      }
+
+      formatDate(dateString) {
+          if (!dateString) return 'N/A';
+
+          try {
+              const date = new Date(dateString);
+              if (isNaN(date.getTime())) return 'Invalid date';
+
+              return date.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+              }) + ' ' + date.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+              });
+          } catch (error) {
+              return 'Invalid date';
+          }
+      }
+
+      getEquipmentName(equipment) {
+          if (!equipment) return 'N/A - No equipment assigned';
+
+          if (typeof equipment === 'object') {
+              const name = equipment.name || 'Unnamed equipment';
+              const model = equipment.model || 'No model';
+              return `${name} (${model})`;
+          }
+
+          return `Equipment ID: ${equipment}`;
+      }
+
+      truncateText(text, maxLength) {
+          if (!text || text.length <= maxLength) return text || '';
+          return text.substring(0, maxLength) + '...';
+      }
+
+      escapeHtml(text) {
+          if (!text) return '';
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+      }
+
+      showToast(title, message, type = 'info') {
+          try {
+              const toastTitle = document.getElementById('toastTitle');
+              const toastMessage = document.getElementById('toastMessage');
+              const toastIcon = document.getElementById('toastIcon');
+              const toastHeader = document.querySelector('.toast-header');
+
+              if (!toastTitle || !toastMessage || !toastIcon || !toastHeader) {
+                  throw new Error('Toast elements not found');
+              }
+
+              toastTitle.textContent = title;
+              toastMessage.textContent = message;
+
+              toastHeader.className = 'toast-header';
+              toastIcon.className = 'bi me-2';
+
+              switch (type) {
+                  case 'success':
+                      toastHeader.classList.add('bg-success', 'text-white');
+                      toastIcon.classList.add('bi-check-circle');
+                      break;
+                  case 'danger':
+                      toastHeader.classList.add('bg-danger', 'text-white');
+                      toastIcon.classList.add('bi-exclamation-triangle');
+                      break;
+                  case 'warning':
+                      toastHeader.classList.add('bg-warning', 'text-dark');
+                      toastIcon.classList.add('bi-exclamation-circle');
+                      break;
+                  default:
+                      toastHeader.classList.add('bg-info', 'text-white');
+                      toastIcon.classList.add('bi-info-circle');
+              }
+
+              if (this.toast) {
+                  this.toast.show();
+              }
+          } catch (error) {
+              console.error('Toast display error:', error);
+              alert(`${title}: ${message}`);
+          }
+      }
+
+      showFriendlyError(title, message) {
+          try {
+              this.showToast(title, message, 'danger');
+          } catch {
+              alert(`${title}\n${message}`);
+          }
+      }
+
+      destroy() {
+          if (this.autoRefreshInterval) {
+              clearInterval(this.autoRefreshInterval);
+          }
+          if (this.idleTimer) {
+              clearTimeout(this.idleTimer);
+          }
+
+          if (this.charts.completionChart) {
+              this.charts.completionChart.destroy();
+          }
+          if (this.charts.taskDistributionChart) {
+              this.charts.taskDistributionChart.destroy();
+          }
+
+          ['mousemove', 'keypress', 'click', 'scroll'].forEach(event => {
+              document.removeEventListener(event, this.resetIdleTimer, { passive: true });
+          });
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+      try {
+          if (typeof UserSessionHandler === 'undefined') {
+              throw new Error('UserSessionHandler not available');
+          }
+          if (typeof bootstrap === 'undefined') {
+              throw new Error('Bootstrap not available');
+          }
+          if (typeof Chart === 'undefined') {
+              throw new Error('Chart.js not available');
+          }
+
+          window.technicianDashboard = new TechnicianDashboard();
+
+          window.addEventListener('beforeunload', () => {
+              if (window.technicianDashboard) {
+                  window.technicianDashboard.destroy();
+              }
+          });
+
+          document.addEventListener('visibilitychange', () => {
+              if (window.technicianDashboard) {
+                  if (document.hidden) {
+                      if (window.technicianDashboard.autoRefreshInterval) {
+                          clearInterval(window.technicianDashboard.autoRefreshInterval);
+                      }
+                  } else {
+                      window.technicianDashboard.setupAutoRefresh();
+                      window.technicianDashboard.loadTechnicianTasks();
+                      window.technicianDashboard.loadTechnicianStats();
+                  }
+              }
+          });
+      } catch (error) {
+          console.error('Initialization error:', error);
+          alert('Initialization failed. Please refresh the page.');
+      }
+  });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

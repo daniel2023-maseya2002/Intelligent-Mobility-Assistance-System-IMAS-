@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* Main content styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333; /* Added for light mode */
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        /* Chart container */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-feed {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .activity-feed {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dark-mode .activity-item {
+            border-bottom: 1px solid #555;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .activity-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .activity-time {
+            color: #666;
+        }
+
+        .dark-mode .activity-time {
+            color: #ccc;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container, .activity-feed {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Staff Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="Staffanalyse.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudMaintenancePlan.html">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="InventoryReport.html">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="menu-text">Inventory Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="Planning.html" class="active">
+                <i class="bi bi-calendar-event"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudEquipment.html">
+                <i class="bi bi-cpu"></i>
+                <span class="menu-text">Equipment</span>
+            </a>
+        </li>
+        <li>
+            <a href="TaskManager.html">
+                <i class="bi bi-list-task"></i>
+                <span class="menu-text">Task</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudStaff.html">
+                <i class="bi bi-people"></i>
+                <span class="menu-text">Staff</span>
+            </a>
+        </li>
+        <li>
+            <a href="Technician.html">
+                <i class="bi bi-person-gear"></i>
+                <span class="menu-text">Technician</span>
+            </a>
+        </li>
+        <li>
+            <a href="EquipmentStatistics.html">
+                <i class="bi bi-pie-chart"></i>
+                <span class="menu-text">Equipment Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="DowntimeEvent.html">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="WhatsApp.html">
+                <i class="bi bi-whatsapp"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="TechnicianStatistics.html">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="menu-text">Technician Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudInventory.html">
+                <i class="bi bi-boxes"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudSparePart.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Spare Part Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="MaintenancePDFReport.html">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Reporting</span>
+            </a>
+        </li>
+        <li>
+            <a href="login.html">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="menu-text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+
+
+
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="container-fluid">
+        <!-- Task Assignment Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Task Assignment System</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" id="createTaskBtn">
+                                <i class="bi bi-plus-circle me-2"></i> Create New Task
+                            </button>
+                            <button class="btn btn-outline-secondary" id="refreshTasksBtn">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Technicians List -->
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Available Technicians</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush" id="techniciansList">
+                                            <!-- Technicians will be loaded here -->
+                                            <div class="text-center py-5">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2">Loading technicians...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-light">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" placeholder="Search technician..." id="searchTechnicianInput">
+                                            <button class="btn btn-outline-secondary" type="button">
+                                                <i class="bi bi-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tasks Assignment -->
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Tasks Management</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="nav nav-tabs" id="tasksTab" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending-tasks" type="button" role="tab">Pending Tasks</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned-tasks" type="button" role="tab">Assigned Tasks</button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tasks" type="button" role="tab">Completed Tasks</button>
+                                            </li>
+                                        </ul>
+                                        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="tasksTabContent">
+                                            <!-- Pending Tasks Tab -->
+                                            <div class="tab-pane fade show active" id="pending-tasks" role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Task ID</th>
+                                                            <th>Description</th>
+                                                            <th>Priority</th>
+                                                            <th>Created</th>
+                                                            <th>Equipment</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody id="pendingTasksTable">
+                                                        <!-- Pending tasks will be loaded here -->
+                                                        <tr>
+                                                            <td colspan="6" class="text-center py-5">
+                                                                <div class="spinner-border text-primary" role="status">
+                                                                    <span class="visually-hidden">Loading...</span>
+                                                                </div>
+                                                                <p class="mt-2">Loading pending tasks...</p>
+                                                            </td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Assigned Tasks Tab -->
+                                            <div class="tab-pane fade" id="assigned-tasks" role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Task ID</th>
+                                                            <th>Description</th>
+                                                            <th>Technician</th>
+                                                            <th>Status</th>
+                                                            <th>Progress</th>
+                                                            <th>Due Date</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody id="assignedTasksTable">
+                                                        <!-- Assigned tasks will be loaded here -->
+                                                        <tr>
+                                                            <td colspan="7" class="text-center py-5">
+                                                                <div class="spinner-border text-primary" role="status">
+                                                                    <span class="visually-hidden">Loading...</span>
+                                                                </div>
+                                                                <p class="mt-2">Loading assigned tasks...</p>
+                                                            </td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Completed Tasks Tab -->
+                                            <div class="tab-pane fade" id="completed-tasks" role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover">
+                                                        <thead>
+                                                        <tr>
+                                                            <th>Task ID</th>
+                                                            <th>Description</th>
+                                                            <th>Technician</th>
+                                                            <th>Completed</th>
+                                                            <th>Duration</th>
+                                                            <th>Rating</th>
+                                                            <th>Details</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody id="completedTasksTable">
+                                                        <!-- Completed tasks will be loaded here -->
+                                                        <tr>
+                                                            <td colspan="7" class="text-center py-5">
+                                                                <div class="spinner-border text-primary" role="status">
+                                                                    <span class="visually-hidden">Loading...</span>
+                                                                </div>
+                                                                <p class="mt-2">Loading completed tasks...</p>
+                                                            </td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Create New Maintenance Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskEquipment" class="form-label">Equipment *</label>
+                                <select class="form-select" id="taskEquipment" required>
+                                    <option value="">Select Equipment</option>
+                                    <!-- Equipment options will be loaded here -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="taskDescription" class="form-label">Description *</label>
+                                <textarea class="form-control" id="taskDescription" rows="3" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">Priority *</label>
+                                <select class="form-select" id="taskPriority" required>
+                                    <option value="">Select Priority</option>
+                                    <option value="LOW">Low</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="CRITICAL">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskEstimatedHours" class="form-label">Estimated Duration (hours) *</label>
+                                <input type="number" class="form-control" id="taskEstimatedHours" min="0.5" step="0.5" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="taskRequiredSkills" class="form-label">Required Skills</label>
+                                <select class="form-select" id="taskRequiredSkills" multiple>
+                                    <option value="ELECTRICAL">Electrical</option>
+                                    <option value="MECHANICAL">Mechanical</option>
+                                    <option value="PLUMBING">Plumbing</option>
+                                    <option value="HVAC">HVAC</option>
+                                    <option value="IT">IT</option>
+                                </select>
+                                <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="taskRequiredParts" class="form-label">Required Parts</label>
+                                <input type="text" class="form-control" id="taskRequiredParts" placeholder="Separate parts with commas">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTaskBtn">Create Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Task Modal -->
+<div class="modal fade" id="assignTaskModal" tabindex="-1" aria-labelledby="assignTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignTaskModalLabel">Assign Task to Technician</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignTaskForm">
+                    <input type="hidden" id="assignTaskId">
+                    <div class="mb-3">
+                        <label class="form-label">Task Description:</label>
+                        <p class="form-control-static fw-bold" id="assignTaskDescription"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Equipment:</label>
+                        <p class="form-control-static" id="assignTaskEquipment"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority:</label>
+                        <p class="form-control-static" id="assignTaskPriority"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignTechnician" class="form-label">Select Technician *</label>
+                        <select class="form-select" id="assignTechnician" required>
+                            <option value="">Select Technician</option>
+                            <!-- Technicians will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDueDate" class="form-label">Due Date *</label>
+                        <input type="date" class="form-control" id="taskDueDate" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAssignBtn">Assign Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Task ID:</label>
+                            <p class="form-control-static" id="detailTaskId"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description:</label>
+                            <p class="form-control-static" id="detailTaskDescription"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Equipment:</label>
+                            <p class="form-control-static" id="detailTaskEquipment"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority:</label>
+                            <p class="form-control-static" id="detailTaskPriority"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status:</label>
+                            <p class="form-control-static" id="detailTaskStatus"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Assigned Technician:</label>
+                            <p class="form-control-static" id="detailTaskTechnician"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Due Date:</label>
+                            <p class="form-control-static" id="detailTaskDueDate"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Progress:</label>
+                            <div class="progress mt-2">
+                                <div class="progress-bar" id="detailTaskProgressBar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted" id="detailTaskProgressText">0%</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Additional Information</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Required Skills:</label>
+                                    <p class="form-control-static" id="detailTaskSkills"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Required Parts:</label>
+                                    <p class="form-control-static" id="detailTaskParts"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Created:</label>
+                            <p class="form-control-static" id="detailTaskCreated"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Last Updated:</label>
+                            <p class="form-control-static" id="detailTaskUpdated"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3" id="technicianActionsSection">
+                    <div class="col-12">
+                        <h6 class="border-bottom pb-2">Task Actions</h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success" id="acceptTaskBtn">
+                                <i class="bi bi-check-circle me-2"></i> Accept Task
+                            </button>
+                            <button class="btn btn-danger" id="rejectTaskBtn">
+                                <i class="bi bi-x-circle me-2"></i> Reject Task
+                            </button>
+                            <button class="btn btn-primary" id="updateProgressBtn">
+                                <i class="bi bi-arrow-up-circle me-2"></i> Update Progress
+                            </button>
+                            <button class="btn btn-warning" id="completeTaskBtn">
+                                <i class="bi bi-flag-fill me-2"></i> Mark as Completed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="editTaskBtn">Edit Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Progress Modal -->
+<div class="modal fade" id="updateProgressModal" tabindex="-1" aria-labelledby="updateProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateProgressModalLabel">Update Task Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="progressForm">
+                    <input type="hidden" id="progressTaskId">
+                    <div class="mb-3">
+                        <label for="progressPercentage" class="form-label">Progress Percentage *</label>
+                        <input type="range" class="form-range" min="0" max="100" step="5" id="progressPercentage">
+                        <div class="d-flex justify-content-between">
+                            <span>0%</span>
+                            <span id="progressPercentageValue">50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="progressNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="progressNotes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProgressBtn">Save Progress</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <small>Just now</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Action completed successfully.
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+
+<script>
+
+
+
+
+
+
+
+    // Task Management System JavaScript - Fixed Version
+    document.addEventListener('DOMContentLoaded', function() {
+        const sessionHandler = UserSessionHandler.getInstance();
+        const currentUser = sessionHandler.getCurrentUser();
+
+        if (!currentUser || !currentUser.role) {
+            window.location.href = '/login.html';
+            return;
+        }
+
+        // Check if user has permission to view this page
+        if (!['MANAGER', 'TECHNICIAN'].includes(currentUser.role)) {
+            window.location.href = '/unauthorized.html';
+            return;
+        }
+
+        // Initialize modals
+        const createTaskModal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+        const assignTaskModal = new bootstrap.Modal(document.getElementById('assignTaskModal'));
+        const taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+        const updateProgressModal = new bootstrap.Modal(document.getElementById('updateProgressModal'));
+        const toast = new bootstrap.Toast(document.getElementById('notificationToast'));
+
+        // Global variables
+        let technicians = [];
+        let pendingTasks = [];
+        let assignedTasks = [];
+        let completedTasks = [];
+        let equipmentList = [];
+
+        // Initialize the system
+        initTaskManagementSystem();
+
+        function initTaskManagementSystem() {
+            loadTechnicians();
+            loadEquipment();
+            loadTasks();
+
+            // Set up event listeners
+            document.getElementById('createTaskBtn').addEventListener('click', showCreateTaskModal);
+            document.getElementById('saveTaskBtn').addEventListener('click', saveNewTask);
+            document.getElementById('refreshTasksBtn').addEventListener('click', refreshAllData);
+            document.getElementById('confirmAssignBtn').addEventListener('click', assignTaskToTechnician);
+            document.getElementById('acceptTaskBtn').addEventListener('click', acceptTask);
+            document.getElementById('rejectTaskBtn').addEventListener('click', rejectTask);
+            document.getElementById('updateProgressBtn').addEventListener('click', showUpdateProgressModal);
+            document.getElementById('completeTaskBtn').addEventListener('click', completeTask);
+            document.getElementById('saveProgressBtn').addEventListener('click', saveTaskProgress);
+            document.getElementById('progressPercentage').addEventListener('input', updateProgressValue);
+
+            // Show/hide technician actions based on user role
+            const technicianActions = document.getElementById('technicianActionsSection');
+            if (currentUser.role !== 'TECHNICIAN') {
+                technicianActions.style.display = 'none';
+            }
+        }
+
+
+
+function loadTechnicians() {
+    fetch('/api/staff?role=TECHNICIAN', {
+        headers: {
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Filtrer seulement les techniciens actifs
+        technicians = Array.isArray(data) ?
+            data.filter(tech => tech.role === 'TECHNICIAN' && tech.active) : [];
+
+        // Charger les tâches pour mettre à jour le compteur
+        return fetch('/api/tasks/by-statuses/ASSIGNED,IN_PROGRESS,ON_HOLD', {
+            headers: {
+                'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+            }
+        });
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to load tasks');
+        return response.json();
+    })
+    .then(tasks => {
+        // Compter les tâches par technicien
+        const taskCounts = {};
+        tasks.forEach(task => {
+            const techId = task.assignedTechnician || task.assignedTechnicianStaff?.id;
+            if (techId) {
+                taskCounts[techId] = (taskCounts[techId] || 0) + 1;
+            }
+        });
+
+        // Mettre à jour le compteur de tâches
+        technicians.forEach(tech => {
+            tech.assignedTasks = taskCounts[tech.id] || 0;
+        });
+
+        renderTechniciansList();
+        renderTechnicianDropdowns();
+    })
+    .catch(error => {
+        console.error('Error loading technicians:', error);
+        technicians = [];
+        renderTechniciansList();
+        renderTechnicianDropdowns();
+        showToast('Error', 'Failed to load technicians. Please try again.', 'danger');
+    });
+}
+
+
+function updateTechnicianTaskCounts() {
+    fetch('/api/tasks/by-statuses/ASSIGNED,IN_PROGRESS,ON_HOLD', {
+        headers: {
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to load tasks');
+        return response.json();
+    })
+    .then(tasks => {
+        const taskCounts = {};
+        tasks.forEach(task => {
+            const techId = task.assignedTechnician || task.assignedTechnicianStaff?.id;
+            if (techId) {
+                taskCounts[techId] = (taskCounts[techId] || 0) + 1;
+            }
+        });
+
+        technicians.forEach(tech => {
+            tech.assignedTasks = taskCounts[tech.id] || 0;
+        });
+
+        renderTechniciansList();
+    })
+    .catch(error => {
+        console.error('Error updating task counts:', error);
+    });
+}
+
+
+
+
+function loadEquipment() {
+    return fetch('/api/equipments', {
+        headers: {
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid equipment data format');
+        }
+
+        equipmentList = data.map(equip => ({
+            equipmentId: equip.equipmentId,
+            name: equip.name || 'Unnamed Equipment',
+            model: equip.model || 'No model',
+            location: equip.location || 'Unknown location',
+            // Inclure toutes les autres propriétés nécessaires
+            ...equip
+        }));
+
+        renderEquipmentDropdown();
+        return equipmentList;
+    })
+    .catch(error => {
+        console.error('Error loading equipment:', error);
+        equipmentList = [];
+        renderEquipmentDropdown();
+        showToast('Error', 'Failed to load equipment list. Please try again.', 'danger');
+        return [];
+    });
+}
+
+
+
+function loadTasks() {
+    // Load equipment first
+    loadEquipment()
+        .then(() => {
+            // Then load pending tasks (PLANNED status)
+            return fetch('/api/tasks/by-status/PLANNED', {
+                headers: {
+                    'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                }
+            });
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            pendingTasks = Array.isArray(data) ? data : [];
+            renderPendingTasksTable();
+
+            // Load assigned tasks with multiple statuses
+            const assignedStatuses = currentUser.role === 'MANAGER'
+                ? ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD']
+                : ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED'];
+
+            return Promise.all(assignedStatuses.map(status =>
+                fetch(`/api/tasks/by-status/${status}`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                    }
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+            ));
+        })
+        .then(results => {
+            assignedTasks = results.flat().filter(task => task != null);
+
+            if (currentUser.role === 'TECHNICIAN') {
+                assignedTasks = assignedTasks.filter(task =>
+                    task.assignedTechnician === currentUser.staffId
+                );
+            }
+
+            renderAssignedTasksTable();
+
+            // Load completed tasks (for managers only)
+            if (currentUser.role === 'MANAGER') {
+                return fetch('/api/tasks/by-status/COMPLETED', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                    }
+                });
+            }
+            return Promise.resolve(null);
+        })
+        .then(response => {
+            if (response && !response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response ? response.json() : [];
+        })
+        .then(data => {
+            completedTasks = Array.isArray(data) ? data : [];
+            renderCompletedTasksTable();
+        })
+        .catch(error => {
+            console.error('Error loading tasks:', error);
+            pendingTasks = [];
+            assignedTasks = [];
+            completedTasks = [];
+            renderPendingTasksTable();
+            renderAssignedTasksTable();
+            renderCompletedTasksTable();
+            showToast('Error', 'Failed to load tasks. Please try again.', 'danger');
+        });
+}
+
+
+
+function renderTechniciansList() {
+    const container = document.getElementById('techniciansList');
+    container.innerHTML = '';
+
+    if (technicians.length === 0) {
+        container.innerHTML = '<div class="text-center py-3">No technicians found</div>';
+        return;
+    }
+
+    technicians.forEach(tech => {
+        const item = document.createElement('a');
+        item.className = 'list-group-item list-group-item-action';
+        item.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <img src="${tech.photo ? `data:image/jpeg;base64,${tech.photo}` : '/assets/images/default-avatar.png'}"
+                         class="rounded-circle" width="40" height="40" alt="${tech.firstName} ${tech.lastName}">
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="mb-0">${tech.firstName} ${tech.lastName}</h6>
+                    <small class="text-muted">${tech.email}</small>
+                    <div class="mt-1">
+                        <span class="badge bg-primary">${tech.role}</span>
+                        <span class="badge ${tech.active ? 'bg-success' : 'bg-secondary'} ms-1">
+                            ${tech.active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <span class="badge ${tech.assignedTasks > 0 ? 'bg-info' : 'bg-secondary'}">
+                        ${tech.assignedTasks || 0} tasks
+                    </span>
+                </div>
+            </div>
+        `;
+
+        if (currentUser.role === 'MANAGER') {
+            item.addEventListener('click', () => {
+                showTechnicianTasks(tech);
+            });
+        }
+
+        container.appendChild(item);
+    });
+}
+
+function renderTechnicianDropdowns() {
+    const assignDropdown = document.getElementById('assignTechnician');
+    assignDropdown.innerHTML = '<option value="">Select Technician</option>';
+
+    technicians.forEach(tech => {
+        const option = document.createElement('option');
+        option.value = tech.id; // Use the actual ID from the technician object
+        option.textContent = `${tech.firstName} ${tech.lastName} (${tech.email})`;
+        assignDropdown.appendChild(option);
+    });
+}
+
+        function renderEquipmentDropdown() {
+            const dropdown = document.getElementById('taskEquipment');
+            dropdown.innerHTML = '<option value="">Select Equipment</option>';
+
+            equipmentList.forEach(equip => {
+                const option = document.createElement('option');
+                option.value = equip.equipmentId;
+                option.textContent = `${equip.name} (${equip.model}, ${equip.location})`;
+                dropdown.appendChild(option);
+            });
+        }
+
+        function renderPendingTasksTable() {
+            const tbody = document.getElementById('pendingTasksTable');
+            tbody.innerHTML = '';
+
+            if (pendingTasks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">No pending tasks available</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            pendingTasks.forEach(task => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task.taskId}</td>
+                    <td>${task.description}</td>
+                    <td><span class="badge ${getPriorityBadgeClass(task.priority)}">${task.priority}</span></td>
+                    <td>${formatDate(task.creationDate)}</td>
+                   <td>${getEquipmentName(task.relatedEquipment ? task.relatedEquipment : task.equipmentId)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary assign-task-btn" data-task-id="${task.taskId}">
+                            <i class="bi bi-person-plus"></i> Assign
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary view-task-btn" data-task-id="${task.taskId}">
+                            <i class="bi bi-eye"></i> View
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to assign buttons
+            document.querySelectorAll('.assign-task-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    showAssignTaskModal(taskId);
+                });
+            });
+
+            // Add event listeners to view buttons
+            document.querySelectorAll('.view-task-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    showTaskDetails(taskId);
+                });
+            });
+        }
+
+        function renderAssignedTasksTable() {
+            const tbody = document.getElementById('assignedTasksTable');
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(assignedTasks)) {
+                console.error('assignedTasks is not an array:', assignedTasks);
+                assignedTasks = [];
+            }
+
+            if (assignedTasks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">No assigned tasks available</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            assignedTasks.forEach(task => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task.taskId}</td>
+                    <td>${task.description}</td>
+<td>${getTechnicianName(task.assignedTechnician || task.assignedTechnicianStaff?.id)}</td>
+                    <td><span class="badge ${getStatusBadgeClass(task.status)}">${task.status}</span></td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${task.completionPercentage || 0}%"></div>
+                        </div>
+                        <small>${task.completionPercentage || 0}%</small>
+                    </td>
+                    <td>${formatDate(task.dueDate)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.taskId}">
+                            <i class="bi bi-eye"></i> View
+                        </button>
+                        ${currentUser.role === 'MANAGER' ? `
+                        <button class="btn btn-sm btn-outline-danger unassign-task-btn" data-task-id="${task.taskId}">
+                            <i class="bi bi-person-dash"></i> Unassign
+                        </button>
+                        ` : ''}
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to view buttons
+            document.querySelectorAll('.view-task-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    showTaskDetails(taskId);
+                });
+            });
+
+            // Add event listeners to unassign buttons (for managers)
+            if (currentUser.role === 'MANAGER') {
+                document.querySelectorAll('.unassign-task-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const taskId = this.getAttribute('data-task-id');
+                        unassignTask(taskId);
+                    });
+                });
+            }
+        }
+
+        function renderCompletedTasksTable() {
+            const tbody = document.getElementById('completedTasksTable');
+            tbody.innerHTML = '';
+
+            if (!Array.isArray(completedTasks)) {
+                console.error('completedTasks is not an array:', completedTasks);
+                completedTasks = [];
+            }
+
+            if (completedTasks.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4">No completed tasks available</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            completedTasks.forEach(task => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${task.taskId}</td>
+                    <td>${task.description}</td>
+<td>${getTechnicianName(task.assignedTechnician || task.assignedTechnicianStaff?.id)}</td>
+                    <td>${formatDate(task.completionDate)}</td>
+                    <td>${task.estimatedDurationMinutes ? (task.estimatedDurationMinutes / 60).toFixed(1) : 'N/A'} hours</td>
+                    <td>
+                        <span class="badge bg-success">Completed</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.taskId}">
+                            <i class="bi bi-eye"></i> Details
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to view buttons
+            document.querySelectorAll('.view-task-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    showTaskDetails(taskId);
+                });
+            });
+        }
+
+        function showCreateTaskModal() {
+            document.getElementById('taskForm').reset();
+            createTaskModal.show();
+        }
+
+
+
+
+function saveNewTask() {
+    const form = document.getElementById('taskForm');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const equipmentSelect = document.getElementById('taskEquipment');
+    const equipmentId = equipmentSelect.value;
+
+    // Validate equipment selection
+    if (!equipmentId) {
+        showToast('Error', 'Please select an equipment', 'danger');
+        equipmentSelect.focus();
+        return;
+    }
+
+    // Verify equipment exists in local list
+    const equipmentExists = equipmentList.some(e =>
+        e.equipmentId.toString() === equipmentId.toString()
+    );
+
+    if (!equipmentExists) {
+        showToast('Error', 'Selected equipment is not valid. Please refresh the equipment list.', 'danger');
+        return;
+    }
+
+    // Generate a unique task ID
+    const taskId = 'TASK-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    const taskData = {
+        taskId: taskId,
+        description: document.getElementById('taskDescription').value,
+        priority: document.getElementById('taskPriority').value,
+        estimatedDurationMinutes: parseFloat(document.getElementById('taskEstimatedHours').value) * 60,
+        requiredSkills: Array.from(document.getElementById('taskRequiredSkills').selectedOptions).map(opt => opt.value),
+        requiredParts: document.getElementById('taskRequiredParts').value.split(',').map(p => p.trim()).filter(p => p),
+        equipmentId: parseInt(equipmentId),
+        status: 'PLANNED'
+    };
+
+    fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        },
+        body: JSON.stringify(taskData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        createTaskModal.hide();
+        showToast('Success', 'Task created successfully!', 'success');
+        // Reload both equipment and tasks to ensure consistency
+        loadEquipment().then(loadTasks);
+    })
+    .catch(error => {
+        console.error('Error creating task:', error);
+        showToast('Error', error.message || 'Failed to create task', 'danger');
+    });
+}
+
+
+
+
+
+
+
+
+        function showAssignTaskModal(taskId) {
+            const task = pendingTasks.find(t => t.taskId === taskId);
+            if (!task) return;
+
+            document.getElementById('assignTaskId').value = taskId;
+            document.getElementById('assignTaskDescription').textContent = task.description;
+            document.getElementById('assignTaskEquipment').textContent = getEquipmentName(task.relatedEquipment || task.equipmentId);
+            document.getElementById('assignTaskPriority').textContent = task.priority;
+
+            // Set default due date to 3 days from now
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 3);
+            document.getElementById('taskDueDate').valueAsDate = dueDate;
+
+            assignTaskModal.show();
+        }
+
+
+
+
+function assignTaskToTechnician() {
+    const form = document.getElementById('assignTaskForm');
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const taskId = document.getElementById('assignTaskId').value;
+    const technicianId = document.getElementById('assignTechnician').value;
+    const dueDate = document.getElementById('taskDueDate').value;
+
+    if (!technicianId || technicianId.trim() === '') {
+        showToast('Error', 'Please select a technician', 'danger');
+        return;
+    }
+
+    const technicianIdNum = parseInt(technicianId);
+    if (isNaN(technicianIdNum)) {
+        showToast('Error', 'Invalid technician ID', 'danger');
+        return;
+    }
+
+    const requestBody = {
+        technicianId: technicianIdNum,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null
+    };
+
+    fetch(`/api/tasks/${taskId}/staff-technician`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(data => {
+        return fetch(`/api/tasks/${taskId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+            },
+            body: JSON.stringify({ status: 'ASSIGNED' })
+        });
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(data => {
+        assignTaskModal.hide();
+        showToast('Success', 'Task assigned successfully!', 'success');
+        loadTasks();
+        updateTechnicianTaskCounts(); // Mettre à jour le compteur
+    })
+    .catch(error => {
+        console.error('Error assigning task:', error);
+        showToast('Error', error.message || 'Failed to assign task', 'danger');
+    });
+}
+
+
+
+
+
+
+
+
+        function showTaskDetails(taskId) {
+            // Find the task in one of our arrays
+            let task = pendingTasks.find(t => t.taskId === taskId);
+            if (!task) task = assignedTasks.find(t => t.taskId === taskId);
+            if (!task) task = completedTasks.find(t => t.taskId === taskId);
+
+            if (!task) {
+                showToast('Error', 'Task not found.', 'danger');
+                return;
+            }
+
+            // Populate the modal with task details
+            document.getElementById('detailTaskId').textContent = task.taskId;
+            document.getElementById('detailTaskDescription').textContent = task.description;
+            document.getElementById('detailTaskEquipment').textContent = getEquipmentName(task.relatedEquipment || task.equipmentId);
+            document.getElementById('detailTaskPriority').textContent = task.priority;
+            document.getElementById('detailTaskStatus').textContent = task.status;
+            document.getElementById('detailTaskTechnician').textContent = getTechnicianName(task.assignedTechnician);
+            document.getElementById('detailTaskDueDate').textContent = formatDate(task.dueDate);
+            document.getElementById('detailTaskProgressBar').style.width = `${task.completionPercentage || 0}%`;
+            document.getElementById('detailTaskProgressText').textContent = `${task.completionPercentage || 0}%`;
+            document.getElementById('detailTaskSkills').textContent = task.requiredSkills?.join(', ') || 'None';
+            document.getElementById('detailTaskParts').textContent = task.requiredParts?.join(', ') || 'None';
+            document.getElementById('detailTaskCreated').textContent = formatDate(task.creationDate);
+            document.getElementById('detailTaskUpdated').textContent = formatDate(task.lastUpdated);
+
+            // Show/hide buttons based on task status and user role
+            const acceptBtn = document.getElementById('acceptTaskBtn');
+            const rejectBtn = document.getElementById('rejectTaskBtn');
+            const updateBtn = document.getElementById('updateProgressBtn');
+            const completeBtn = document.getElementById('completeTaskBtn');
+
+            if (task.status === 'ASSIGNED' && currentUser.role === 'TECHNICIAN' && task.assignedTechnician === currentUser.staffId) {
+                acceptBtn.style.display = 'inline-block';
+                rejectBtn.style.display = 'inline-block';
+                updateBtn.style.display = 'none';
+                completeBtn.style.display = 'none';
+            } else if (task.status === 'IN_PROGRESS' && currentUser.role === 'TECHNICIAN' && task.assignedTechnician === currentUser.staffId) {
+                acceptBtn.style.display = 'none';
+                rejectBtn.style.display = 'none';
+                updateBtn.style.display = 'inline-block';
+                completeBtn.style.display = 'inline-block';
+            } else {
+                acceptBtn.style.display = 'none';
+                rejectBtn.style.display = 'none';
+                updateBtn.style.display = 'none';
+                completeBtn.style.display = 'none';
+            }
+
+            taskDetailsModal.show();
+        }
+
+        function acceptTask() {
+            const taskId = document.getElementById('detailTaskId').textContent;
+
+            fetch(`/api/tasks/${taskId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    status: 'IN_PROGRESS'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                taskDetailsModal.hide();
+                showToast('Success', 'Task accepted and marked as in progress!', 'success');
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error accepting task:', error);
+                showToast('Error', 'Failed to accept task. Please try again.', 'danger');
+            });
+        }
+
+        function rejectTask() {
+            const taskId = document.getElementById('detailTaskId').textContent;
+
+            if (!confirm('Are you sure you want to reject this task? It will be returned to the pending tasks list.')) {
+                return;
+            }
+
+            fetch(`/api/tasks/${taskId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    status: 'PLANNED'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                taskDetailsModal.hide();
+                showToast('Success', 'Task rejected and returned to pending list.', 'success');
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error rejecting task:', error);
+                showToast('Error', 'Failed to reject task. Please try again.', 'danger');
+            });
+        }
+
+        function showUpdateProgressModal() {
+            const taskId = document.getElementById('detailTaskId').textContent;
+            const progress = parseInt(document.getElementById('detailTaskProgressText').textContent) || 0;
+
+            document.getElementById('progressTaskId').value = taskId;
+            document.getElementById('progressPercentage').value = progress;
+            document.getElementById('progressPercentageValue').textContent = `${progress}%`;
+
+            updateProgressModal.show();
+        }
+
+        function updateProgressValue() {
+            const value = document.getElementById('progressPercentage').value;
+            document.getElementById('progressPercentageValue').textContent = `${value}%`;
+        }
+
+        function saveTaskProgress() {
+            const taskId = document.getElementById('progressTaskId').value;
+            const progress = document.getElementById('progressPercentage').value;
+            const notes = document.getElementById('progressNotes').value;
+
+            fetch(`/api/tasks/${taskId}/completion`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    completionPercentage: parseInt(progress),
+                    notes: notes
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateProgressModal.hide();
+                showToast('Success', 'Task progress updated successfully!', 'success');
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error updating task progress:', error);
+                showToast('Error', 'Failed to update task progress. Please try again.', 'danger');
+            });
+        }
+
+        function completeTask() {
+            const taskId = document.getElementById('detailTaskId').textContent;
+
+            fetch(`/api/tasks/${taskId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    status: 'COMPLETED'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Also update completion percentage to 100%
+                return fetch(`/api/tasks/${taskId}/completion`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+                    },
+                    body: JSON.stringify({
+                        completionPercentage: 100
+                    })
+                });
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                taskDetailsModal.hide();
+                showToast('Success', 'Task marked as completed!', 'success');
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error completing task:', error);
+                showToast('Error', 'Failed to complete task. Please try again.', 'danger');
+            });
+        }
+
+
+
+function unassignTask(taskId) {
+    if (!confirm('Are you sure you want to unassign this task? The technician will no longer be responsible for it.')) {
+        return;
+    }
+
+    // Envoyer un objet vide pour indiquer la désassignation
+    fetch(`/api/tasks/${taskId}/staff-technician`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+        },
+        body: JSON.stringify({}) // Corps vide pour indiquer la désassignation
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(data => {
+        return fetch(`/api/tasks/${taskId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionHandler.getAuthToken()}`
+            },
+            body: JSON.stringify({ status: 'PLANNED' })
+        });
+    })
+    .then(response => {
+        if (!response.ok) return response.json().then(err => { throw err; });
+        return response.json();
+    })
+    .then(data => {
+        showToast('Success', 'Task unassigned successfully!', 'success');
+        loadTasks();
+        updateTechnicianTaskCounts();
+    })
+    .catch(error => {
+        console.error('Error unassigning task:', error);
+        showToast('Error', error.message || 'Failed to unassign task', 'danger');
+    });
+}
+
+
+
+
+    function showTechnicianTasks(technician) {
+        // Filter tasks assigned to this technician
+        const techTasks = assignedTasks.filter(task => task.assignedTechnician === technician.staffId);
+
+        // Create a modal to show technician's tasks
+        const modalContent = `
+            <div class="modal fade" id="technicianTasksModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Tasks Assigned to ${technician.fullName}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="d-flex align-items-center mb-4">
+                                <img src="${technician.photo ? `data:image/jpeg;base64,${technician.photo}` : '/assets/images/default-avatar.png'}"
+                                     class="rounded-circle me-3" width="60" height="60" alt="${technician.fullName}">
+                                <div>
+                                    <h6 class="mb-0">${technician.fullName}</h6>
+                                    <p class="text-muted mb-0">${technician.email}</p>
+                                    <p class="mb-0"><span class="badge bg-primary">${technician.role}</span></p>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Task ID</th>
+                                            <th>Description</th>
+                                            <th>Status</th>
+                                            <th>Progress</th>
+                                            <th>Due Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${techTasks.length > 0 ?
+                                            techTasks.map(task => `
+                                                <tr>
+                                                    <td>${task.taskId}</td>
+                                                    <td>${task.description}</td>
+                                                    <td><span class="badge ${getStatusBadgeClass(task.status)}">${task.status}</span></td>
+                                                    <td>
+                                                        <div class="progress" style="height: 20px;">
+                                                            <div class="progress-bar" role="progressbar" style="width: ${task.completionPercentage || 0}%"></div>
+                                                        </div>
+                                                        <small>${task.completionPercentage || 0}%</small>
+                                                    </td>
+                                                    <td>${formatDate(task.dueDate)}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary view-task-btn" data-task-id="${task.taskId}">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('') : `
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-3">No tasks assigned</td>
+                                                </tr>
+                                            `}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to DOM
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalContent;
+        document.body.appendChild(modalContainer);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('technicianTasksModal'));
+        modal.show();
+
+        // Add event listener for when modal is hidden
+        document.getElementById('technicianTasksModal').addEventListener('hidden.bs.modal', function() {
+            document.body.removeChild(modalContainer);
+        });
+
+        // Add event listeners to view buttons in the modal
+        modalContainer.querySelectorAll('.view-task-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const taskId = this.getAttribute('data-task-id');
+                modal.hide();
+                showTaskDetails(taskId);
+            });
+        });
+    }
+
+    function refreshAllData() {
+        loadTechnicians();
+        loadEquipment();
+        loadTasks();
+        showToast('Info', 'Data refreshed successfully', 'info');
+    }
+
+    // Helper functions
+    function getPriorityBadgeClass(priority) {
+        switch (priority) {
+            case 'LOW': return 'bg-success';
+            case 'MEDIUM': return 'bg-primary';
+            case 'HIGH': return 'bg-warning';
+            case 'CRITICAL': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'PLANNED': return 'bg-secondary';
+            case 'ASSIGNED': return 'bg-info';
+            case 'IN_PROGRESS': return 'bg-primary';
+            case 'ON_HOLD': return 'bg-warning';
+            case 'COMPLETED': return 'bg-success';
+            case 'CANCELLED': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+
+
+
+function getEquipmentName(equipment) {
+    // Si equipment est null/undefined
+    if (!equipment) return 'N/A - No equipment assigned';
+
+    // Si equipment est déjà un objet avec equipmentId
+    if (typeof equipment === 'object' && equipment.equipmentId) {
+        return `${equipment.name || 'Unnamed Equipment'} (${equipment.model || 'No model'} - ${equipment.location || 'No location'})`;
+    }
+
+    // Si equipment est un ID (nombre ou chaîne)
+    const id = typeof equipment === 'string' ? parseInt(equipment) : equipment;
+
+    if (isNaN(id)) {
+        console.error('Invalid equipment ID:', equipment);
+        return 'Invalid Equipment ID';
+    }
+
+    const equip = equipmentList.find(e =>
+        e.equipmentId === id || e.equipmentId.toString() === equipment.toString()
+    );
+
+    if (!equip) {
+        console.warn('Equipment not found in local list:', equipment, equipmentList);
+        return 'Equipment Not Found';
+    }
+
+    return `${equip.name || 'Unnamed Equipment'} (${equip.model || 'No model'} - ${equip.location || 'No location'})`;
+}
+
+
+
+function getTechnicianName(technicianId) {
+    if (!technicianId) return 'Not assigned';
+
+    // Handle both number and string IDs
+    const id = typeof technicianId === 'string' ?
+        parseInt(technicianId) : technicianId;
+
+    if (isNaN(id)) return 'Unknown Technician';
+
+    const tech = technicians.find(t => t.id === id);
+    return tech ? `${tech.firstName} ${tech.lastName}` : 'Unknown Technician';
+}
+
+    function showToast(title, message, type) {
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        const toast = document.getElementById('notificationToast');
+
+        // Set title and message
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+
+        // Set appropriate color based on type
+        const toastHeader = toast.querySelector('.toast-header');
+        toastHeader.className = 'toast-header';
+        switch (type) {
+            case 'success':
+                toastHeader.classList.add('bg-success', 'text-white');
+                break;
+            case 'error':
+            case 'danger':
+                toastHeader.classList.add('bg-danger', 'text-white');
+                break;
+            case 'warning':
+                toastHeader.classList.add('bg-warning', 'text-dark');
+                break;
+            case 'info':
+                toastHeader.classList.add('bg-info', 'text-dark');
+                break;
+            default:
+                toastHeader.classList.add('bg-primary', 'text-white');
+        }
+
+        // Show the toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    }
+});
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

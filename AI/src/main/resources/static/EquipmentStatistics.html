@@ -1,0 +1,1236 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 250px;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        /* Header styles */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-text span {
+            color: #ff6b6b;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 12px;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .header-btn i {
+            font-size: 16px;
+        }
+
+        .btn-text {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .profile-container:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .avatar:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .user-email {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background-color: white;
+            z-index: 900;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d;
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-mode .sidebar-menu li {
+            border-bottom: 1px solid #444;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar-menu a {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-mode .sidebar-menu a:hover {
+            background-color: #404040;
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e6f2ff;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .dark-mode .sidebar-menu a.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            color: #6eb4ff;
+        }
+
+        .sidebar-menu i {
+            margin-right: 10px;
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        /* Main content styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 20px;
+            min-height: calc(100vh - var(--header-height));
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a;
+        }
+
+        /* Stats cards */
+        .stats-card {
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stats-card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .high-priority {
+            background-color: #e6fff0;
+            border: 1px solid #ccf0d8;
+        }
+
+        .dark-mode .high-priority {
+            background-color: #1a2f1a;
+            border: 1px solid #2d5d2d;
+        }
+
+        .medium-priority {
+            background-color: #e6f3ff;
+            border: 1px solid #cce1f0;
+        }
+
+        .dark-mode .medium-priority {
+            background-color: #1a2637;
+            border: 1px solid #2d4a66;
+        }
+
+        .low-priority {
+            background-color: #fff8e6;
+            border: 1px solid #f0e8cc;
+        }
+
+        .dark-mode .low-priority {
+            background-color: #332b1a;
+            border: 1px solid #665533;
+        }
+
+        .stats-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333; /* Added for light mode */
+        }
+
+        .dark-mode .stats-number {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .stats-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .dark-mode .stats-label {
+            color: #ccc;
+        }
+
+        .stats-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .high-priority .stats-icon {
+            background-color: #28c76f;
+        }
+
+        .medium-priority .stats-icon {
+            background-color: #0d6efd;
+        }
+
+        .low-priority .stats-icon {
+            background-color: #ff9f43;
+        }
+
+        /* Chart container */
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .chart-container {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dark-mode .chart-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .full-width-chart .chart-wrapper {
+            height: 400px;
+        }
+
+        /* Activity feed */
+        .activity-feed {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .activity-feed {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .dark-mode .activity-item {
+            border-bottom: 1px solid #555;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .activity-title {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .activity-time {
+            color: #666;
+        }
+
+        .dark-mode .activity-time {
+            color: #ccc;
+        }
+
+        .refresh-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #0b5ed7;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .dark-mode .loading {
+            color: #e0e0e0; /* Improved text color for readability */
+        }
+
+        .error {
+            background: #ea5455;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+                overflow: visible;
+            }
+
+            .sidebar .menu-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .main-content.expanded {
+                margin-left: 0;
+            }
+
+            .sidebar-menu i {
+                margin-right: 0;
+                font-size: 20px;
+            }
+
+            .sidebar-menu a {
+                padding: 15px;
+                justify-content: center;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .profile-container {
+                padding: 8px;
+                border-radius: 50%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .logo-image {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title {
+                display: none;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-card, .chart-container, .activity-feed {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-left">
+        <div class="logo">
+            <img src="images/logo1.jpg" alt="PMMS Logo" class="logo-image">
+            <span class="logo-text">PMMS</span>
+        </div>
+        <button class="header-btn" id="sidebarToggle" title="Toggle Sidebar">
+            <i class="bi bi-list"></i>
+            <span class="btn-text">Menu</span>
+        </button>
+    </div>
+    <div class="header-center">
+        <div class="header-title">Staff Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+        <div class="header-buttons">
+            <button class="header-btn" id="themeToggle" title="Toggle Theme">
+                <i class="bi bi-sun"></i>
+                <span class="btn-text">Light</span>
+            </button>
+        </div>
+        <div class="profile-container">
+            <div class="profile-image">
+                <img src="images/default-avatar.png" alt="User Profile" class="avatar">
+            </div>
+            <div class="user-info">
+                <h3 class="user-name">Loading...</h3>
+                <p class="user-email">Loading...</p>
+            </div>
+        </div>
+        <div class="dropdown-menu user-dropdown" aria-labelledby="userProfile">
+            <a class="dropdown-item" href="#"><i class="bi bi-person"></i> Profile</a>
+            <a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+</header>
+
+<nav class="sidebar" id="sidebar">
+    <ul class="sidebar-menu">
+        <li>
+            <a href="Staffanalyse.html">
+                <i class="bi bi-speedometer2"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudMaintenancePlan.html">
+                <i class="bi bi-wrench-adjustable"></i>
+                <span class="menu-text">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="InventoryReport.html">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="menu-text">Inventory Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="Planning.html" class="active">
+                <i class="bi bi-calendar-event"></i>
+                <span class="menu-text">Planning</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudEquipment.html">
+                <i class="bi bi-cpu"></i>
+                <span class="menu-text">Equipment</span>
+            </a>
+        </li>
+        <li>
+            <a href="TaskManager.html">
+                <i class="bi bi-list-task"></i>
+                <span class="menu-text">Task</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudStaff.html">
+                <i class="bi bi-people"></i>
+                <span class="menu-text">Staff</span>
+            </a>
+        </li>
+        <li>
+            <a href="Technician.html">
+                <i class="bi bi-person-gear"></i>
+                <span class="menu-text">Technician</span>
+            </a>
+        </li>
+        <li>
+            <a href="EquipmentStatistics.html">
+                <i class="bi bi-pie-chart"></i>
+                <span class="menu-text">Equipment Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="DowntimeEvent.html">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="menu-text">Downtime</span>
+            </a>
+        </li>
+        <li>
+            <a href="WhatsApp.html">
+                <i class="bi bi-whatsapp"></i>
+                <span class="menu-text">Communication</span>
+            </a>
+        </li>
+        <li>
+            <a href="TechnicianStatistics.html">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="menu-text">Technician Statistics</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudInventory.html">
+                <i class="bi bi-boxes"></i>
+                <span class="menu-text">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="CrudSparePart.html">
+                <i class="bi bi-tools"></i>
+                <span class="menu-text">Spare Part Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="MaintenancePDFReport.html">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="menu-text">Reporting</span>
+            </a>
+        </li>
+        <li>
+            <a href="login.html">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="menu-text">Logout</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+
+
+
+
+
+
+
+
+
+
+<main class="main-content">
+    <div class="container-fluid">
+        <!-- Stats Cards Row -->
+        <div class="row stats-cards g-3 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card high-priority">
+                    <div class="stats-icon"><i class="bi bi-tools"></i></div>
+                    <div class="stats-label">Total Equipment</div>
+                    <div class="stats-number" id="totalEquipment">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 15%</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card medium-priority">
+                    <div class="stats-icon"><i class="bi bi-check-circle"></i></div>
+                    <div class="stats-label">Operational</div>
+                    <div class="stats-number" id="operationalEquipment">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 8%</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card low-priority">
+                    <div class="stats-icon"><i class="bi bi-wrench"></i></div>
+                    <div class="stats-label">Maintenance Needed</div>
+                    <div class="stats-number" id="maintenanceNeeded">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-up me-1"></i> 12%</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card" style="background-color: #f0f8ff; border: 1px solid #d0e3ff;">
+                    <div class="stats-icon" style="background-color: #5b8cff;"><i class="bi bi-calendar"></i></div>
+                    <div class="stats-label">Avg Maintenance Days</div>
+                    <div class="stats-number" id="avgMaintenanceDays">0</div>
+                    <div class="stats-change"><i class="bi bi-arrow-down me-1"></i> 5%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Status Distribution Pie Chart -->
+            <div class="col-lg-6">
+                <div class="chart-container p-4 bg-white rounded shadow-sm">
+                    <h5 class="mb-3">Equipment Status Distribution</h5>
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Maintenance Frequency Bar Chart -->
+            <div class="col-lg-6">
+                <div class="chart-container p-4 bg-white rounded shadow-sm">
+                    <h5 class="mb-3">Maintenance Frequency by Equipment</h5>
+                    <canvas id="maintenanceFrequencyChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Location Distribution Chart -->
+            <div class="col-lg-6">
+                <div class="chart-container p-4 bg-white rounded shadow-sm">
+                    <h5 class="mb-3">Equipment Distribution by Location</h5>
+                    <canvas id="locationChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Reliability Trend Line Chart -->
+            <div class="col-lg-6">
+                <div class="chart-container p-4 bg-white rounded shadow-sm">
+                    <h5 class="mb-3">Equipment Reliability Trend</h5>
+                    <canvas id="reliabilityChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment Table Section -->
+        <div class="table-container">
+            <div class="table-actions">
+                <div>
+                    <button class="btn btn-outline-primary" id="exportPDFReportBtn"><i class="bi bi-file-earmark-pdf me-2"></i> Export PDF</button>
+                    <button class="btn btn-outline-success ms-2" id="exportChartsBtn"><i class="bi bi-image me-2"></i> Export Charts</button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group">
+                        <input type="text" id="searchEquipmentInput" class="form-control" placeholder="Search equipment...">
+                        <button class="btn btn-outline-secondary" type="button" id="searchEquipmentButton"><i class="bi bi-search"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Model</th>
+                        <th>Serial Number</th>
+                        <th>Location</th>
+                        <th>Installation Date</th>
+                        <th>Status</th>
+                        <th>Last Maintenance</th>
+                        <th>Reliability</th>
+                    </tr>
+                    </thead>
+                    <tbody id="equipmentTableBody"></tbody>
+                </table>
+            </div>
+            <div id="equipmentPagination" class="d-flex justify-content-between align-items-center mt-3">
+                <div>Showing <span id="showingEntries">0-0</span> of <span id="totalEntries">0</span> entries</div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0" id="paginationLinks"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/user_session_handler.js"></script>
+<script src="js/SessionTracker.js"></script>
+
+<script>
+    // Chart instances
+    let statusChart, maintenanceFrequencyChart, locationChart, reliabilityChart;
+
+    // Notification function
+    function showNotification(title, message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show`;
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.innerHTML = `
+            <strong>${title}</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+    }
+
+    // Function to initialize all charts
+    function initializeCharts(equipmentData) {
+        try {
+            // Process data for charts
+            const statusCounts = countEquipmentByStatus(equipmentData);
+            const locationCounts = countEquipmentByLocation(equipmentData);
+            const maintenanceCounts = countMaintenanceByEquipment(equipmentData);
+            const reliabilityData = calculateReliabilityTrend(equipmentData);
+
+            // 1. Status Distribution Pie Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#6c757d'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Maintenance Frequency Bar Chart
+            const maintenanceCtx = document.getElementById('maintenanceFrequencyChart').getContext('2d');
+            maintenanceFrequencyChart = new Chart(maintenanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: maintenanceCounts.map(item => item.equipmentName),
+                    datasets: [{
+                        label: 'Maintenance Count',
+                        data: maintenanceCounts.map(item => item.count),
+                        backgroundColor: '#0d6efd',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Number of Maintenances' } },
+                        x: { title: { display: true, text: 'Equipment' } }
+                    }
+                }
+            });
+
+            // 3. Location Distribution Chart
+            const locationCtx = document.getElementById('locationChart').getContext('2d');
+            locationChart = new Chart(locationCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(locationCounts),
+                    datasets: [{
+                        data: Object.values(locationCounts),
+                        backgroundColor: ['#6610f2', '#6f42c1', '#d63384', '#fd7e14', '#20c997', '#0dcaf0'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+
+            // 4. Reliability Trend Line Chart
+            const reliabilityCtx = document.getElementById('reliabilityChart').getContext('2d');
+            reliabilityChart = new Chart(reliabilityCtx, {
+                type: 'line',
+                data: {
+                    labels: reliabilityData.map(item => item.month),
+                    datasets: [{
+                        label: 'Average Reliability Score',
+                        data: reliabilityData.map(item => item.reliability),
+                        fill: false,
+                        borderColor: '#20c997',
+                        tension: 0.1,
+                        pointBackgroundColor: '#20c997',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { min: 0, max: 100, title: { display: true, text: 'Reliability Score (%)' } },
+                        x: { title: { display: true, text: 'Month' } }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing charts:', error);
+            showNotification('Error', 'Failed to initialize charts.', 'danger');
+        }
+    }
+
+    // Helper functions to process data for charts
+    function countEquipmentByStatus(equipmentData) {
+        const statusMap = { 'OPERATIONAL': 0, 'UNDER_MAINTENANCE': 0, 'DEFECTIVE': 0, 'RETIRED': 0 };
+        equipmentData.forEach(equipment => {
+            if (equipment.status && statusMap[equipment.status]) {
+                statusMap[equipment.status]++;
+            }
+        });
+        return Object.fromEntries(Object.entries(statusMap).filter(([_, count]) => count > 0));
+    }
+
+    function countEquipmentByLocation(equipmentData) {
+        const locationCounts = {};
+        equipmentData.forEach(equipment => {
+            const location = equipment.location || 'Unknown';
+            locationCounts[location] = (locationCounts[location] || 0) + 1;
+        });
+        return locationCounts;
+    }
+
+    function countMaintenanceByEquipment(equipmentData) {
+        return equipmentData
+            .map(equipment => ({
+                equipmentName: equipment.name || 'Unknown',
+                count: equipment.maintenanceHistory?.length || 0
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+    }
+
+    function calculateReliabilityTrend(equipmentData) {
+        // Mock data for demo; replace with real data if available
+        return [
+            { month: 'Jan', reliability: 85 },
+            { month: 'Feb', reliability: 82 },
+            { month: 'Mar', reliability: 88 },
+            { month: 'Apr', reliability: 90 },
+            { month: 'May', reliability: 87 },
+            { month: 'Jun', reliability: 92 }
+        ];
+    }
+
+    // Function to update all charts with new data
+    function updateCharts(equipmentData) {
+        try {
+            const statusCounts = countEquipmentByStatus(equipmentData);
+            const locationCounts = countEquipmentByLocation(equipmentData);
+            const maintenanceCounts = countMaintenanceByEquipment(equipmentData);
+            const reliabilityData = calculateReliabilityTrend(equipmentData);
+
+            // Update Status Chart
+            statusChart.data.labels = Object.keys(statusCounts);
+            statusChart.data.datasets[0].data = Object.values(statusCounts);
+            statusChart.update();
+
+            // Update Maintenance Frequency Chart
+            maintenanceFrequencyChart.data.labels = maintenanceCounts.map(item => item.equipmentName);
+            maintenanceFrequencyChart.data.datasets[0].data = maintenanceCounts.map(item => item.count);
+            maintenanceFrequencyChart.update();
+
+            // Update Location Chart
+            locationChart.data.labels = Object.keys(locationCounts);
+            locationChart.data.datasets[0].data = Object.values(locationCounts);
+            locationChart.update();
+
+            // Update Reliability Chart
+            reliabilityChart.data.labels = reliabilityData.map(item => item.month);
+            reliabilityChart.data.datasets[0].data = reliabilityData.map(item => item.reliability);
+            reliabilityChart.update();
+
+            // Update stats cards
+            document.getElementById('totalEquipment').textContent = equipmentData.length;
+            document.getElementById('operationalEquipment').textContent = statusCounts['OPERATIONAL'] || 0;
+            document.getElementById('maintenanceNeeded').textContent = statusCounts['UNDER_MAINTENANCE'] || 0;
+            document.getElementById('avgMaintenanceDays').textContent = calculateAvgMaintenanceDays(equipmentData);
+        } catch (error) {
+            console.error('Error updating charts:', error);
+            showNotification('Error', 'Failed to update charts.', 'danger');
+        }
+    }
+
+    function calculateAvgMaintenanceDays(equipmentData) {
+        const now = new Date();
+        let totalDays = 0;
+        let count = 0;
+        equipmentData.forEach(equipment => {
+            if (equipment.lastMaintenanceDate) {
+                const lastMaintenance = new Date(equipment.lastMaintenanceDate);
+                const diffTime = now - lastMaintenance;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                totalDays += diffDays;
+                count++;
+            }
+        });
+        return count > 0 ? Math.round(totalDays / count) : 0;
+    }
+
+    // Function to populate equipment table
+    function populateEquipmentTable(equipmentData, page = 1, pageSize = 10) {
+        try {
+            const tableBody = document.getElementById('equipmentTableBody');
+            tableBody.innerHTML = '';
+            const start = (page - 1) * pageSize;
+            const end = Math.min(start + pageSize, equipmentData.length);
+            const paginatedData = equipmentData.slice(start, end);
+
+            paginatedData.forEach(equipment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${equipment.equipmentId || ''}</td>
+                    <td>${equipment.name || ''}</td>
+                    <td>${equipment.model || ''}</td>
+                    <td>${equipment.serialNumber || ''}</td>
+                    <td>${equipment.location || ''}</td>
+                    <td>${equipment.installationDate || ''}</td>
+                    <td>${equipment.status || ''}</td>
+                    <td>${equipment.lastMaintenanceDate || ''}</td>
+                    <td>${equipment.reliability ? equipment.reliability.toFixed(2) : 'N/A'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Update pagination
+            document.getElementById('showingEntries').textContent = `${start + 1}-${end}`;
+            document.getElementById('totalEntries').textContent = equipmentData.length;
+            updatePagination(equipmentData.length, page, pageSize);
+        } catch (error) {
+            console.error('Error populating table:', error);
+            showNotification('Error', 'Failed to populate equipment table.', 'danger');
+        }
+    }
+
+    // Function to update pagination links
+    function updatePagination(totalItems, currentPage, pageSize) {
+        const paginationLinks = document.getElementById('paginationLinks');
+        paginationLinks.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / pageSize);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            li.addEventListener('click', (e) => {
+                e.preventDefault();
+                fetchEquipmentData(i);
+            });
+            paginationLinks.appendChild(li);
+        }
+    }
+
+    // Export charts as PDF
+    document.getElementById('exportChartsBtn').addEventListener('click', function() {
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape');
+
+            doc.setFontSize(18);
+            doc.text('Equipment Analytics Report', 14, 20);
+            doc.setFontSize(12);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+
+            const canvases = [
+                document.getElementById('statusChart'),
+                document.getElementById('maintenanceFrequencyChart'),
+                document.getElementById('locationChart'),
+                document.getElementById('reliabilityChart')
+            ];
+
+            let yPosition = 40;
+            canvases.forEach((canvas, index) => {
+                if (canvas) {
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 280;
+                    const imgHeight = canvas.height * imgWidth / canvas.width;
+
+                    doc.setFontSize(14);
+                    doc.text(canvas.parentElement.querySelector('h5').textContent, 14, yPosition);
+                    yPosition += 10;
+
+                    doc.addImage(imgData, 'PNG', 14, yPosition, imgWidth, imgHeight);
+                    yPosition += imgHeight + 20;
+
+                    if (index < canvases.length - 1) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                }
+            });
+
+            doc.save('equipment_analytics_report.pdf');
+            showNotification('Success', 'Charts exported to PDF successfully', 'success');
+        } catch (error) {
+            console.error('Error exporting charts:', error);
+            showNotification('Error', 'Failed to export charts to PDF.', 'danger');
+        }
+    });
+
+    // Search functionality
+    document.getElementById('searchEquipmentButton').addEventListener('click', function() {
+        const searchTerm = document.getElementById('searchEquipmentInput').value.toLowerCase();
+        fetchEquipmentData(1, searchTerm);
+    });
+
+    // Fetch equipment data
+    async function fetchEquipmentData(page = 1, searchTerm = '') {
+        try {
+            let url = '/api/equipments';
+            if (searchTerm) {
+                url += `/search?name=${encodeURIComponent(searchTerm)}`;
+            }
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const equipmentData = await response.json();
+
+            // Initialize or update charts
+            if (!statusChart) {
+                initializeCharts(equipmentData);
+            } else {
+                updateCharts(equipmentData);
+            }
+
+            // Populate table
+            populateEquipmentTable(equipmentData, page);
+        } catch (error) {
+            console.error('Error fetching equipment data:', error);
+            showNotification('Error', 'Failed to load equipment data. Please try again.', 'danger');
+        }
+    }
+
+    // Initial data fetch
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchEquipmentData();
+    });
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>

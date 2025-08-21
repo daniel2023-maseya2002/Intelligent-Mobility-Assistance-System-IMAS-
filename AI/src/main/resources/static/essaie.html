@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Management - IMAS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-blue: #1E40AF;
+            --secondary-red: #DC2626;
+            --light-blue: #3B82F6;
+            --light-red: #EF4444;
+            --gold: #F59E0B;
+            --green: #10B981;
+            --gray-dark: #1F2937;
+            --gray-medium: #6B7280;
+            --gray-light: #F3F4F6;
+            --white: #FFFFFF;
+            --sidebar-width: 240px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --white: #1F2937;
+            --gray-light: #374151;
+            --gray-medium: #9CA3AF;
+            --gray-dark: #F9FAFB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--gray-dark);
+            transition: var(--transition);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--header-height);
+            background: var(--white);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            transition: var(--transition);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--gray-light);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--gray-light);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .user-profile:hover {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--white);
+            border-right: 1px solid rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            z-index: 1100;
+            transition: var(--transition);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.25rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.875rem 1.5rem;
+            color: var(--gray-medium);
+            text-decoration: none;
+            transition: var(--transition);
+            border-radius: 0 25px 25px 0;
+            margin-right: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: linear-gradient(90deg, rgba(30,64,175,0.1) 0%, rgba(30,64,175,0.05) 100%);
+            color: var(--primary-blue);
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu a.active {
+            border-right: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.25rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .stat-icon.maintenance {
+            background: linear-gradient(135deg, var(--gold), #F59E0B);
+        }
+
+        .stat-icon.high-priority {
+            background: linear-gradient(135deg, var(--secondary-red), var(--light-red));
+        }
+
+        .stat-icon.ongoing {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        }
+
+        .stat-icon.completed {
+            background: linear-gradient(135deg, var(--green), #22C55E);
+        }
+
+        .stat-info h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-info p {
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--light-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(30,64,175,0.3);
+        }
+
+        .btn-success {
+            background: var(--green);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-warning {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .btn-warning:hover {
+            background: #F59E0B;
+        }
+
+        .btn-danger {
+            background: var(--secondary-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--light-red);
+        }
+
+        .btn-secondary {
+            background: var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-dark);
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .table th {
+            background: var(--gray-light);
+            font-weight: 600;
+            color: var(--gray-dark);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tr:hover {
+            background: rgba(30,64,175,0.05);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: var(--white);
+            color: var(--gray-dark);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-medium);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--gray-light);
+            color: var(--gray-dark);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-high {
+            background: rgba(220,38,38,0.1);
+            color: var(--secondary-red);
+        }
+
+        .status-medium {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        .status-low {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-ongoing {
+            background: rgba(59,130,246,0.1);
+            color: var(--light-blue);
+        }
+
+        .status-completed {
+            background: rgba(16,185,129,0.1);
+            color: var(--green);
+        }
+
+        .status-scheduled {
+            background: rgba(245,158,11,0.1);
+            color: var(--gold);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .action-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .action-btn.view {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .action-btn.edit {
+            background: var(--gold);
+            color: var(--gray-dark);
+        }
+
+        .action-btn.delete {
+            background: var(--secondary-red);
+            color: var(--white);
+        }
+
+        .action-btn.complete {
+            background: var(--green);
+            color: var(--white);
+        }
+
+        /* Detail cards for view modals */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .detail-item {
+            background: var(--gray-light);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--gray-medium);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--gray-dark);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .header {
+                left: 0;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo-icon">
+            <i class="fas fa-tools"></i>
+        </div>
+        <span class="logo-text">IMAS</span>
+    </div>
+    <div class="sidebar-menu">
+        <ul>
+            <li>
+                <a href="Dashboard.html">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="active">
+                    <i class="fas fa-tools"></i>
+                    <span>Maintenance</span>
+                </a>
+            </li>
+            <li>
+                <a href="MaintenancePredictionManagement.html">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Predictions</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('equipment')">
+                    <i class="fas fa-cog"></i>
+                    <span>Equipment</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" onclick="showSection('rerouting')">
+                    <i class="fas fa-route"></i>
+                    <span>Re-routing</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Header -->
+<header class="header" id="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    <div class="header-center">
+        <h1 class="header-title">Maintenance Management System</h1>
+    </div>
+    <div class="header-right">
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile" id="userProfile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <span id="userName">Admin User</span>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="section">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Maintenance Overview</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card" onclick="filterMaintenanceRecords('all')">
+                <div class="stat-icon maintenance">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalMaintenanceRecords">0</h3>
+                    <p>Total Records</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="filterMaintenanceRecords('HIGH')">
+                <div class="stat-icon high-priority">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="highPriorityRecords">0</h3>
+                    <p>High Priority</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="filterMaintenanceRecords('ongoing')">
+                <div class="stat-icon ongoing">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="ongoingRecords">0</h3>
+                    <p>Ongoing</p>
+                </div>
+            </div>
+            <div class="stat-card" onclick="filterMaintenanceRecords('completed')">
+                <div class="stat-icon completed">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="completedRecords">0</h3>
+                    <p>Completed</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Maintenance by Priority</h3>
+                <div class="chart-container">
+                    <canvas id="priorityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Monthly Maintenance Trends</h3>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Equipment Maintenance Status</h3>
+                <div class="chart-container">
+                    <canvas id="equipmentChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem;">Average Resolution Time</h3>
+                <div class="chart-container">
+                    <canvas id="resolutionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Recent Maintenance Records</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="text" placeholder="Search records..." class="form-control" style="width: 250px;" id="maintenanceSearchInput">
+                    <select class="form-control" style="width: 150px;" id="priorityFilter">
+                        <option value="">All Priorities</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                    <button class="btn" onclick="openModal('addMaintenanceModal')">
+                        <i class="fas fa-plus"></i>
+                        Add Record
+                    </button>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Equipment</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Priority</th>
+                    <th>Hours</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="maintenanceTableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--gray-medium);">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Equipment Section -->
+    <section id="equipment-section" class="section hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 style="color: var(--gray-dark);">Equipment Management</h1>
+            <button class="btn" onclick="openModal('addEquipmentModal')">
+                <i class="fas fa-plus"></i>
+                Add Equipment
+            </button>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>All Equipment</h3>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="text" placeholder="Search equipment..." class="form-control" style="width: 250px;" id="equipmentSearchInput">
+                    <select class="form-control" style="width: 150px;" id="equipmentStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="OPERATIONAL">Operational</option>
+                        <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                        <option value="DEFECTIVE">Defective</option>
+                        <option value="RETIRED">Retired</option>
+                    </select>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Model</th>
+                    <th>Serial Number</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Last Maintenance</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="equipmentTableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--gray-medium);">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Re-routing Section -->
+    <section id="rerouting-section" class="section hidden">
+        <h1 style="margin-bottom: 2rem; color: var(--gray-dark);">Route Re-routing Management</h1>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Emergency Re-routing</h3>
+            <form id="reroutingForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="affectedRoute">Affected Route</label>
+                        <select class="form-control" id="affectedRoute" required>
+                            <option value="">Select route...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="alternativeRoute">Alternative Route</label>
+                        <select class="form-control" id="alternativeRoute" required>
+                            <option value="">Select alternative...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reasonForRerouting">Reason for Re-routing</label>
+                        <select class="form-control" id="reasonForRerouting" required>
+                            <option value="">Select reason...</option>
+                            <option value="MAINTENANCE">Scheduled Maintenance</option>
+                            <option value="ACCIDENT">Accident</option>
+                            <option value="CONSTRUCTION">Construction Work</option>
+                            <option value="WEATHER">Weather Conditions</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="estimatedDuration">Estimated Duration (hours)</label>
+                        <input type="number" class="form-control" id="estimatedDuration" min="1" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="additionalNotes">Additional Notes</label>
+                    <textarea class="form-control" id="additionalNotes" rows="3" placeholder="Enter additional details about the re-routing..."></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="submit" class="btn">
+                        <i class="fas fa-route"></i>
+                        Implement Re-routing
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Active Re-routings</h3>
+                <button class="btn btn-secondary" onclick="loadReroutingHistory()">
+                    <i class="fas fa-history"></i>
+                    View History
+                </button>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Affected Route</th>
+                    <th>Alternative Route</th>
+                    <th>Reason</th>
+                    <th>Start Time</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="reroutingTableBody">
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--gray-medium);">No active re-routings</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- Add Maintenance Record Modal -->
+<div id="addMaintenanceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add Maintenance Record</h2>
+            <button class="close-btn" onclick="closeModal('addMaintenanceModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addMaintenanceForm">
+            <div class="form-group">
+                <label>Equipment</label>
+                <select class="form-control" id="maintenanceEquipment" required>
+                    <option value="">Select equipment...</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" class="form-control" id="maintenanceStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" class="form-control" id="maintenanceEndDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select class="form-control" id="maintenancePriority" required>
+                        <option value="">Select priority...</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Hours</label>
+                    <input type="number" class="form-control" id="maintenanceHours" min="1" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" id="maintenanceDescription" rows="4" placeholder="Enter maintenance description..." required></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addMaintenanceModal')">Cancel</button>
+                <button type="submit" class="btn">Add Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Equipment Modal -->
+<div id="addEquipmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Add Equipment</h2>
+            <button class="close-btn" onclick="closeModal('addEquipmentModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="addEquipmentForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Equipment Name</label>
+                    <input type="text" class="form-control" id="equipmentName" required>
+                </div>
+                <div class="form-group">
+                    <label>Model</label>
+                    <input type="text" class="form-control" id="equipmentModel" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Serial Number</label>
+                    <input type="text" class="form-control" id="equipmentSerial" required>
+                </div>
+                <div class="form-group">
+                    <label>Installation Date</label>
+                    <input type="date" class="form-control" id="equipmentInstallDate" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" class="form-control" id="equipmentLocation" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-control" id="equipmentStatus" required>
+                        <option value="">Select status...</option>
+                        <option value="OPERATIONAL">Operational</option>
+                        <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                        <option value="DEFECTIVE">Defective</option>
+                        <option value="RETIRED">Retired</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addEquipmentModal')">Cancel</button>
+                <button type="submit" class="btn">Add Equipment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Maintenance Modal -->
+<div id="viewMaintenanceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Maintenance Record Details</h2>
+            <button class="close-btn" onclick="closeModal('viewMaintenanceModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="viewMaintenanceContent">
+            <!-- Content will be populated dynamically -->
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <button class="btn" onclick="closeModal('viewMaintenanceModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Maintenance Modal -->
+<div id="editMaintenanceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit Maintenance Record</h2>
+            <button class="close-btn" onclick="closeModal('editMaintenanceModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editMaintenanceForm">
+            <input type="hidden" id="editMaintenanceId">
+            <div class="form-group">
+                <label>Equipment</label>
+                <select class="form-control" id="editMaintenanceEquipment" required>
+                    <option value="">Select equipment...</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" class="form-control" id="editMaintenanceStartDate" required>
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" class="form-control" id="editMaintenanceEndDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select class="form-control" id="editMaintenancePriority" required>
+                        <option value="">Select priority...</option>
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Hours</label>
+                    <input type="number" class="form-control" id="editMaintenanceHours" min="1" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea class="form-control" id="editMaintenanceDescription" rows="4" required></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editMaintenanceModal')">Cancel</button>
+                <button type="submit" class="btn">Update Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let maintenanceRecords = [];
+    let equipmentList = [];
+    let routes = [];
+    let reroutings = [];
+    let charts = {};
+    const API_BASE = 'http://localhost:8080/api';
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEventListeners();
+        loadAllData();
+        showSection('dashboard');
+    });
+
+    // Event listeners
+    function initializeEventListeners() {
+        document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('addMaintenanceForm').addEventListener('submit', handleAddMaintenance);
+        document.getElementById('editMaintenanceForm').addEventListener('submit', handleEditMaintenance);
+        document.getElementById('addEquipmentForm').addEventListener('submit', handleAddEquipment);
+        document.getElementById('reroutingForm').addEventListener('submit', handleRerouting);
+        document.getElementById('maintenanceSearchInput')?.addEventListener('input', filterMaintenanceTable);
+        document.getElementById('priorityFilter')?.addEventListener('change', filterMaintenanceTable);
+        document.getElementById('equipmentSearchInput')?.addEventListener('input', filterEquipmentTable);
+        document.getElementById('equipmentStatusFilter')?.addEventListener('change', filterEquipmentTable);
+    }
+
+    // Load all data
+    async function loadAllData() {
+        try {
+            await Promise.all([
+                loadMaintenanceRecords(),
+                loadEquipment(),
+                loadRoutes()
+            ]);
+            updateDashboardStats();
+            createCharts();
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showNotification('Error loading data: ' + error.message, 'error');
+        }
+    }
+
+    // Load maintenance records
+    async function loadMaintenanceRecords() {
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records`);
+            if (!response.ok) throw new Error('Failed to fetch maintenance records');
+            maintenanceRecords = await response.json();
+            displayMaintenanceRecords(maintenanceRecords);
+        } catch (error) {
+            console.error('Error loading maintenance records:', error);
+            document.getElementById('maintenanceTableBody').innerHTML =
+                '<tr><td colspan="8" style="text-align: center; color: var(--secondary-red);">Error loading records</td></tr>';
+        }
+    }
+
+    // Load equipment
+    async function loadEquipment() {
+        try {
+            const response = await fetch(`${API_BASE}/equipments`);
+            if (!response.ok) throw new Error('Failed to fetch equipment');
+            equipmentList = await response.json();
+            displayEquipment(equipmentList);
+            populateEquipmentSelects();
+        } catch (error) {
+            console.error('Error loading equipment:', error);
+            document.getElementById('equipmentTableBody').innerHTML =
+                '<tr><td colspan="8" style="text-align: center; color: var(--secondary-red);">Error loading equipment</td></tr>';
+        }
+    }
+
+    // Load routes
+    async function loadRoutes() {
+        try {
+            const response = await fetch(`${API_BASE}/routes`);
+            if (!response.ok) throw new Error('Failed to fetch routes');
+            routes = await response.json();
+            populateRouteSelects();
+        } catch (error) {
+            console.error('Error loading routes:', error);
+        }
+    }
+
+    // Display maintenance records
+    function displayMaintenanceRecords(records) {
+        const tbody = document.getElementById('maintenanceTableBody');
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-medium);">No maintenance records found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = records.map(record => {
+            const priority = record.priority || 'MEDIUM';
+            const statusClass = getMaintenanceStatus(record);
+            const equipment = record.equipment || {};
+
+            return `
+                <tr>
+                    <td>${record.id}</td>
+                    <td>${equipment.name || 'N/A'}</td>
+                    <td>${formatDate(record.startDate)}</td>
+                    <td>${record.endDate ? formatDate(record.endDate) : 'In Progress'}</td>
+                    <td><span class="status-badge status-${priority.toLowerCase()}">${priority}</span></td>
+                    <td>${record.estimatedHours || 0}h</td>
+                    <td><span class="status-badge status-${statusClass}">${getStatusText(statusClass)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewMaintenanceDetails(${record.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="editMaintenance(${record.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${!record.endDate ? `<button class="action-btn complete" onclick="completeMaintenance(${record.id})" title="Complete">
+                                <i class="fas fa-check"></i>
+                            </button>` : ''}
+                            <button class="action-btn delete" onclick="deleteMaintenance(${record.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Display equipment
+    function displayEquipment(equipment) {
+        const tbody = document.getElementById('equipmentTableBody');
+        if (equipment.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-medium);">No equipment found</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = equipment.map(item => {
+            const status = item.status || 'OPERATIONAL';
+            const statusClass = status.toLowerCase().replace('_', '-');
+
+            return `
+                <tr>
+                    <td>${item.equipmentId}</td>
+                    <td>${item.name}</td>
+                    <td>${item.model || 'N/A'}</td>
+                    <td>${item.serialNumber || 'N/A'}</td>
+                    <td>${item.location || 'N/A'}</td>
+                    <td><span class="status-badge status-${statusClass}">${status.replace('_', ' ')}</span></td>
+                    <td>${item.lastMaintenanceDate ? formatDate(item.lastMaintenanceDate) : 'Never'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewEquipmentDetails(${item.equipmentId})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="editEquipment(${item.equipmentId})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteEquipment(${item.equipmentId})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Populate equipment selects
+    function populateEquipmentSelects() {
+        const selects = ['maintenanceEquipment', 'editMaintenanceEquipment'];
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">Select equipment...</option>';
+                equipmentList.forEach(equipment => {
+                    select.innerHTML += `<option value="${equipment.equipmentId}">${equipment.name} (${equipment.model || 'No model'})</option>`;
+                });
+            }
+        });
+    }
+
+    // Populate route selects
+    function populateRouteSelects() {
+        const selects = ['affectedRoute', 'alternativeRoute'];
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">Select route...</option>';
+                routes.forEach(route => {
+                    select.innerHTML += `<option value="${route.id}">${route.routeName} (${route.routeCode})</option>`;
+                });
+            }
+        });
+    }
+
+    // Update dashboard statistics
+    function updateDashboardStats() {
+        const total = maintenanceRecords.length;
+        const highPriority = maintenanceRecords.filter(r => r.priority === 'HIGH').length;
+        const ongoing = maintenanceRecords.filter(r => !r.endDate).length;
+        const completed = maintenanceRecords.filter(r => r.endDate).length;
+
+        document.getElementById('totalMaintenanceRecords').textContent = total;
+        document.getElementById('highPriorityRecords').textContent = highPriority;
+        document.getElementById('ongoingRecords').textContent = ongoing;
+        document.getElementById('completedRecords').textContent = completed;
+    }
+
+    // Create charts
+    function createCharts() {
+        createPriorityChart();
+        createTrendsChart();
+        createEquipmentChart();
+        createResolutionChart();
+    }
+
+    // Priority chart
+    function createPriorityChart() {
+        const ctx = document.getElementById('priorityChart');
+        if (!ctx) return;
+
+        if (charts.priority) {
+            charts.priority.destroy();
+        }
+
+        const priorityCounts = {
+            HIGH: maintenanceRecords.filter(r => r.priority === 'HIGH').length,
+            MEDIUM: maintenanceRecords.filter(r => r.priority === 'MEDIUM').length,
+            LOW: maintenanceRecords.filter(r => r.priority === 'LOW').length
+        };
+
+        charts.priority = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Priority', 'Medium Priority', 'Low Priority'],
+                datasets: [{
+                    data: [priorityCounts.HIGH, priorityCounts.MEDIUM, priorityCounts.LOW],
+                    backgroundColor: ['#DC2626', '#F59E0B', '#10B981'],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // Trends chart
+    function createTrendsChart() {
+        const ctx = document.getElementById('trendsChart');
+        if (!ctx) return;
+
+        if (charts.trends) {
+            charts.trends.destroy();
+        }
+
+        // Get last 6 months of data
+        const months = [];
+        const counts = [];
+        const today = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            months.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+
+            const monthCount = maintenanceRecords.filter(record => {
+                const recordDate = new Date(record.startDate);
+                return recordDate.getMonth() === date.getMonth() &&
+                       recordDate.getFullYear() === date.getFullYear();
+            }).length;
+
+            counts.push(monthCount);
+        }
+
+        charts.trends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Maintenance Records',
+                    data: counts,
+                    borderColor: '#1E40AF',
+                    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Equipment chart
+    function createEquipmentChart() {
+        const ctx = document.getElementById('equipmentChart');
+        if (!ctx) return;
+
+        if (charts.equipment) {
+            charts.equipment.destroy();
+        }
+
+        const statusCounts = {
+            OPERATIONAL: equipmentList.filter(e => e.status === 'OPERATIONAL').length,
+            UNDER_MAINTENANCE: equipmentList.filter(e => e.status === 'UNDER_MAINTENANCE').length,
+            DEFECTIVE: equipmentList.filter(e => e.status === 'DEFECTIVE').length,
+            RETIRED: equipmentList.filter(e => e.status === 'RETIRED').length
+        };
+
+        charts.equipment = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Operational', 'Under Maintenance', 'Defective', 'Retired'],
+                datasets: [{
+                    label: 'Equipment Count',
+                    data: [statusCounts.OPERATIONAL, statusCounts.UNDER_MAINTENANCE,
+                           statusCounts.DEFECTIVE, statusCounts.RETIRED],
+                    backgroundColor: ['#10B981', '#F59E0B', '#DC2626', '#6B7280'],
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Resolution time chart
+    function createResolutionChart() {
+        const ctx = document.getElementById('resolutionChart');
+        if (!ctx) return;
+
+        if (charts.resolution) {
+            charts.resolution.destroy();
+        }
+
+        // Calculate average resolution time by priority
+        const avgResolutionTime = {
+            HIGH: calculateAvgResolutionTime('HIGH'),
+            MEDIUM: calculateAvgResolutionTime('MEDIUM'),
+            LOW: calculateAvgResolutionTime('LOW')
+        };
+
+        charts.resolution = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['High Priority', 'Medium Priority', 'Low Priority'],
+                datasets: [{
+                    label: 'Avg Resolution Time (hours)',
+                    data: [avgResolutionTime.HIGH, avgResolutionTime.MEDIUM, avgResolutionTime.LOW],
+                    backgroundColor: 'rgba(30, 64, 175, 0.2)',
+                    borderColor: '#1E40AF',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1E40AF'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Calculate average resolution time by priority
+    function calculateAvgResolutionTime(priority) {
+        const completedRecords = maintenanceRecords.filter(r =>
+            r.priority === priority && r.endDate && r.startDate
+        );
+
+        if (completedRecords.length === 0) return 0;
+
+        const totalHours = completedRecords.reduce((sum, record) => {
+            const start = new Date(record.startDate);
+            const end = new Date(record.endDate);
+            const hours = (end - start) / (1000 * 60 * 60);
+            return sum + hours;
+        }, 0);
+
+        return Math.round(totalHours / completedRecords.length);
+    }
+
+    // Handle add maintenance
+    async function handleAddMaintenance(e) {
+        e.preventDefault();
+
+        const formData = {
+            equipment: { equipmentId: parseInt(document.getElementById('maintenanceEquipment').value) },
+            startDate: document.getElementById('maintenanceStartDate').value,
+            endDate: document.getElementById('maintenanceEndDate').value || null,
+            priority: document.getElementById('maintenancePriority').value,
+            estimatedHours: parseInt(document.getElementById('maintenanceHours').value),
+            description: document.getElementById('maintenanceDescription').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) throw new Error('Failed to create maintenance record');
+
+            closeModal('addMaintenanceModal');
+            showNotification('Maintenance record added successfully!', 'success');
+            document.getElementById('addMaintenanceForm').reset();
+            loadAllData();
+        } catch (error) {
+            console.error('Error adding maintenance record:', error);
+            showNotification('Error adding maintenance record: ' + error.message, 'error');
+        }
+    }
+
+    // Handle edit maintenance
+    async function handleEditMaintenance(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('editMaintenanceId').value;
+        const formData = {
+            equipment: { equipmentId: parseInt(document.getElementById('editMaintenanceEquipment').value) },
+            startDate: document.getElementById('editMaintenanceStartDate').value,
+            endDate: document.getElementById('editMaintenanceEndDate').value || null,
+            priority: document.getElementById('editMaintenancePriority').value,
+            estimatedHours: parseInt(document.getElementById('editMaintenanceHours').value),
+            description: document.getElementById('editMaintenanceDescription').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) throw new Error('Failed to update maintenance record');
+
+            closeModal('editMaintenanceModal');
+            showNotification('Maintenance record updated successfully!', 'success');
+            loadAllData();
+        } catch (error) {
+            console.error('Error updating maintenance record:', error);
+            showNotification('Error updating maintenance record: ' + error.message, 'error');
+        }
+    }
+
+    // Handle add equipment
+    async function handleAddEquipment(e) {
+        e.preventDefault();
+
+        const formData = {
+            name: document.getElementById('equipmentName').value,
+            model: document.getElementById('equipmentModel').value,
+            serialNumber: document.getElementById('equipmentSerial').value,
+            installationDate: document.getElementById('equipmentInstallDate').value,
+            location: document.getElementById('equipmentLocation').value,
+            status: document.getElementById('equipmentStatus').value
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}/equipments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) throw new Error('Failed to create equipment');
+
+            closeModal('addEquipmentModal');
+            showNotification('Equipment added successfully!', 'success');
+            document.getElementById('addEquipmentForm').reset();
+            loadAllData();
+        } catch (error) {
+            console.error('Error adding equipment:', error);
+            showNotification('Error adding equipment: ' + error.message, 'error');
+        }
+    }
+
+    // Handle rerouting
+    async function handleRerouting(e) {
+        e.preventDefault();
+
+        const formData = {
+            affectedRouteId: parseInt(document.getElementById('affectedRoute').value),
+            alternativeRouteId: parseInt(document.getElementById('alternativeRoute').value),
+            reason: document.getElementById('reasonForRerouting').value,
+            estimatedDuration: parseInt(document.getElementById('estimatedDuration').value),
+            additionalNotes: document.getElementById('additionalNotes').value,
+            startTime: new Date().toISOString(),
+            status: 'ACTIVE'
+        };
+
+        try {
+            // Here you would typically send to a rerouting endpoint
+            // For now, we'll simulate the request
+            console.log('Implementing rerouting:', formData);
+
+            showNotification('Re-routing implemented successfully!', 'success');
+            document.getElementById('reroutingForm').reset();
+            loadReroutingHistory();
+        } catch (error) {
+            console.error('Error implementing rerouting:', error);
+            showNotification('Error implementing rerouting: ' + error.message, 'error');
+        }
+    }
+
+    // View maintenance details
+    async function viewMaintenanceDetails(id) {
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records/${id}`);
+            if (!response.ok) throw new Error('Failed to fetch maintenance record');
+
+            const record = await response.json();
+            const equipment = record.equipment || {};
+
+            const content = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Record ID</div>
+                        <div class="detail-value">${record.id}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Equipment</div>
+                        <div class="detail-value">${equipment.name || 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Equipment Model</div>
+                        <div class="detail-value">${equipment.model || 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Priority</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-${record.priority.toLowerCase()}">${record.priority}</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Start Date</div>
+                        <div class="detail-value">${formatDate(record.startDate)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">End Date</div>
+                        <div class="detail-value">${record.endDate ? formatDate(record.endDate) : 'In Progress'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Estimated Hours</div>
+                        <div class="detail-value">${record.estimatedHours || 0}h</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-${getMaintenanceStatus(record)}">
+                                ${getStatusText(getMaintenanceStatus(record))}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h4>Description</h4>
+                    <p style="background: var(--gray-light); padding: 1rem; border-radius: var(--border-radius); margin-top: 1rem;">
+                        ${record.description || 'No description provided'}
+                    </p>
+                </div>
+            `;
+
+            document.getElementById('viewMaintenanceContent').innerHTML = content;
+            openModal('viewMaintenanceModal');
+        } catch (error) {
+            console.error('Error loading maintenance details:', error);
+            showNotification('Error loading maintenance details: ' + error.message, 'error');
+        }
+    }
+
+    // Edit maintenance
+    async function editMaintenance(id) {
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records/${id}`);
+            if (!response.ok) throw new Error('Failed to fetch maintenance record');
+
+            const record = await response.json();
+
+            document.getElementById('editMaintenanceId').value = record.id;
+            document.getElementById('editMaintenanceEquipment').value = record.equipment?.equipmentId || '';
+            document.getElementById('editMaintenanceStartDate').value = record.startDate;
+            document.getElementById('editMaintenanceEndDate').value = record.endDate || '';
+            document.getElementById('editMaintenancePriority').value = record.priority;
+            document.getElementById('editMaintenanceHours').value = record.estimatedHours;
+            document.getElementById('editMaintenanceDescription').value = record.description;
+
+            openModal('editMaintenanceModal');
+        } catch (error) {
+            console.error('Error loading maintenance for edit:', error);
+            showNotification('Error loading maintenance details: ' + error.message, 'error');
+        }
+    }
+
+    // Complete maintenance
+    async function completeMaintenance(id) {
+        if (!confirm('Are you sure you want to mark this maintenance as completed?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records/${id}/complete`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to complete maintenance');
+
+            showNotification('Maintenance marked as completed!', 'success');
+            loadAllData();
+        } catch (error) {
+            console.error('Error completing maintenance:', error);
+            showNotification('Error completing maintenance: ' + error.message, 'error');
+        }
+    }
+
+    // Delete maintenance
+    async function deleteMaintenance(id) {
+        if (!confirm('Are you sure you want to delete this maintenance record? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/maintenance-records/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Failed to delete maintenance record');
+
+            showNotification('Maintenance record deleted successfully!', 'success');
+            loadAllData();
+        } catch (error) {
+            console.error('Error deleting maintenance:', error);
+            showNotification('Error deleting maintenance: ' + error.message, 'error');
+        }
+    }
+
+    // Helper functions
+    function getMaintenanceStatus(record) {
+        if (!record.endDate) {
+            return 'ongoing';
+        } else {
+            return 'completed';
+        }
+    }
+
+    function getStatusText(status) {
+        const statusMap = {
+            'ongoing': 'Ongoing',
+            'completed': 'Completed',
+            'scheduled': 'Scheduled'
+        };
+        return statusMap[status] || status;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    // Filter functions
+    function filterMaintenanceTable() {
+        const searchTerm = document.getElementById('maintenanceSearchInput').value.toLowerCase();
+        const priorityFilter = document.getElementById('priorityFilter').value;
+        const rows = document.querySelectorAll('#maintenanceTableBody tr');
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const priorityCell = row.cells[4];
+            const priority = priorityCell ? priorityCell.textContent.trim() : '';
+
+            const matchesSearch = text.includes(searchTerm);
+            const matchesPriority = !priorityFilter || priority.includes(priorityFilter);
+
+            row.style.display = (matchesSearch && matchesPriority) ? '' : 'none';
+        });
+    }
+
+    function filterEquipmentTable() {
+        const searchTerm = document.getElementById('equipmentSearchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('equipmentStatusFilter').value;
+        const rows = document.querySelectorAll('#equipmentTableBody tr');
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const statusCell = row.cells[5];
+            const status = statusCell ? statusCell.textContent.trim() : '';
+
+            const matchesSearch = text.includes(searchTerm);
+            const matchesStatus = !statusFilter || status.includes(statusFilter);
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    function filterMaintenanceRecords(filter) {
+        let filteredRecords = maintenanceRecords;
+
+        switch(filter) {
+            case 'HIGH':
+                filteredRecords = maintenanceRecords.filter(r => r.priority === 'HIGH');
+                break;
+            case 'ongoing':
+                filteredRecords = maintenanceRecords.filter(r => !r.endDate);
+                break;
+            case 'completed':
+                filteredRecords = maintenanceRecords.filter(r => r.endDate);
+                break;
+            default:
+                filteredRecords = maintenanceRecords;
+        }
+
+        displayMaintenanceRecords(filteredRecords);
+    }
+
+    // Navigation functions
+    function showSection(sectionName) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show target section
+        const targetSection = document.getElementById(sectionName + '-section');
+        if (targetSection) {
+            targetSection.classList.remove('hidden');
+        }
+
+        // Load section-specific data
+        switch(sectionName) {
+            case 'equipment':
+                loadEquipment();
+                break;
+            case 'rerouting':
+                loadReroutingHistory();
+                break;
+        }
+    }
+
+    function loadReroutingHistory() {
+        // This would typically load rerouting data from the API
+        // For now, we'll show an empty table
+        const tbody = document.getElementById('reroutingTableBody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--gray-medium);">No active re-routings</td></tr>';
+    }
+
+    // UI functions
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const themeToggle = document.getElementById('themeToggle');
+        const icon = themeToggle.querySelector('i');
+
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.className = 'fas fa-moon';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.className = 'fas fa-sun';
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function showNotification(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+
+        const colors = {
+            success: '#10B981',
+            error: '#DC2626',
+            warning: '#F59E0B',
+            info: '#3B82F6'
+        };
+
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+            background: ${colors[type] || colors.info};
+        `;
+
+        const icons = {
+            success: '✅',
+            error: '❌',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+
+        notification.innerHTML = `${icons[type] || icons.info} ${message}`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+<script src="js/singleWindowValidator.js"></script>
+</body>
+</html>
